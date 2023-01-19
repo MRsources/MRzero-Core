@@ -7,7 +7,7 @@ import torch
 from numpy import pi
 
 
-# TODO: documentation, everything in MRzeroCore must have a docstring
+# TODO: Add documentation and functions to analyze the graph
 
 
 def compute_graph(
