@@ -19,12 +19,12 @@ from __future__ import annotations
 import torch
 from numpy import pi
 
-from .sequence import Sequence, PulseUsage
-from .sim_data import RawSimData
-from . import util
+from ..sequence import Sequence, PulseUsage
+from ..phantom import SimData
+from .. import util
 
 
-def spin_sim(seq: Sequence, data: RawSimData, spin_count: int,
+def spin_sim(seq: Sequence, data: SimData, spin_count: int,
              perfect_spoiling=False
              ) -> torch.Tensor:
     """
