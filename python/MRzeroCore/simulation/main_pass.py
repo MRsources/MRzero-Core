@@ -3,7 +3,7 @@ import torch
 
 from ..sequence import Sequence
 from ..phantom.sim_data import SimData
-from MRzeroCore._prepass import PyDistribution as PrePassState
+from .pre_pass import Graph
 import numpy as np
 from .. import util
 
@@ -13,7 +13,7 @@ from .. import util
 # has can extract all information it wants during simulation.
 
 
-def execute_graph(graph: list[list[PrePassState]],
+def execute_graph(graph: Graph,
                   seq: Sequence,
                   data: SimData,
                   min_signal: float = 1e-2,

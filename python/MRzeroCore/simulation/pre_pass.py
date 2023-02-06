@@ -15,7 +15,7 @@ def compute_graph(
     data: SimData,
     max_state_count: int = 200,
     min_state_mag: float = 1e-4
-):
+) -> Graph:
     """Like pre_pass.compute_graph, but computes args from `` data``."""
     return compute_graph_ext(
         seq,
@@ -42,7 +42,7 @@ def compute_graph_ext(
     nyquist: tuple[float, float, float] = (float('inf'), float('inf'), float('inf')),
     fov: tuple[float, float, float] = (1.0, 1.0, 1.0),
     avg_b1_trig: torch.Tensor | None = None,
-) -> list[list[PrePassState]]:
+) -> Graph:
     if min_state_mag < 0:
         min_state_mag = 0
 
@@ -54,10 +54,17 @@ def compute_graph_ext(
             torch.sin(angle/2)**2
         ], dim=1).type(torch.float32)
 
-    return _prepass.compute_graph(
+    return Graph(_prepass.compute_graph(
         seq,
         T1, T2, T2dash, D,
         max_state_count, min_state_mag,
         nyquist, fov,
         avg_b1_trig
-    )
+    ))
+
+
+class Graph(list):
+    def __init__(self, graph: list[list[PrePassState]]) -> None:
+        super().__init__(graph)
+
+    # Add plotting functions here
