@@ -5,7 +5,7 @@ import pickle
 import torch
 from enum import Enum
 from typing import Iterable, Union
-from MRzeroCore import util
+from . import util
 
 
 class PulseUsage(Enum):

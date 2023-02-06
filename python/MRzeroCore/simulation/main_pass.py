@@ -2,8 +2,8 @@ from __future__ import annotations
 import torch
 
 from ..sequence import Sequence
-from ..phantom import SimData
-from . import PrePassState
+from ..phantom.sim_data import SimData
+from MRzeroCore._prepass import PyDistribution as PrePassState
 import numpy as np
 from .. import util
 

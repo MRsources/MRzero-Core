@@ -2,7 +2,7 @@ from __future__ import annotations
 from MRzeroCore import _prepass
 from MRzeroCore._prepass import PyDistribution as PrePassState
 from ..sequence import Sequence
-from ..phantom import SimData
+from ..phantom.sim_data import SimData
 import torch
 from numpy import pi
 

@@ -1,10 +1,10 @@
 from __future__ import annotations
 from numpy import pi
 import torch
-from .. import util
+from . import util
 
 
-def adjoint(signal: torch.Tensor,
+def reco_adjoint(signal: torch.Tensor,
             kspace: torch.Tensor,
             resolution: tuple[int, int, int] | float | None = None,
             FOV: tuple[float, float, float] | float | None = None,

@@ -20,7 +20,7 @@ import torch
 from numpy import pi
 
 from ..sequence import Sequence, PulseUsage
-from ..phantom import SimData
+from ..phantom.sim_data import SimData
 from .. import util
 
 
