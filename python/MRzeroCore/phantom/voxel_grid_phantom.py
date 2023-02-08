@@ -102,20 +102,6 @@ class VoxelGridPhantom:
         self.base_fov = base_fov
         self.rel_fov = rel_fov
 
-# TODO: Remove this Hack for MRzeroCore
-    def double_voxels(self):
-        """HACK to test multi-T1 decay. Duplicates phantom in 1st dimension,
-        but leaves voxel positions identical so that there are 2 voxels at each pos"""
-        self.PD = torch.cat([self.PD, self.PD])
-        self.T1 = torch.cat([self.T1, self.T1])
-        self.T2 = torch.cat([self.T2, self.T2])
-        self.T2dash = torch.cat([self.T2dash, self.T2dash])
-        self.D = torch.cat([self.D, self.D])
-        self.B0 = torch.cat([self.B0, self.B0])
-        self.B1 = torch.cat([self.B1, self.B1], 1)
-        self.coil_sens = torch.cat([self.coil_sens, self.coil_sens], 1)
-        self.doubled = True
-
     def build(self, PD_threshold: float = 1e-6,
               use_SI_FoV: bool = False, voxel_shape="sinc") -> SimData:
         """Build a :class:`SimData` instance for simulation.
@@ -133,17 +119,11 @@ class VoxelGridPhantom:
 
         fov = (self.base_fov * self.rel_fov) if use_SI_FoV else (self.rel_fov)
         shape = torch.tensor(mask.shape)
-        if hasattr(self, "doubled"):
-            shape[0] //= 2
         pos_x, pos_y, pos_z = torch.meshgrid(
-            torch.linspace(-fov[0]/2, fov[0]/2, int(shape[0]) + 1)[:-1],
-            torch.linspace(-fov[1]/2, fov[1]/2, int(shape[1]) + 1)[:-1],
-            torch.linspace(-fov[2]/2, fov[2]/2, int(shape[2]) + 1)[:-1],
+            torch.linspace(-fov[0]/2, fov[0]/2, shape[0] + 1, device=self.PD.device)[:-1],
+            torch.linspace(-fov[1]/2, fov[1]/2, shape[1] + 1, device=self.PD.device)[:-1],
+            torch.linspace(-fov[2]/2, fov[2]/2, shape[2] + 1, device=self.PD.device)[:-1],
         )
-        if hasattr(self, "doubled"):
-            pos_x = torch.cat([pos_x, pos_x])
-            pos_y = torch.cat([pos_y, pos_y])
-            pos_z = torch.cat([pos_z, pos_z])
 
         voxel_pos = torch.stack([
             pos_x[mask].flatten(),
