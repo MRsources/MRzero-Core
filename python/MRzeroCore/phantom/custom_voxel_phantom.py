@@ -4,7 +4,6 @@ import torch
 from numpy import pi
 import matplotlib.pyplot as plt
 from .sim_data import SimData
-from .. import util
 
 
 def heaviside(t: torch.Tensor, size: torch.Tensor) -> torch.Tensor:
@@ -127,9 +126,8 @@ class CustomVoxelPhantom:
 
     def build(self) -> SimData:
         """Build a :class:`SimData` instance for simulation."""
-        # SimData uses util.set_device(), but can't access the internals of
-        # the provided dephasing func, so here we need to do it ourselves
-        voxel_size = util.set_device(self.voxel_size)
+        # TODO: until the dephasing func fix is here, this only works on the
+        # device self.voxel_size happens to be on
 
         return SimData(
             self.PD,
@@ -142,8 +140,8 @@ class CustomVoxelPhantom:
             torch.ones(1, self.PD.numel()),
             torch.tensor([0.2, 0.2, 0.2]),  # FOV for diffusion
             self.voxel_pos,
-            [float('inf'), float('inf'), float('inf')],
-            build_dephasing_func(self.voxel_shape, voxel_size),
+            torch.tensor([float('inf'), float('inf'), float('inf')]),
+            build_dephasing_func(self.voxel_shape, self.voxel_size),
             recover_func=lambda d: recover(self.voxel_size, self.voxel_shape, d)
         )
 
@@ -169,7 +167,7 @@ class CustomVoxelPhantom:
         # All voxels have the same shape -> same intra-voxel dephasing
         dephasing = build_dephasing_func(
             self.voxel_shape, self.voxel_size
-        )(trajectory)
+        )(trajectory, None)
 
         # Iterate over all voxels and render them into the kspaces
         for i in range(self.PD.numel()):
@@ -205,17 +203,19 @@ class CustomVoxelPhantom:
         plt.show()
 
 
+# TODO: dephasing funcs can store tensors that need to switch device on demand.
+# Maybe it is necessary to make a dephasing func class that can do that.
 def build_dephasing_func(shape: str, size: torch.Tensor,
-                         ) -> Callable[[torch.Tensor], torch.Tensor]:
+                         ) -> Callable[[torch.Tensor, torch.Tensor], torch.Tensor]:
     """Helper function to get the correct dephasing function."""
     if shape == "sinc":
-        return lambda t: sigmoid(t, size)
+        return lambda t, _: sigmoid(t, size)
     elif shape == "exact_sinc":
-        return lambda t: heaviside(t, size)
+        return lambda t, _: heaviside(t, size)
     elif shape == "box":
-        return lambda t: sinc(t, size)
+        return lambda t, _: sinc(t, size)
     elif shape == "gauss":
-        return lambda t: gauss(t, size)
+        return lambda t, _: gauss(t, size)
     else:
         raise ValueError("shape not implemented:", self.voxel_shape)
 
