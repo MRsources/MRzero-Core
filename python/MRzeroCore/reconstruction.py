@@ -1,7 +1,6 @@
 from __future__ import annotations
 from numpy import pi
 import torch
-from . import util
 
 
 def reco_adjoint(signal: torch.Tensor,
@@ -75,22 +74,20 @@ def reco_adjoint(signal: torch.Tensor,
         print(f"Detected resolution: {resolution}")
 
     # Same grid as defined in SimData
-    pos_x = torch.linspace(-0.5, 0.5, resolution[0] + 1)[:-1] * FOV[0]
-    pos_y = torch.linspace(-0.5, 0.5, resolution[1] + 1)[:-1] * FOV[1]
-    pos_z = torch.linspace(-0.5, 0.5, resolution[2] + 1)[:-1] * FOV[2]
+    pos_x = torch.linspace(-0.5, 0.5, resolution[0] + 1, device=kspace.device)[:-1] * FOV[0]
+    pos_y = torch.linspace(-0.5, 0.5, resolution[1] + 1, device=kspace.device)[:-1] * FOV[1]
+    pos_z = torch.linspace(-0.5, 0.5, resolution[2] + 1, device=kspace.device)[:-1] * FOV[2]
     pos_x, pos_y, pos_z = torch.meshgrid(pos_x, pos_y, pos_z)
 
-    voxel_pos = util.set_device(torch.stack([
+    voxel_pos = torch.stack([
         pos_x.flatten(),
         pos_y.flatten(),
         pos_z.flatten()
-    ], dim=1)).t()
+    ], dim=1).t()
 
     NCoils = signal.shape[1]
     # assert NCoils == 1, "reconstruct currently does not support multicoil"
 
-    # (Samples, 4)
-    kspace = util.set_device(kspace)
     # (Samples, 3) x (3, Voxels)
     phase = kspace[:, :3] @ voxel_pos
     # (Samples, Voxels): Rotation of all voxels at every event

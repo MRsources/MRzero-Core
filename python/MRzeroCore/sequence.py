@@ -4,9 +4,8 @@ from __future__ import annotations
 import pickle
 import torch
 from enum import Enum
-from typing import Iterable, Union
+from typing import Iterable
 import matplotlib.pyplot as plt
-from . import util
 
 
 class PulseUsage(Enum):
@@ -37,21 +36,39 @@ class Pulse:
     def __init__(
         self,
         usage: PulseUsage,
-        angle: Union[float, torch.Tensor],
-        phase: Union[float, torch.Tensor],
+        angle: float | torch.Tensor,
+        phase: float | torch.Tensor,
         selective: bool,
     ) -> None:
         """Create a Pulse instance.
 
         If ``angle`` and ``phase`` are floats they will be converted to
-        torch tensors on the device given by util.get_device().
+        torch cpu tensors.
         """
         self.usage = usage
-        self.angle = torch.as_tensor(angle, dtype=torch.float,
-                                     device=util.get_device())
-        self.phase = torch.as_tensor(phase, dtype=torch.float,
-                                     device=util.get_device())
+        self.angle = angle
+        self.phase = phase
         self.selective = selective
+
+    def cpu(self) -> Pulse:
+        return Pulse(
+            self.usage,
+            torch.as_tensor(self.angle, dtype=torch.float).cpu(),
+            torch.as_tensor(self.phase, dtype=torch.float).cpu(),
+            self.selective
+        )
+
+    def cuda(self) -> Pulse:
+        return Pulse(
+            self.usage,
+            torch.as_tensor(self.angle, dtype=torch.float).cuda(),
+            torch.as_tensor(self.phase, dtype=torch.float).cuda(),
+            self.selective
+        )
+
+    @property
+    def device(self) -> torch.device:
+        return self.angle.device
 
     @classmethod
     def zero(cls):
@@ -127,10 +144,32 @@ class Repetition:
                 f"expected {(self.event_count, )}"
             )
 
-        self.event_time = util.set_device(event_time)
-        self.gradm = util.set_device(gradm)
-        self.adc_phase = util.set_device(adc_phase)
-        self.adc_usage = util.set_device(adc_usage)
+        self.event_time = event_time
+        self.gradm = gradm
+        self.adc_phase = adc_phase
+        self.adc_usage = adc_usage
+
+    def cuda(self) -> Repetition:
+        return Repetition(
+            self.pulse.cuda(),
+            self.event_time.cuda(),
+            self.gradm.cuda(),
+            self.adc_phase.cuda(),
+            self.adc_usage.cuda()
+        )
+
+    def cpu(self) -> Repetition:
+        return Repetition(
+            self.pulse.cpu(),
+            self.event_time.cpu(),
+            self.gradm.cpu(),
+            self.adc_phase.cpu(),
+            self.adc_usage.cpu()
+        )
+
+    @property
+    def device(self) -> torch.device:
+        return self.gradm.device
 
     @classmethod
     def zero(cls, event_count: int) -> Repetition:
@@ -172,10 +211,21 @@ class Sequence(list):
     This extends a standard python list and inherits all its functions. It
     additionally implements MRI sequence specific methods.
     """
+    # TODO: overload indexing operators to return a Sequence
 
     def __init__(self, repetitions: Iterable[Repetition] = []) -> None:
         """Create a ``Sequence`` instance by passing repetitions."""
         super().__init__(repetitions)
+
+    def cuda(self) -> Sequence:
+        return Sequence([rep.cuda() for rep in self])
+
+    def cpu(self) -> Sequence:
+        return Sequence([rep.cpu() for rep in self])
+
+    @property
+    def device(self) -> torch.device:
+        return self[0].device
 
     def clone(self) -> Sequence:
         """Return a deepcopy of self."""
@@ -200,11 +250,11 @@ class Sequence(list):
         list[torch.Tensor]
             A tensor of shape (``event_count``, 4) for every repetition.
         """
-        k_pos = util.set_device(torch.zeros(4))
+        k_pos = torch.zeros(4, device=self.device)
         trajectory = []
         # Pulses with usage STORE store magnetisation and update this variable,
         # following excitation pulses will reset to stored instead of origin
-        stored = util.set_device(torch.zeros(4))
+        stored = torch.zeros(4, device=self.device)
 
         for rep in self:
             if rep.pulse.usage == PulseUsage.EXCIT:

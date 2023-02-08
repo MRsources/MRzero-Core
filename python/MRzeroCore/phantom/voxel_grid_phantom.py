@@ -4,7 +4,6 @@ import numpy as np
 import torch
 import matplotlib.pyplot as plt
 from .sim_data import SimData
-from .. import util
 
 
 def sigmoid(trajectory: torch.Tensor, nyquist: torch.Tensor) -> torch.Tensor:
@@ -103,6 +102,7 @@ class VoxelGridPhantom:
         self.base_fov = base_fov
         self.rel_fov = rel_fov
 
+# TODO: Remove this Hack for MRzeroCore
     def double_voxels(self):
         """HACK to test multi-T1 decay. Duplicates phantom in 1st dimension,
         but leaves voxel positions identical so that there are 2 voxels at each pos"""
@@ -151,15 +151,12 @@ class VoxelGridPhantom:
             pos_z[mask].flatten()
         ], dim=1)
 
-        # SimData can't set the device: this is captured by the dephasing fn
-        nyquist = torch.tensor(shape, device=util.get_device()) / 2
-
         if voxel_shape == "box":
-            dephasing_func = lambda t: sinc(t, 0.5 / nyquist)
+            dephasing_func = lambda t, n: sinc(t, 0.5 / n)
         elif voxel_shape == "sinc":
-            dephasing_func = lambda t: sigmoid(t, nyquist)
+            dephasing_func = lambda t, n: sigmoid(t, n)
         elif voxel_shape == "point":
-            dephasing_func = lambda t: identity(t)
+            dephasing_func = lambda t, _: identity(t)
         else:
             raise ValueError(f"Unsupported voxel shape '{voxel_shape}'")
 
@@ -174,7 +171,7 @@ class VoxelGridPhantom:
             self.coil_sens[:, mask],
             self.base_fov * self.rel_fov,  # Always SI, only used for diffusion
             voxel_pos,
-            (torch.tensor(mask.shape) / 2).tolist(),
+            torch.tensor(shape, device=self.PD.device) / 2,
             dephasing_func,
             recover_func=lambda d: recover(mask, self.base_fov, self.rel_fov, d)
         )

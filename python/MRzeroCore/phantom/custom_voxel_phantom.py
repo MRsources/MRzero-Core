@@ -232,6 +232,8 @@ def recover(voxel_size: torch.Tensor, voxel_shape: str, sim_data: SimData
         sim_data.T2.cpu(),
         sim_data.T2dash.cpu(),
         sim_data.D.cpu(),
+        0,  # B0
+        1,  # B1
         # These must be provided (captured in the recover_func lambda)
         voxel_size,
         voxel_shape

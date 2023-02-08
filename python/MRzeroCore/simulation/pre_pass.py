@@ -8,6 +8,7 @@ from numpy import pi
 
 
 # TODO: Add documentation and functions to analyze the graph
+# TODO: Maybe convert tensors to list (nyquist and fov) only in compute_graph_ext
 
 
 def compute_graph(
@@ -25,7 +26,7 @@ def compute_graph(
         float(torch.mean(data.D)),
         max_state_count,
         min_state_mag,
-        data.nyquist,
+        data.nyquist.tolist(),
         data.fov.tolist(),
         data.avg_B1_trig
     )

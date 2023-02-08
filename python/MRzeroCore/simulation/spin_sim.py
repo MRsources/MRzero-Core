@@ -21,7 +21,6 @@ from numpy import pi
 
 from ..sequence import Sequence, PulseUsage
 from ..phantom.sim_data import SimData
-from .. import util
 
 
 def spin_sim(seq: Sequence, data: SimData, spin_count: int,

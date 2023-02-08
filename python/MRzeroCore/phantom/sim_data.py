@@ -2,7 +2,6 @@ from __future__ import annotations
 from typing import Callable, Any
 import torch
 from numpy import pi
-from .. import util
 
 
 class SimData:
@@ -41,8 +40,8 @@ class SimData:
     voxel_pos : torch.Tensor
         (voxel_count, 3) Voxel positions. These can be anywhere, but for easy
         sequence programming they should be in the range [-0.5, 0.5[
-    nyquist : tuple[float, float, float]
-        Maximum frequency encoded by the data
+    nyquist : torch.Tensor
+        (3, ) tensor: Maximum frequency encoded by the data
     dephasing_func : torch.Tensor -> torch.Tensor
         A function describing the intra-voxel dephasing. Maps a k-space
         trajectory (events, 3) to the measured attenuation (events).
@@ -63,8 +62,8 @@ class SimData:
         coil_sens: torch.Tensor,
         fov: torch.Tensor,
         voxel_pos: torch.Tensor,
-        nyquist: list[float],
-        dephasing_func: Callable[[torch.Tensor], torch.Tensor],
+        nyquist: torch.Tensor,
+        dephasing_func: Callable[[torch.Tensor, torch.Tensor], torch.Tensor],
         recover_func: Callable[[SimData], Any] | None = None,
     ) -> None:
         """Create a :class:`SimData` instance based on the given tensors.
@@ -86,20 +85,58 @@ class SimData:
         if coil_sens.ndim < 2 or coil_sens.shape[1] != PD.numel():
             raise Exception("coil_sens must have shape [coils, voxel_count]")
 
-        self.PD = util.set_device(PD.clamp(min=0))
-        self.T1 = util.set_device(T1.clamp(min=1e-6))
-        self.T2 = util.set_device(T2.clamp(min=1e-6))
-        self.T2dash = util.set_device(T2dash.clamp(min=1e-6))
-        self.D = util.set_device(D.clamp(min=1e-6))
-        self.B0 = util.set_device(B0.clone())
-        self.B1 = util.set_device(B1.clone())
-        self.coil_sens = util.set_device(coil_sens.clone())
-        self.fov = util.set_device(fov.clone())
-        self.voxel_pos = util.set_device(voxel_pos.clone())
-        self.avg_B1_trig = util.set_device(calc_avg_B1_trig(B1, PD))
-        self.nyquist = nyquist
+        self.PD = PD.clamp(min=0)
+        self.T1 = T1.clamp(min=1e-6)
+        self.T2 = T2.clamp(min=1e-6)
+        self.T2dash = T2dash.clamp(min=1e-6)
+        self.D = D.clamp(min=1e-6)
+        self.B0 = B0.clone()
+        self.B1 = B1.clone()
+        self.coil_sens = coil_sens.clone()
+        self.fov = fov.clone()
+        self.voxel_pos = voxel_pos.clone()
+        self.avg_B1_trig = calc_avg_B1_trig(B1, PD)
+        self.nyquist = nyquist.clone()
         self.dephasing_func = dephasing_func
         self.recover_func = recover_func
+
+    def cuda(self) -> SimData:
+        return SimData(
+            self.PD.cuda(),
+            self.T1.cuda(),
+            self.T2.cuda(),
+            self.T2dash.cuda(),
+            self.D.cuda(),
+            self.B0.cuda(),
+            self.B1.cuda(),
+            self.coil_sens.cuda(),
+            self.fov.cuda(),
+            self.voxel_pos.cuda(),
+            self.nyquist.cuda(),
+            self.dephasing_func,
+            self.recover_func
+        )
+
+    def cpu(self) -> SimData:
+        return SimData(
+            self.PD.cpu(),
+            self.T1.cpu(),
+            self.T2.cpu(),
+            self.T2dash.cpu(),
+            self.D.cpu(),
+            self.B0.cpu(),
+            self.B1.cpu(),
+            self.coil_sens.cpu(),
+            self.fov.cpu(),
+            self.voxel_pos.cpu(),
+            self.nyquist.cpu(),
+            self.dephasing_func,
+            self.recover_func
+        )
+
+    @property
+    def device(self) -> torch.device:
+        return self.PD.device
 
     def recover(self) -> Any:
         """Recover the data that was used to build this instance."""
@@ -120,9 +157,9 @@ def calc_avg_B1_trig(B1: torch.Tensor, PD: torch.Tensor) -> torch.Tensor:
     the pre-pass, to get better magnetization estmates even if the pre-pass is
     not spatially resolved.
     """
-    B1 = B1.flatten()[:, None]  # voxels x 1
-    PD = (PD.flatten() / PD.sum())[:, None]  # voxels x 1
-    angle = torch.linspace(0, 2*pi, 361)[None, :]  # 1 x angle
+    B1 = B1.flatten()[:, None]  # voxels, 1
+    PD = (PD.flatten() / PD.sum())[:, None]  # voxels, 1
+    angle = torch.linspace(0, 2*pi, 361, device=PD.device)[None, :]  # 1, angle
     return torch.stack([
         (torch.sin(B1 * angle) * PD).sum(0),
         (torch.cos(B1 * angle) * PD).sum(0),

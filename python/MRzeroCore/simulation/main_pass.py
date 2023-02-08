@@ -5,7 +5,6 @@ from ..sequence import Sequence
 from ..phantom.sim_data import SimData
 from .pre_pass import Graph
 import numpy as np
-from .. import util
 
 
 # NOTE: return encoding and magnetization is currently missing. If we want to
@@ -50,17 +49,17 @@ def execute_graph(graph: Graph,
     # Proton density can be baked into coil sensitivity. shape: voxels x coils
     coil_sensitivity = (
         data.coil_sens.t().to(torch.cfloat)
-        * torch.abs(data.PD).unsqueeze(1)#/torch.abs(data.PD).sum()
+        * torch.abs(data.PD).unsqueeze(1)
     )
     coil_count = int(coil_sensitivity.shape[1])
     voxel_count = data.PD.numel()
 
     # The first repetition contains only one element: A fully relaxed z0
     graph[0][0].mag = torch.ones(
-        voxel_count, dtype=torch.cfloat, device=util.get_device()
+        voxel_count, dtype=torch.cfloat, device=data.device
     )
     # Calculate kt_vec ourselves for autograd
-    graph[0][0].kt_vec = torch.zeros(4, device=util.get_device())
+    graph[0][0].kt_vec = torch.zeros(4, device=data.device)
 
     for i, (dists, rep) in enumerate(zip(graph[1:], seq)):
         print(f"\rCalculating repetition {i+1} / {len(seq)}", end='')
@@ -69,12 +68,10 @@ def execute_graph(graph: Graph,
         angle = rep.pulse.angle * torch.abs(data.B1[0, :])
         phase = torch.as_tensor(rep.pulse.phase)
         # Unaffected magnetisation
-        z_to_z = util.set_device(torch.cos(angle))
-        p_to_p = util.set_device(torch.cos(angle/2)**2)
+        z_to_z = torch.cos(angle)
+        p_to_p = torch.cos(angle/2)**2
         # Excited magnetisation
-        z_to_p = util.set_device(
-            -0.70710678118j * torch.sin(angle) * torch.exp(1j*phase)
-        )
+        z_to_p = -0.70710678118j * torch.sin(angle) * torch.exp(1j*phase)    
         p_to_z = -z_to_p.conj()
         m_to_z = -z_to_p
         # Refocussed magnetisation
@@ -98,21 +95,18 @@ def execute_graph(graph: Graph,
 
         # shape: events x coils
         rep_sig = torch.zeros(rep.event_count, coil_count,
-                              dtype=torch.cfloat, device=util.get_device())
+                              dtype=torch.cfloat, device=data.device)
 
         # shape: events x 4
-        trajectory = util.set_device(torch.cumsum(torch.cat([
+        trajectory = torch.cumsum(torch.cat([
             rep.gradm, rep.event_time[:, None]
-        ], 1), 0))
-        dt = util.set_device(rep.event_time)
+        ], 1), 0)
+        dt = rep.event_time
 
         total_time = rep.event_time.sum()
         r1 = torch.exp(-total_time / torch.abs(data.T1))
         r2 = torch.exp(-total_time / torch.abs(data.T2))
 
-        mag_p_rep = []
-        mag_z_rep = []
-        encoding_rep = []
         # Use the same adc phase for all coils
         adc_rot = torch.exp(1j * rep.adc_phase).unsqueeze(1)
 
@@ -131,7 +125,7 @@ def execute_graph(graph: Graph,
             # The pre_pass already calculates kt_vec, but that does not
             # work with autograd -> we need to calculate it with torch
             if dist.dist_type == 'z0':
-                dist.kt_vec = torch.zeros(4, device=util.get_device())
+                dist.kt_vec = torch.zeros(4, device=data.device)
             elif ancestors[0][0] in ['-+', '-z']:
                 dist.kt_vec = -1.0 * ancestors[0][1].kt_vec
             else:
@@ -169,7 +163,7 @@ def execute_graph(graph: Graph,
                     (dist_traj[:, 3:] * data.B0)
                     - (dist_traj[:, :3] @ data.voxel_pos.T)
                 ))
-                dephasing = data.dephasing_func(dist_traj[:, :3])[:, None]
+                dephasing = data.dephasing_func(dist_traj[:, :3], data.nyquist)[:, None]
 
                 # shape: events x voxels
                 transverse_mag = (
