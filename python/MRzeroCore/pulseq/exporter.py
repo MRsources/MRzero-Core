@@ -3,10 +3,9 @@ from types import SimpleNamespace
 import sys
 import numpy as np
 import torch
-from . import sequence as Seq
-from . import util
+from ..sequence import Sequence as Seq
 
-sys.path.append("../scannerloop_libs")
+# TODO: maybe replace with import pypulseq as pp
 from pypulseq.Sequence.sequence import Sequence
 from pypulseq.make_adc import make_adc as _make_adc
 from pypulseq.make_delay import make_delay as _make_delay
@@ -507,9 +506,10 @@ def pulseq_write_EPG_3D(seq_param, path, FOV, plot_seq=False, num_slices=1, writ
     
     append_header(path, FOV,slice_thickness)
     
-    if write_data:
-        util.write_data_to_seq_file(seq_param,path)
-        print('Add kspace & adc_usage information to seq File!')
+    # TODO: This function is missing
+    # if write_data:
+    #     util.write_data_to_seq_file(seq_param,path)
+    #     print('Add kspace & adc_usage information to seq File!')
 
 def append_header(path, FOV,slice_thickness):
     # append version and definitions
