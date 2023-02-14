@@ -1,7 +1,10 @@
 /target
+/documentation/_autosummary
+/documentation/_build
 
 # Test files
 *.seq
+*.blend1
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
