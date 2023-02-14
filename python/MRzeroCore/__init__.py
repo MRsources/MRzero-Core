@@ -1,4 +1,4 @@
-from .sequence import Sequence, PulseUsage, chain
+from .sequence import PulseUsage, Pulse, Repetition, Sequence, chain
 from .phantom.voxel_grid_phantom import VoxelGridPhantom
 from .phantom.custom_voxel_phantom import CustomVoxelPhantom
 from .phantom.sim_data import SimData
