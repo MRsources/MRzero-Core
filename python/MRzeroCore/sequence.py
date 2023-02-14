@@ -82,24 +82,24 @@ class Pulse:
 
 
 class Repetition:
-    """A ``Repetition`` starts with a RF pulse and ends just before the next.
+    """A :class:`Repetition` starts with a RF pulse and ends just before the next.
 
     Attributes
     ----------
     pulse : Pulse
-        The RF pulse at the beginning of this ``Repetition``
+        The RF pulse at the beginning of this :class:`Repetition`
     event_time : torch.Tensor
         Duration of each event (seconds)
     gradm : torch.Tensor
-        Gradient moment of every event, shape (``event_count``, 3)
+        Gradient moment of every event, shape (:attr:`event_count`, 3)
     adc_phase : torch.Tensor
-        Float tensor describing the adc rotation, shape (``event_count``, 3)
+        Float tensor describing the adc rotation, shape (:attr:`event_count`, 3)
     adc_usage: torch.Tensor
         Int tensor specifying which contrast a sample belongs to, shape
-        (``event_count``, 3). Samples with ``adc_usage <= 0`` will not be
+        (:attr:`event_count`, 3). Samples with ```adc_usage <= 0``` will not be
         measured. For single contrast sequences, just use 0 or 1.
     event_count : int
-        Number of events in this ``Repetition``
+        Number of events in this :class:`Repetition`
     """
 
     def __init__(
@@ -173,7 +173,18 @@ class Repetition:
 
     @classmethod
     def zero(cls, event_count: int) -> Repetition:
-        """Create a ``Repetition`` instance with everything set to zero."""
+        """Create a ``Repetition`` instance with everything set to zero.
+
+        Parameters
+        ----------
+        event_count : int
+            Number of events in the new :class:`Repetition`.
+
+        Returns
+        -------
+        :class:`Repetition`
+            A :class:`Repetition` that is part of this :class:`Sequence`.
+        """
         return cls(
             Pulse.zero(),
             torch.zeros(event_count, dtype=torch.float),
