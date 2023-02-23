@@ -4,7 +4,9 @@ from MRzeroCore._prepass import PyDistribution as PrePassState
 from ..sequence import Sequence
 from ..phantom.sim_data import SimData
 import torch
-from numpy import pi
+import numpy as np
+import matplotlib.pyplot as plt
+from typing import Literal
 
 
 # TODO: Add documentation and functions to analyze the graph
@@ -48,7 +50,7 @@ def compute_graph_ext(
         min_state_mag = 0
 
     if avg_b1_trig is None:
-        angle = torch.linspace(0, 2*pi, 361)
+        angle = torch.linspace(0, 2*np.pi, 361)
         avg_b1_trig = torch.stack([
             torch.sin(angle),
             torch.cos(angle),
@@ -68,4 +70,47 @@ class Graph(list):
     def __init__(self, graph: list[list[PrePassState]]) -> None:
         super().__init__(graph)
 
-    # Add plotting functions here
+    def plot(self,
+             transversal_mag: bool = True,
+             dephasing: Literal["k_x", "k_y", "k_z", "t"] = "t",
+             color: Literal[
+                 "abs(mag)", "phase(mag)", "weight", "signal", "rel. signal"
+             ] = "weight",
+             log_color: bool = True):
+        data = []
+        kt_idx = {"k_x": 0, "k_y": 1, "k_z": 2, "t": 3}[dephasing]
+
+        def extract(state: PrePassState):
+            if color == "abs(mag)":
+                value = np.abs(state.prepass_mag)
+            elif color == "phase(mag)":
+                value = np.angle(state.prepass_mag)
+            elif color == "weight":
+                value = state.weight
+            elif color == "signal":
+                value = state.signal
+            elif color == "rel. signal":
+                value = state.rel_signal
+            if log_color:
+                value = np.log10(np.abs(value) + 1e-7)
+            return value
+
+        for r, rep in enumerate(self):
+            for state in rep:
+                if transversal_mag == (state.dist_type == "+"):
+                    data.append((
+                        r,
+                        state.prepass_kt_vec[kt_idx],
+                        extract(state),
+                    ))
+
+        data.sort(key=lambda d: d[2])
+        data = np.asarray(data)
+
+        plt.scatter(data[:, 0], data[:, 1], c=data[:, 2], s=20)
+        plt.xlabel("Repetition")
+        plt.ylabel(f"${dephasing}$ - Dephasing")
+        if log_color:
+            plt.colorbar(label="log. " + color)
+        else:
+            plt.colorbar(label=color)
