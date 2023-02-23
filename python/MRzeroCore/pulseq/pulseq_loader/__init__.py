@@ -1,5 +1,5 @@
 from __future__ import annotations
-from .pulseq_file import PulseqFile, plot_file  # noqa
+from .pulseq_file import PulseqFile  # noqa
 from .pulse import Pulse
 from .spoiler import Spoiler
 from .adc import Adc
