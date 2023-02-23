@@ -1,11 +1,11 @@
 """Classes needed for sequence definition."""
 
 from __future__ import annotations
-import pickle
 import torch
 from enum import Enum
 from typing import Iterable
 import matplotlib.pyplot as plt
+from .pulseq.pulseq_loader import intermediate, PulseqFile, Adc, Spoiler
 
 
 class PulseUsage(Enum):
@@ -222,7 +222,6 @@ class Sequence(list):
     This extends a standard python list and inherits all its functions. It
     additionally implements MRI sequence specific methods.
     """
-    # TODO: overload indexing operators to return a Sequence
 
     def __init__(self, repetitions: Iterable[Repetition] = []) -> None:
         """Create a ``Sequence`` instance by passing repetitions."""
@@ -342,34 +341,37 @@ class Sequence(list):
         """Calculate the total duration of self in seconds."""
         return sum(rep.event_time.sum().item() for rep in self)
 
-    def save(self, file_name):
-        """Save self to the given file.
-
-        Can be loaded again by using :meth:`load`.
-
-        Parameters
-        ----------
-        file_name : str
-            The directory & file name the ``Sequence`` will be written to.
-        """
-        with open(file_name, 'wb') as file:
-            pickle.dump(self, file)
-
     @classmethod
-    def load(cls, file_name) -> Sequence:
-        """Create a ``Sequence`` instance by loading it from a file.
+    def from_seq_file(cls, seq_file: PulseqFile) -> Sequence:
+        seq = Sequence()
+        rep = None
+        for tmp_rep in intermediate(seq_file):
+            rep = seq.new_rep(tmp_rep[0])
+            rep.pulse.angle = torch.tensor(tmp_rep[1].angle, dtype=torch.float)
+            rep.pulse.phase = torch.tensor(tmp_rep[1].phase, dtype=torch.float)
+            if abs(tmp_rep[1].angle) > 1.6:  # ~91°
+                rep.pulse.usage = PulseUsage.REFOC
+            else:
+                rep.pulse.usage = PulseUsage.EXCIT
 
-        The file is expected to be created by using :meth:`save`.
-
-        Parameters
-        ----------
-        file_name : str
-            The directory & file name the ``Sequence`` will be read from.
-        """
-        with open(file_name, 'rb') as file:
-            return pickle.load(file)
-
-
+            # to combine multiple blocks into one repetition, we need to keep
+            # track of the current event offset
+            i = 0
+            for block in tmp_rep[2]:
+                if isinstance(block, Spoiler):
+                    rep.event_time[i] = block.duration
+                    rep.gradm[i, :] = torch.tensor(block.gradm)
+                    i += 1
+                else:
+                    assert isinstance(block, Adc)
+                    num = len(block.event_time)
+                    rep.event_time[i:i+num] = torch.tensor(block.event_time)
+                    rep.gradm[i:i+num, :] = torch.tensor(block.gradm)
+                    rep.adc_phase[i:i+num] = np.pi/2 - block.phase
+                    rep.adc_usage[i:i+num] = 1
+                    i += num
+            assert i == tmp_rep[0]
+        return seq
 
     def plot_kspace_trajectory(self,
                                figsize: tuple[float, float] = (5, 5),
@@ -439,8 +441,6 @@ class Sequence(list):
         plt.show()
 
 
-        
-    
 # TODO: Remove this funciton and all references to it
 import numpy as np
 def to_numpy(x: torch.Tensor) -> np.ndarray:
