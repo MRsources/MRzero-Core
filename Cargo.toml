@@ -8,7 +8,7 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-pyo3 = { version = "0.17.3", features = ["extension-module", "num-complex", "abi3-py37"] }
+pyo3 = { version = "0.17.3", features = ["extension-module", "num-complex"] }
 num-complex = "0.4.2"
 
 [package.metadata.maturin]
