@@ -75,13 +75,13 @@ class CustomVoxelPhantom:
 
     def __init__(self,
                  pos: list[list[float]] | torch.Tensor,
-                 PD: float | torch.Tensor = 1.0,
-                 T1: float | torch.Tensor = 1.5,
-                 T2: float | torch.Tensor = 0.1,
-                 T2dash: float | torch.Tensor = 0.05,
-                 D: float | torch.Tensor = 1,
-                 B0: float | torch.Tensor = 0,
-                 B1: float | torch.Tensor = 1,
+                 PD: float | list[float] | torch.Tensor = 1.0,
+                 T1: float | list[float] | torch.Tensor = 1.5,
+                 T2: float | list[float] | torch.Tensor = 0.1,
+                 T2dash: float | list[float] | torch.Tensor = 0.05,
+                 D: float | list[float] | torch.Tensor = 1,
+                 B0: float | list[float] | torch.Tensor = 0,
+                 B1: float | list[float] | torch.Tensor = 1,
                  voxel_size=0.1, voxel_shape="sinc"
                  ) -> None:
         """Create a phantom consisting of manually placed voxels.
@@ -144,6 +144,32 @@ class CustomVoxelPhantom:
             build_dephasing_func(self.voxel_shape, self.voxel_size),
             recover_func=lambda d: recover(self.voxel_size, self.voxel_shape, d)
         )
+
+    def generate_PD_map(self) -> torch.Tensor:
+        """Convenience function for MRTwin_pulseq to generate a PD map."""
+        kx, ky = torch.meshgrid(
+            torch.linspace(-64, 63, 128),
+            torch.linspace(-64, 63, 128),
+        )
+        trajectory = torch.stack([
+            kx.flatten(),
+            ky.flatten(),
+            torch.zeros(kx.numel()),
+        ], dim=1)
+        PD_kspace = torch.zeros(128, 128, dtype=torch.cfloat)
+
+        # All voxels have the same shape -> same intra-voxel dephasing
+        dephasing = build_dephasing_func(
+            self.voxel_shape, self.voxel_size
+        )(trajectory, None)
+
+        # Iterate over all voxels and render them into the kspaces
+        for i in range(self.PD.numel()):
+            rot = torch.exp(-2j*pi * (trajectory @ self.voxel_pos[i, :]))
+            kspace = (rot * dephasing).view(128, 128)
+            PD_kspace += kspace * self.PD[i]
+
+        return torch.fft.fftshift(torch.fft.ifft2(PD_kspace)).abs()[:, :, None]
 
     def plot(self) -> None:
         """Print and plot all data stored in this phantom."""
