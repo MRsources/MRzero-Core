@@ -6,7 +6,6 @@ from ..phantom.sim_data import SimData
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
-from typing import Literal
 
 
 # TODO: Add documentation and functions to analyze the graph
@@ -72,13 +71,26 @@ class Graph(list):
 
     def plot(self,
              transversal_mag: bool = True,
-             dephasing: Literal["k_x", "k_y", "k_z", "t"] = "t",
-             color: Literal[
-                 "abs(mag)", "phase(mag)", "weight", "signal", "rel. signal"
-             ] = "weight",
+             dephasing: str = "tau",
+             color: str = "weight",
              log_color: bool = True):
+        """Visualize the graph.
+        
+        Parameters
+        ----------
+        transversal_mag : bool
+            If true, show only + states, otherwise z(0)
+        dephasing : str
+            Use one of ``['k_x', 'k_y', 'k_z', 'tau']`` dephasing as the
+            y-position of a state in the scatter plot
+        color : str
+            Use one of ``['abs(mag)', 'phase(mag)', 'weight', 'signal',
+            'rel. signal']`` as color of a state in the scatter plot
+        log_color : bool
+            If true, use the logarithm of the chosen property for coloring
+        """
         data = []
-        kt_idx = {"k_x": 0, "k_y": 1, "k_z": 2, "t": 3}[dephasing]
+        kt_idx = {"k_x": 0, "k_y": 1, "k_z": 2, "tau": 3}[dephasing]
 
         def extract(state: PrePassState):
             if color == "abs(mag)":
