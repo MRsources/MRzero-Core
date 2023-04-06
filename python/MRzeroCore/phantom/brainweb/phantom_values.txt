@@ -1,0 +1,69 @@
+# T1 and T2 times, taken from:
+# https://mri-q.com/uploads/3/4/5/7/34572113/normal_relaxation_times_at_3t.pdf
+# Value taken from paper with most participants (draw: closest to mean of all)
+# Studies that are outliers are ignored (WM T2 time)
+
+# T2' calculated from T2 and T2*, taken from:
+# https://www.sciencedirect.com/science/article/pii/S0730725X07001701?via%3Dihub
+
+# Water / Fat T2': https://link.springer.com/article/10.1007/s00723-015-0737-5 (4.7 T)
+
+# Errors are uncertenties of studies, not data on variation in one measurement
+
+Brainweb Tissues:
+ - CSF
+   T1: 4163 ± 263
+	T2: 1650 (approx, taken from https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5973950/)
+	T2*: 57.1 -> T2': 59.1
+
+ - Gray Matter
+   T1: 1558 ± 88
+	T2: 83 ± 4
+   T2*: 66.0 ± 1.4 -> T2': 322
+
+ - White Matter
+   T1: 830 ± 0
+	T2: 75 ± 3
+   T2*: 53.2 ± 1.2 -> T2': 183
+	T2': 56 ± 1
+
+ - Fat
+   T1: 374 ± 45
+	T2: 125
+	T2* = 10.7 -> T2': 11.7
+
+# The following values are not used for phantom generation
+
+ - Muscle
+   T1: 1100 ± 59
+	T2: 40
+
+ - Muscle/Skin
+
+ - Skull
+    Probably similar to Bone marrow, but they don't overlap in the images
+
+ - Blood vessels
+    Probably similar to CSF (mostly water)
+
+ - Connective (region around fat)
+    Overlaps nearly fully with Fat
+
+ - Dura matter
+    Very little volume, probably not noticable at lower resolutions
+
+ - Bone marrow
+    T1: 586 ± 73
+	T2: 127
+
+
+Diffusion:
+Values taken from https://onlinelibrary.wiley.com/doi/10.1002/jmri.1076
+10^-3 mm² / s
+CSF: 3.19 ± 0.10
+WM:  0.65 ± 0.03
+GM:  0.83 ± 0.05
+
+No great source for fat, https://onlinelibrary.wiley.com/doi/10.1002/mrm.24535
+says it barely diffuses
+FAT: ~0.1
