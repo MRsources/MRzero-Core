@@ -1,4 +1,5 @@
 [package]
+authors = ["Jonathan Endres <jonathan.endres@uk-erlangen.de>"]
 name = "mrzero_core"
 version = "0.1.0"
 edition = "2021"
@@ -8,9 +9,5 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-pyo3 = { version = "0.17.3", features = ["extension-module", "num-complex"] }
+pyo3 = { version = "0.17.3", features = ["abi3-py37", "extension-module", "num-complex"] }
 num-complex = "0.4.2"
-
-[package.metadata.maturin]
-name = "MRzeroCore._prepass"
-python-source = "python"

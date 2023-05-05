@@ -6,8 +6,9 @@
 *.seq
 *.blend1
 
-# Brainweb downloader chache files
+# Brainweb files
 *.i8.gz
+*.npz
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
