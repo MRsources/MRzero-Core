@@ -3,7 +3,7 @@
 /documentation/_build
 
 # Test files
-*.seq
+external.seq
 *.blend1
 
 # Brainweb files
