@@ -1,5 +1,5 @@
 [build-system]
-requires = ["maturin-0.8.3-py3-none-manylinux1_x86_64.whl"]
+requires = ["maturin>=0.14,<0.15"]
 build-backend = "maturin"
 
 [project]
@@ -12,5 +12,6 @@ classifiers = [
 ]
 
 [tool.maturin]
-python-source = "python"
-name = "MRzeroCore._prepass"
+profile = "release"
+strip = true
+module-name = "MRzeroCore._prepass"
