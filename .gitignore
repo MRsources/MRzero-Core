@@ -2,6 +2,8 @@
 /documentation/_autosummary
 /documentation/_build
 
+*.pdf
+
 # Test files
 external.seq
 *.blend1
