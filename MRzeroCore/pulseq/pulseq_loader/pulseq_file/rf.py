@@ -68,6 +68,8 @@ class Rf:
             f"delay={self.delay}, "
             f"freq={self.freq}, "
             f"phase={self.phase})"
+            f"mag_id={self.shim_mag_id}, "
+            f"phase_id={self.shim_phase_id}"
         )
 
 
