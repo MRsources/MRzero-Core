@@ -57,7 +57,7 @@ class Pulse:
         if rf.shim_mag_id != 0:
             assert rf.shim_phase_id != 0
             angle = angle * pulseq.shapes[rf.shim_mag_id]
-            phase = phase * pulseq.shapes[rf.shim_phase_id]
+            phase = phase + pulseq.shapes[rf.shim_phase_id]
 
         return (
             Spoiler(t, gradm[0, :]),
