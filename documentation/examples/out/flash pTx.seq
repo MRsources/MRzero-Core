@@ -462,11 +462,6 @@ Name flash
 21 64 156250 50 0 1.88496
 22 64 156250 50 0 4.08407
 
-# Format of delays:
-# id delay (us)
-[DELAYS]
-1 1000
-
 # Sequence Shapes
 [SHAPES]
 

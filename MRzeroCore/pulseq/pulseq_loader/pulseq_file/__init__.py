@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Supports version 1.2.0 to 1.4.0, python representation is modeled after 1.4.0
+# Supports version 1.4.5: pTx extension
 
 
 class PulseqFile:
@@ -19,12 +20,12 @@ class PulseqFile:
 
         assert "VERSION" in sections
         self.version = helpers.parse_version(sections.pop("VERSION"))
-        assert 120 <= self.version <= 140
+        assert 120 <= self.version <= 140 or self.version == 145
 
         # mandatory sections
         assert "BLOCKS" in sections
-        assert self.version != 140 or "DEFINITIONS" in sections
-        assert not (self.version == 140 and "DELAYS" in sections)
+        assert self.version < 140 or "DEFINITIONS" in sections
+        assert not (self.version >= 140 and "DELAYS" in sections)
 
         if "DEFINITIONS" in sections:
             self.definitions = Definitions.parse(
@@ -50,7 +51,7 @@ class PulseqFile:
 
         # Finally parse the blocks, some additional logic is needed to convert
         # 1.3.x sequences with delay events into the 1.4.0 format
-        if self.version == 140:
+        if self.version >= 140:
             self.blocks = parse_blocks(
                 sections.pop("BLOCKS"), self.version,
                 None, self.definitions.block_raster_time
