@@ -18,7 +18,7 @@ class Adc:
 
     @classmethod
     def parse(cls, line: str, version: int) -> tuple[int, Adc]:
-        assert 120 <= version <= 140
+        assert 120 <= version <= 140 or version == 145
         vals = line.split()
         assert len(vals) == 6
 

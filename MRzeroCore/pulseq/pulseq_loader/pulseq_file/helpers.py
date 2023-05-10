@@ -40,6 +40,7 @@ def parse_version(lines: list[str]) -> int:
     minor = None
     revision = None
 
+    # This strips suffixes like "1.3.1post1"
     def to_int(s: str) -> int:
         s = s.split()[1]
         pos = 0
@@ -72,7 +73,7 @@ def write_version(file, version: int):
 
 
 def parse_delays(lines: list[str], version: int) -> dict[int, float]:
-    assert 120 <= version <= 140
+    assert 120 <= version <= 140 or version == 145
     delays = {}
 
     for line in lines:
@@ -88,14 +89,14 @@ def parse_delays(lines: list[str], version: int) -> dict[int, float]:
 
 
 def parse_shape(lines: list[str], version: int) -> tuple[int, np.ndarray]:
-    assert 120 <= version <= 140
+    assert 120 <= version <= 140 or version == 145
     assert len(lines) >= 3  # at least id, num and one sample
 
     shape_id = int(lines[0].split()[1])
     count = int(lines[1].split()[1])
     compressed = [float(line) for line in lines[2:]]
 
-    if len(compressed) == count and version == 140:
+    if len(compressed) == count and version == 140 or version == 145:
         # No compression
         return shape_id, np.array(compressed)
 
