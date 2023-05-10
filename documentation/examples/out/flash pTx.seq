@@ -10,10 +10,6 @@ revision 5
 Total duration 1.42208 
 FOV 1 1 0.008 
 Name flash
-GradientRasterTime 10e-6
-RadiofrequencyRasterTime 1e-6
-AdcRasterTime 0.1e-6
-BlockDurationRaster 10e-6
 
 # Format of blocks:
 #  #  D RF  GX  GY  GZ ADC EXT

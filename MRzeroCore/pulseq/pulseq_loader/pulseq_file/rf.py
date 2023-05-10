@@ -35,7 +35,7 @@ class Rf:
             float(vals.pop(0)),
             int(vals.pop(0)),
             int(vals.pop(0)),
-            0 if version < 140 else int(vals.pop(0)),
+            0 if version < 140 or version == 145 else int(vals.pop(0)),
             int(vals.pop(0)) * 1e-6,
             float(vals.pop(0)),
             float(vals.pop(0)),
