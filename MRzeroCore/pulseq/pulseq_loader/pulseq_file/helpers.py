@@ -98,7 +98,7 @@ def parse_shape(lines: list[str], version: int) -> tuple[int, np.ndarray]:
 
     # Uncompressed shapes are introduced with 1.4.0 but also used
     # for pTx pulses by Martin's pTx extension
-    if len(compressed) == count and version == 140 or version == 139:
+    if len(compressed) == count and (version == 140 or version == 139):
         # No compression
         return shape_id, np.array(compressed)
 
