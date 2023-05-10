@@ -27,7 +27,7 @@ class Definitions:
 
     @classmethod
     def parse(cls, lines: list[str], version: int):
-        assert 120 <= version <= 140 or version == 145
+        assert 120 <= version <= 140
         defs = {}
 
         for line in lines:

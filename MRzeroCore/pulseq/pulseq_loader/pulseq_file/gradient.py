@@ -17,7 +17,7 @@ class Gradient:
 
     @classmethod
     def parse(cls, line: str, version: int) -> tuple[int, Gradient]:
-        assert 120 <= version <= 140 or version == 145
+        assert 120 <= version <= 140
         vals = line.split()
 
         gradient_id = int(vals.pop(0))

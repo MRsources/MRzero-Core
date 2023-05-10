@@ -3,8 +3,8 @@
 
 [VERSION]
 major 1
-minor 4
-revision 5
+minor 3
+  revision 9
 
 [DEFINITIONS]
 Total duration 1.42208 
@@ -461,6 +461,11 @@ Name flash
 20 64 156250 50 0 0.942478
 21 64 156250 50 0 1.88496
 22 64 156250 50 0 4.08407
+
+# Format of delays:
+# id delay (us)
+[DELAYS]
+1 1000
 
 # Sequence Shapes
 [SHAPES]
