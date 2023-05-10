@@ -12,6 +12,8 @@ class Rf:
         delay: float,  # s (spec: us)
         freq: float,
         phase: float,
+        shim_mag_id: int,
+        shim_phase_id: int,
     ) -> None:
         self.amp = amp
         self.mag_id = mag_id
@@ -20,10 +22,12 @@ class Rf:
         self.delay = delay
         self.freq = freq
         self.phase = phase
+        self.shim_mag_id = shim_mag_id
+        self.shim_phase_id = shim_phase_id
 
     @classmethod
     def parse(cls, line: str, version: int) -> tuple[int, Rf]:
-        assert 120 <= version <= 140
+        assert 120 <= version <= 140 or version == 145
 
         vals = line.split()
         rf_id = int(vals.pop(0))
@@ -35,6 +39,8 @@ class Rf:
             int(vals.pop(0)) * 1e-6,
             float(vals.pop(0)),
             float(vals.pop(0)),
+            0 if version != 145 else int(vals.pop(0)),
+            0 if version != 145 else int(vals.pop(0)),
         )
         assert len(vals) == 0
         return rf_id, rf

@@ -10,8 +10,8 @@ from .adc import parse_adcs, write_adcs, Adc  # noqa
 import matplotlib.pyplot as plt
 import numpy as np
 
-# Supports version 1.2.0 to 1.4.0, python representation is modeled after 1.4.0
-# Supports version 1.4.5: pTx extension
+# Supports version 1.2.0 to 1.4.0, python representation is modeled after 1.4.0 with pTx
+# Supports version 1.4.5: Martin Freudensprung's pTx extension
 
 
 class PulseqFile:
