@@ -13,6 +13,16 @@ docker run --rm -v D:/repos/MRzero-Core:/io konstin2/maturin build --release
 This builds a manylinux verison of the wheel but fails to add all the python scripts to it.
 Copy the .dist-info folder and the _prepass.abi3.so file into a windows wheel.
 
+To build the documentation, run
+```
+jupyter-book build documentation/
+```
+in the root folder of this project. This requires jupyter-book, as well as MRzeroCore itself to be installed.
+
+# CHANGELOG
+
+We really should start tracking all the changes...
+
 # CONTENTS
 
 The MRzero Core contains the following, which can be imported with e.g.:
