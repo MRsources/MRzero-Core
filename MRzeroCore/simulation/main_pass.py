@@ -63,10 +63,22 @@ def execute_graph(graph: Graph,
 
     for i, (dists, rep) in enumerate(zip(graph[1:], seq)):
         print(f"\rCalculating repetition {i+1} / {len(seq)}", end='')
-        # Apply the pulse
-        # Necessary elements of the pulse rotation matrix
-        angle = rep.pulse.angle * torch.abs(data.B1[0, :])
+
+        angle = torch.as_tensor(rep.pulse.angle)
         phase = torch.as_tensor(rep.pulse.phase)
+
+        # 1Tx or pTx?
+        if angle.numel() == 1:
+            assert phase.numel() == 1
+            B1 = data.B1.sum(0)
+            angle = angle * B1.abs()
+            phase = phase + B1.angle()
+        else:
+            assert angle.numel() == phase.numel() == data.B1.shape[0]
+            B1 = (data.B1 * (angle * torch.exp(1j * phase))[:, None]).sum(0)
+            angle = B1.abs()
+            phase = B1.angle()
+
         # Unaffected magnetisation
         z_to_z = torch.cos(angle)
         p_to_p = torch.cos(angle/2)**2

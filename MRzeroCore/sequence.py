@@ -347,9 +347,14 @@ class Sequence(list):
         rep = None
         for tmp_rep in intermediate(seq_file):
             rep = seq.new_rep(tmp_rep[0])
-            rep.pulse.angle = torch.tensor(tmp_rep[1].angle, dtype=torch.float)
-            rep.pulse.phase = torch.tensor(tmp_rep[1].phase, dtype=torch.float)
-            if abs(tmp_rep[1].angle) > 1.6:  # ~91°
+            rep.pulse.angle = torch.as_tensor(tmp_rep[1].angle, dtype=torch.float)
+            rep.pulse.phase = torch.as_tensor(tmp_rep[1].phase, dtype=torch.float)
+
+            # Refocussing pulses are pulses with > 90° angle.
+            # Pulses are potentially pTx but we don't have B1 maps: use a rough CP approximation
+            flip = rep.pulse.angle.mean() / np.sqrt(1 / rep.pulse.angle.numel())
+
+            if flip > 100 * torch.pi/180:
                 rep.pulse.usage = PulseUsage.REFOC
             else:
                 rep.pulse.usage = PulseUsage.EXCIT

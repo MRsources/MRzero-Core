@@ -157,6 +157,10 @@ def calc_avg_B1_trig(B1: torch.Tensor, PD: torch.Tensor) -> torch.Tensor:
     the pre-pass, to get better magnetization estmates even if the pre-pass is
     not spatially resolved.
     """
+    # With pTx, there are now potentially multiple B1 maps with phase.
+    # NOTE: This is a (probably suboptimal) workaround
+    B1 = B1.sum(0).abs()
+
     B1 = B1.flatten()[:, None]  # voxels, 1
     PD = (PD.flatten() / PD.sum())[:, None]  # voxels, 1
     angle = torch.linspace(0, 2*pi, 361, device=PD.device)[None, :]  # 1, angle

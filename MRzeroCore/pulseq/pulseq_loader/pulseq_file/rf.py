@@ -12,6 +12,8 @@ class Rf:
         delay: float,  # s (spec: us)
         freq: float,
         phase: float,
+        shim_mag_id: int,
+        shim_phase_id: int,
     ) -> None:
         self.amp = amp
         self.mag_id = mag_id
@@ -20,6 +22,8 @@ class Rf:
         self.delay = delay
         self.freq = freq
         self.phase = phase
+        self.shim_mag_id = shim_mag_id
+        self.shim_phase_id = shim_phase_id
 
     @classmethod
     def parse(cls, line: str, version: int) -> tuple[int, Rf]:
@@ -35,6 +39,8 @@ class Rf:
             int(vals.pop(0)) * 1e-6,
             float(vals.pop(0)),
             float(vals.pop(0)),
+            0 if version != 139 else int(vals.pop(0)),
+            0 if version != 139 else int(vals.pop(0)),
         )
         assert len(vals) == 0
         return rf_id, rf
@@ -62,6 +68,8 @@ class Rf:
             f"delay={self.delay}, "
             f"freq={self.freq}, "
             f"phase={self.phase})"
+            f"mag_id={self.shim_mag_id}, "
+            f"phase_id={self.shim_phase_id}"
         )
 
 

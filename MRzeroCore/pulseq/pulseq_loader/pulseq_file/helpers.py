@@ -40,6 +40,7 @@ def parse_version(lines: list[str]) -> int:
     minor = None
     revision = None
 
+    # This strips suffixes like "1.3.1post1"
     def to_int(s: str) -> int:
         s = s.split()[1]
         pos = 0
@@ -95,7 +96,9 @@ def parse_shape(lines: list[str], version: int) -> tuple[int, np.ndarray]:
     count = int(lines[1].split()[1])
     compressed = [float(line) for line in lines[2:]]
 
-    if len(compressed) == count and version == 140:
+    # Uncompressed shapes are introduced with 1.4.0 but also used
+    # for pTx pulses by Martin's pTx extension
+    if len(compressed) == count and (version == 140 or version == 139):
         # No compression
         return shape_id, np.array(compressed)
 

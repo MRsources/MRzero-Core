@@ -34,7 +34,10 @@ class Pulse:
         assert np.sum(np.abs(pulse.imag)) < np.pi/180  # Trigger at 1°
         pulse = pulse.real
 
-        center = np.argmax(np.cumsum(pulse) > np.sum(pulse) / 2)
+        angle = np.sum(pulse)
+        phase = rf.phase
+
+        center = np.argmax(np.cumsum(pulse) > angle / 2)
         t = float(rf.delay + center * raster_time)
 
         gradm = np.zeros((2, 3))
@@ -50,9 +53,15 @@ class Pulse:
         gradm[:, 1] *= fov[1]
         gradm[:, 2] *= fov[2]
 
+        # If there is pTx, replace angle and phase with per-channel dat
+        if rf.shim_mag_id != 0:
+            assert rf.shim_phase_id != 0
+            angle = angle * pulseq.shapes[rf.shim_mag_id]
+            phase = phase + pulseq.shapes[rf.shim_phase_id]
+
         return (
             Spoiler(t, gradm[0, :]),
-            cls(np.sum(pulse), rf.phase),
+            cls(angle, phase),
             Spoiler(block.duration - t, gradm[1, :])
         )
 
