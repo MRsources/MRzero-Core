@@ -8,17 +8,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-# TODO: Add documentation and functions to analyze the graph
-# TODO: Maybe convert tensors to list (nyquist and fov) only in compute_graph_ext
-
-
 def compute_graph(
     seq: Sequence,
     data: SimData,
     max_state_count: int = 200,
     min_state_mag: float = 1e-4
 ) -> Graph:
-    """Like pre_pass.compute_graph, but computes args from `` data``."""
+    """Like :func:`pre_pass.compute_graph_ext`, but computes some args from :attr:`data`."""
     return compute_graph_ext(
         seq,
         float(torch.mean(data.T1)),
@@ -45,6 +41,32 @@ def compute_graph_ext(
     fov: tuple[float, float, float] = (1.0, 1.0, 1.0),
     avg_b1_trig: torch.Tensor | None = None,
 ) -> Graph:
+    """Compute the PDG from the sequence and phantom data provided.
+    
+    Parameters
+    ----------
+    seq : Sequence
+        The sequence that produces the returned PDG
+    T1 : float
+        Simulated T1 relaxation time [s]
+    T2 : float
+        Simulated T2 relaxation time [s]
+    T2' : float
+        Simulated T2' relaxation time [s]
+    D : float
+        Simulated diffusion coefficient [$10^{-3} mm^2 / s$]
+    max_state_count : int
+        Maximum state count. If more states are produced, the weakest are omitted.
+    min_state_mag : float
+        Minimum magnetization of a state to be simulated.
+    nyquist : (float, float, float)
+        Nyquist frequency of simulated data. Signal is cut off for higher frequencies.
+    fov : (float, float, float)
+        Size of the simulated phantom. Used for diffusion.
+    avg_b1_trig : torch.Tensor | None
+        Tensor containing the B1-averaged trigonometry used in the rotation matrix.
+        Default values are used if `None` is passed.
+    """
     if min_state_mag < 0:
         min_state_mag = 0
 
@@ -66,6 +88,7 @@ def compute_graph_ext(
 
 
 class Graph(list):
+    """:class:`Graph` is a wrapper around the list of states returned by the prepass."""
     def __init__(self, graph: list[list[PrePassState]]) -> None:
         super().__init__(graph)
 

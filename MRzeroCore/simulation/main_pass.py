@@ -26,10 +26,10 @@ def execute_graph(graph: Graph,
 
     Parameters
     ----------
-    graph : list[list[Distribution]]
-        Distribution graph that will be executed.
+    graph : Graph
+        Phase Distribution Graph that will be executed.
     seq : Sequence
-        Sequence that will be simulated and was used to create ``graph``.
+        Sequence that will be simulated and was used to create :attr:`graph`.
     data : SimData
         Physical properties of phantom and scanner.
     min_signal : float
