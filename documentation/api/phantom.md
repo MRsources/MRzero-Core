@@ -5,6 +5,10 @@
 
 # Phantom
 
+:::{note}
+Integrate and document the BrainWeb downloader
+:::
+
 The data required by the simulation is stored in the {class}`SimData` class. It holds all the necessary maps as sparse tensors of voxels, the voxel position is stored in one of those tensors. {class}`SimData` should not be created directly, but rather by using one of the phantoms. Currently, there are two phantom classes available:
 
 ::::{grid}
