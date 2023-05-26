@@ -1,7 +1,8 @@
-.. _simulation:
+(simulation)=
+```{eval-rst}
 .. currentmodule:: MRzeroCore
+```
 
-Simulation
-==========
+# Simulation
 
 PDG, prepass and spin sim:

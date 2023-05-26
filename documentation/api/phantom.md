@@ -1,7 +1,8 @@
-.. _phantom:
+(phantom)=
+```{eval-rst}
 .. currentmodule:: MRzeroCore
+```
 
-Phantom
-=======
+# Phantom
 
 List all Phantoms here
