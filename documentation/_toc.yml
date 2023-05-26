@@ -10,6 +10,9 @@ chapters:
   - file: api/reco
   - file: api/phantom
   - file: api/simulation
+    sections:
+    - file: api/simulation/pdg_sim
+    - file: api/simulation/spin_sim
 - file: examples
   sections:
   - file: examples/flash
