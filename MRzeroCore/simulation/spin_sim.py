@@ -48,16 +48,16 @@ def spin_sim(seq: Sequence, data: SimData, spin_count: int,
     # RawSimData doesn't store the voxel shape. We could extract it by FFT'ing
     # the dephasing function, if that feature is desired. Until then, we just
     # use the nyquist frequencies, with a special case for ∞ (custom phantoms).
-    voxel_size = 0.5 / torch.tensor(data.nyquist, device=util.get_device())
+    voxel_size = 0.5 / torch.tensor(data.nyquist, device=data.device)
     if not torch.isfinite(voxel_size).all():
         # Fallback voxel size
-        voxel_size = torch.tensor([0.1, 0.1, 0.1], device=util.get_device())
+        voxel_size = torch.tensor([0.1, 0.1, 0.1], device=data.device)
 
     # 3 dimensional R2 sequence for intravoxel spin distribution
     g = 1.22074408460575947536  # 3D
     # g = 1.32471795724474602596  # 2D
-    a = 1.0 / torch.tensor([g**1, g**2, g**3], device=util.get_device())
-    indices = torch.arange(spin_count, device=util.get_device())
+    a = 1.0 / torch.tensor([g**1, g**2, g**3], device=data.device)
+    indices = torch.arange(spin_count, device=data.device)
     spin_pos = torch.stack([
         (0.5 + a[0] * indices) % 1,
         (0.5 + a[1] * indices) % 1,
@@ -67,7 +67,7 @@ def spin_sim(seq: Sequence, data: SimData, spin_count: int,
     spin_pos = 2 * pi * (spin_pos - 0.5) * voxel_size.unsqueeze(1)
 
     # Omega is a cauchy-distributed tensor of spin offset freqencies (for T2')
-    off_res = torch.linspace(-0.5, 0.5, spin_count, device=util.get_device())
+    off_res = torch.linspace(-0.5, 0.5, spin_count, device=data.device)
     omega = torch.tan(pi * 0.999 * off_res)  # Cut off high frequencies
     omega = omega[torch.randperm(spin_count)]
 
@@ -80,7 +80,7 @@ def spin_sim(seq: Sequence, data: SimData, spin_count: int,
 
     # Start off with relaxed magnetisation, stored as (voxels x spins)
     spins = torch.zeros((data.PD.numel(), spin_count, 3),
-                        device=util.get_device())
+                        device=data.device)
     spins[:, :, 2] = 1
 
     # Simulation:
@@ -94,7 +94,7 @@ def spin_sim(seq: Sequence, data: SimData, spin_count: int,
 
         spins = flip(spins, rep.pulse.angle, rep.pulse.phase, data.B1)
         rep_sig = torch.zeros((rep.event_count, coil_count),
-                              dtype=torch.cfloat, device=util.get_device())
+                              dtype=torch.cfloat, device=data.device)
         signal.append(rep_sig)
 
         # When applying relaxation, dephasing etc. event after event,
@@ -151,7 +151,7 @@ def dephase(spins: torch.Tensor, omega: torch.Tensor,
     """T2' - dephase spins, the per-voxel amount is given by T2dash and dt."""
     # shape: voxels x spins
     angle = ((1 / T2dash).unsqueeze(1) @ omega.unsqueeze(0)) * dt
-    rot_mat = torch.zeros((*angle.shape, 3, 3), device=util.get_device())
+    rot_mat = torch.zeros((*angle.shape, 3, 3), device=spins.device)
     rot_mat[:, :, 0, 0] = torch.cos(angle)
     rot_mat[:, :, 0, 1] = -torch.sin(angle)
     rot_mat[:, :, 1, 0] = torch.sin(angle)
@@ -167,7 +167,7 @@ def flip(spins: torch.Tensor, angle: torch.Tensor, phase: torch.Tensor,
     a = angle * B1
     p = torch.as_tensor(phase)
     # Rz(phase) * Rx(angle) * Rz(-phase):
-    rot_mat = torch.zeros((B1.numel(), 3, 3), device=util.get_device())
+    rot_mat = torch.zeros((B1.numel(), 3, 3), device=spins.device)
     rot_mat[:, 0, 0] = torch.sin(p)**2*torch.cos(a) + torch.cos(p)**2
     rot_mat[:, 0, 1] = (1 - torch.cos(a))*torch.sin(p)*torch.cos(p)
     rot_mat[:, 0, 2] = torch.sin(a)*torch.sin(p)
@@ -185,7 +185,7 @@ def grad_precess(spins: torch.Tensor, gradm: torch.Tensor,
                  voxel_pos: torch.Tensor) -> torch.Tensor:
     """Rotate individual voxels as given by their position and ```gradm``."""
     angle = -2 * pi * voxel_pos @ gradm  # shape: voxels
-    rot_mat = torch.zeros((angle.numel(), 3, 3), device=util.get_device())
+    rot_mat = torch.zeros((angle.numel(), 3, 3), device=spins.device)
     rot_mat[:, 0, 0] = torch.cos(angle)
     rot_mat[:, 0, 1] = -torch.sin(angle)
     rot_mat[:, 1, 0] = torch.sin(angle)
@@ -199,7 +199,7 @@ def B0_precess(spins: torch.Tensor, B0: torch.Tensor,
                dt: float) -> torch.Tensor:
     """Rotate voxels as given by ``B0`` and the elapsed time ``dt``."""
     angle = B0 * dt * 2 * pi  # shape: voxels
-    rot_mat = torch.zeros((angle.numel(), 3, 3), device=util.get_device())
+    rot_mat = torch.zeros((angle.numel(), 3, 3), device=spins.device)
     rot_mat[:, 0, 0] = torch.cos(angle)
     rot_mat[:, 0, 1] = -torch.sin(angle)
     rot_mat[:, 1, 0] = torch.sin(angle)
@@ -217,7 +217,7 @@ def intravoxel_precess(spins: torch.Tensor, gradm: torch.Tensor,
     simulate the effect gradients have on the magnetisation.
     """
     angle = spin_pos.T @ gradm  # shape: spins
-    rot_mat = torch.zeros((angle.numel(), 3, 3), device=util.get_device())
+    rot_mat = torch.zeros((angle.numel(), 3, 3), device=spins.device)
     rot_mat[:, 0, 0] = torch.cos(angle)
     rot_mat[:, 0, 1] = -torch.sin(angle)
     rot_mat[:, 1, 0] = torch.sin(angle)
