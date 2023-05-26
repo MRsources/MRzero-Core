@@ -101,6 +101,11 @@ class SimData:
         self.recover_func = recover_func
 
     def cuda(self) -> SimData:
+        """Move the simulation data to the default CUDA device.
+        
+        The returned :class:`SimData` is equivalent to :attr:`self` if the data
+        already was on the GPU.
+        """
         return SimData(
             self.PD.cuda(),
             self.T1.cuda(),
@@ -118,6 +123,11 @@ class SimData:
         )
 
     def cpu(self) -> SimData:
+        """Move the simulation data to the CPU.
+        
+        The returned :class:`SimData` is equivalent to :attr:`self` if the data
+        already was on the CPU.
+        """
         return SimData(
             self.PD.cpu(),
             self.T1.cpu(),
@@ -136,6 +146,7 @@ class SimData:
 
     @property
     def device(self) -> torch.device:
+        """The device (either CPU or a CUDA device) the data is stored on."""
         return self.PD.device
 
     def recover(self) -> Any:
