@@ -6,9 +6,9 @@ in the near future, be tested.
 
 # BUILDING
 
-Building for linux still can use some improvements. Current solution:
+Building for linux requires docker to be installed. Run:
 ```
-docker run --rm -v D:/repos/MRzero-Core:/io konstin2/maturin build --release
+docker run --rm -v D:/repos/MRzero-Core:/io ghcr.io/pyo3/maturin build
 ```
 This builds a manylinux verison of the wheel but fails to add all the python scripts to it.
 Copy the .dist-info folder and the _prepass.abi3.so file into a windows wheel.
