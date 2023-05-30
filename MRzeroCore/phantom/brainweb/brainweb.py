@@ -133,7 +133,7 @@ class Phantom:
         self.d = d
 
     @classmethod
-    def load(cls, subject: int, scale: int = 1) -> Tissue:
+    def load(cls, subject: int, scale: int = 1):
         """Load a phantom from BrainWeb data.
 
         scale: downsampling factor [1, 2, ...]x"""
