@@ -73,7 +73,7 @@ def download(subject: int, tissue_type: TissueType) -> np.ndarray:
         file_path = os.path.join(file_dir, file_name)
 
         try:
-            os.mkdir(file_dir)
+            os.makedirs(file_dir)
         except FileExistsError:
             pass
 

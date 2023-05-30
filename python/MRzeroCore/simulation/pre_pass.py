@@ -1,11 +1,10 @@
 from __future__ import annotations
-from MRzeroCore import _prepass
-from MRzeroCore._prepass import PyDistribution as PrePassState
-from ..sequence import Sequence
-from ..phantom.sim_data import SimData
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
+from ..sequence import Sequence
+from ..phantom.sim_data import SimData
+from MRzeroCore import _prepass
 
 
 def compute_graph(
@@ -42,7 +41,7 @@ def compute_graph_ext(
     avg_b1_trig: torch.Tensor | None = None,
 ) -> Graph:
     """Compute the PDG from the sequence and phantom data provided.
-    
+
     Parameters
     ----------
     seq : Sequence
@@ -89,7 +88,7 @@ def compute_graph_ext(
 
 class Graph(list):
     """:class:`Graph` is a wrapper around the list of states returned by the prepass."""
-    def __init__(self, graph: list[list[PrePassState]]) -> None:
+    def __init__(self, graph: list[list[_prepass.PyDistribution]]) -> None:
         super().__init__(graph)
 
     def plot(self,
@@ -98,7 +97,7 @@ class Graph(list):
              color: str = "weight",
              log_color: bool = True):
         """Visualize the graph.
-        
+
         Parameters
         ----------
         transversal_mag : bool
@@ -115,7 +114,7 @@ class Graph(list):
         data = []
         kt_idx = {"k_x": 0, "k_y": 1, "k_z": 2, "tau": 3}[dephasing]
 
-        def extract(state: PrePassState):
+        def extract(state: _prepass.PyDistribution):
             if color == "abs(mag)":
                 value = np.abs(state.prepass_mag)
             elif color == "phase(mag)":
