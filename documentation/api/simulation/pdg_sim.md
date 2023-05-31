@@ -20,10 +20,6 @@ Two functions are provided: {func}`compute_graph` and {func}`compute_graph_ext`.
 
 ## Phase Distribution Graph
 
-:::{note}
-Implement additional functions for plotting and analyzing the {class}`Graph`
-:::
-
 ```{eval-rst}
 .. autoclass:: MRzeroCore.simulation.pre_pass.Graph
     :members:
