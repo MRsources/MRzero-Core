@@ -3,8 +3,8 @@
 ## ToDo
 
 - [ ] Rename and document "cartesian pulseq exporter"
-- [ ] Describe how to NUFFT reco in the reco page
-- [ ] Integrate and document BrainWeb
+- [x] Describe how to NUFFT reco in the reco page
+- [x] Integrate and document BrainWeb
 - [ ] Rename matrics to "emitted signal" and "latent signal"
 - [ ] Add more graph plotting functions
 
