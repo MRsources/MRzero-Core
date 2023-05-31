@@ -2,7 +2,7 @@
 
 ## ToDo
 
-- [ ] Rename and document "cartesian pulseq exporter"
+- [x] Rename and document "cartesian pulseq exporter"
 - [x] Describe how to NUFFT reco in the reco page
 - [x] Integrate and document BrainWeb
 - [x] Rename matrics to "emitted signal" and "latent signal"

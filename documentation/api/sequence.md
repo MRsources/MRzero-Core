@@ -35,6 +35,8 @@ for i in range(64):
     rep.adc_phase[2:-2] = pi - rep.pulse.phase
 ```
 
+## Pulseq
+
 Sequences can also be imported from [Pulseq](https://pulseq.github.io/) `.seq` files using the {meth}`Sequence.from_seq_file` method.
 
 :::{note}
@@ -42,6 +44,12 @@ The importer tries to minimize the amount of events for imported sequences. This
 :::
 
 Sometimes it might be desirable to measure multiple contrasts in a single sequence. This can be realized by combining sequences with {func}`chain`, followed by masking the simulated signal using {meth}`Sequence.get_contrasts()`. Alternatively, {attr}`Repetition.adc_usage` allows to manually assign ADC samples to different contrasts.
+
+To export MRzero sequences as Pulseq .seq files, {func}`pulseq_write_cartesian` can be used. This exporter does only support sequences with k-space trajectories that are on a cartesian grid. Exporters that are more flexible will be added in the future, as well as better documentation of these exporters.
+
+```{eval-rst}
+.. autofunction:: pulseq_write_cartesian
+```
 
 
 ## Sequence
