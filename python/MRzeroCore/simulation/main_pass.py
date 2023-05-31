@@ -16,7 +16,7 @@ def execute_graph(graph: Graph,
                   seq: Sequence,
                   data: SimData,
                   min_signal: float = 1e-2,
-                  min_weight: float = 1e-2,
+                  min_latent_signal: float = 1e-2,
                   ) -> torch.Tensor:
     """Calculate the signal of the sequence by computing the graph.
 
@@ -34,8 +34,8 @@ def execute_graph(graph: Graph,
         Physical properties of phantom and scanner.
     min_signal : float
         Minimum relative signal of a state for it to be measured.
-    min_weight : float
-        Minimum "weight" metric of a state for it to be simulated. Should be
+    min_latent_signal : float
+        Minimum "latent_signal" metric of a state for it to be simulated. Should be
         less than min_signal.
 
     Returns
@@ -128,7 +128,7 @@ def execute_graph(graph: Graph,
                 lambda edge: edge[1].mag is not None, dist.ancestors
             ))
 
-            if dist.dist_type != 'z0' and dist.weight < min_weight:
+            if dist.dist_type != 'z0' and dist.latent_signal < min_latent_signal:
                 continue  # skip unimportant distributions
             if dist.dist_type != 'z0' and len(ancestors) == 0:
                 continue  # skip dists for which no ancestors were simulated

@@ -32,7 +32,7 @@ Implement additional functions for plotting and analyzing the {class}`Graph`
 (main_pass)=
 ## Main-Pass
 
-Takes the {class}`Sequence`, the {class}`SimData` and the {class} `Graph` produced by both in the [pre-pass](pre_pass) in order to calculate the measured ADC signal. Because of the work done by the [pre-pass](pre_pass), only the minimal work needed in order to achieve the desired precision is executed. This precision can be tuned by the {attr}`min_signal` and {attr}`min_weight` thresholds. Higher values lead to less states being simulated, which improves speed and reduces accuracy. A value of 1 will mean that 2 states will be simulated (z0 and one +), resulting in the FID signal. A value of 0 means that everything will be simulated that somehow contributes to the signal.
+Takes the {class}`Sequence`, the {class}`SimData` and the {class} `Graph` produced by both in the [pre-pass](pre_pass) in order to calculate the measured ADC signal. Because of the work done by the [pre-pass](pre_pass), only the minimal work needed in order to achieve the desired precision is executed. This precision can be tuned by the {attr}`min_signal` and {attr}`min_latent_signal` thresholds. Higher values lead to less states being simulated, which improves speed and reduces accuracy. A value of 1 will mean that 2 states will be simulated (z0 and one +), resulting in the FID signal. A value of 0 means that everything will be simulated that somehow contributes to the signal.
 
 :::{note}
 The thresholds should be renamed to emitted signal and latent signal.

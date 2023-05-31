@@ -94,7 +94,7 @@ class Graph(list):
     def plot(self,
              transversal_mag: bool = True,
              dephasing: str = "tau",
-             color: str = "weight",
+             color: str = "latent signal",
              log_color: bool = True):
         """Visualize the graph.
 
@@ -106,7 +106,7 @@ class Graph(list):
             Use one of ``['k_x', 'k_y', 'k_z', 'tau']`` dephasing as the
             y-position of a state in the scatter plot
         color : str
-            Use one of ``['abs(mag)', 'phase(mag)', 'weight', 'signal',
+            Use one of ``['abs(mag)', 'phase(mag)', 'latent signal', 'signal',
             'rel. signal']`` as color of a state in the scatter plot
         log_color : bool
             If true, use the logarithm of the chosen property for coloring
@@ -119,8 +119,8 @@ class Graph(list):
                 value = np.abs(state.prepass_mag)
             elif color == "phase(mag)":
                 value = np.angle(state.prepass_mag)
-            elif color == "weight":
-                value = state.weight
+            elif color == "latent signal":
+                value = state.latent_signal
             elif color == "signal":
                 value = state.signal
             elif color == "rel. signal":

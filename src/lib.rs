@@ -23,7 +23,7 @@ struct PyDistribution {
     #[pyo3(get)]
     prepass_mag: Option<Py<PyComplex>>,
     #[pyo3(get)]
-    weight: f32,
+    latent_signal: f32,
     #[pyo3(get)]
     signal: f32,
     #[pyo3(get)]
@@ -42,7 +42,7 @@ impl PyDistribution {
             mag: Some(py.None()),
             kt_vec: Some(py.None()),
             prepass_mag: Some(PyComplex::from_doubles(py, 0.0, 0.0).into()),
-            weight: 0.0,
+            latent_signal: 0.0,
             signal: 0.0,
             rel_signal: 0.0,
             prepass_kt_vec: [0.0, 0.0, 0.0, 0.0],
@@ -236,7 +236,7 @@ fn compute_graph<'p>(
                 let mag = dist.mag;
                 Some(PyComplex::from_doubles(py, mag.re as f64, mag.im as f64).into())
             };
-            py_dist.weight = dist.weight;
+            py_dist.latent_signal = dist.latent_signal;
             py_dist.signal = dist.signal;
             py_dist.rel_signal = dist.rel_signal;
             py_dist.prepass_kt_vec = dist.kt_vec;
