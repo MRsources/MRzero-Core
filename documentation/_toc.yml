@@ -12,7 +12,7 @@ chapters:
   - file: api/simulation
     sections:
     - file: api/simulation/pdg_sim
-    - file: api/simulation/spin_sim
+    - file: api/simulation/isochromat_sim
 - file: examples
   sections:
   - file: examples/flash

@@ -1,4 +1,4 @@
-(spin_sim_doc)=
+(isochromat_sim_doc)=
 ```{eval-rst}
 .. currentmodule:: MRzeroCore
 ```
@@ -14,7 +14,7 @@ Additionally, the isochromat simulation does not support diffusion.
 :::
 
 ```{eval-rst}
-.. autofunction:: spin_sim
+.. autofunction:: isochromat_sim
 ```
 
 ## Helper functions
@@ -22,17 +22,17 @@ Additionally, the isochromat simulation does not support diffusion.
 The simulation is split into multiple functions, each of them only executing a single, easily understandable step of the overall simulation. These are not exposed by `MRzeroCore` as they are not meant to be used directly.
 
 ```{eval-rst}
-.. autofunction:: MRzeroCore.simulation.spin_sim.measure
+.. autofunction:: MRzeroCore.simulation.isochromat_sim.measure
 
-.. autofunction:: MRzeroCore.simulation.spin_sim.relax
+.. autofunction:: MRzeroCore.simulation.isochromat_sim.relax
 
-.. autofunction:: MRzeroCore.simulation.spin_sim.dephase
+.. autofunction:: MRzeroCore.simulation.isochromat_sim.dephase
 
-.. autofunction:: MRzeroCore.simulation.spin_sim.flip
+.. autofunction:: MRzeroCore.simulation.isochromat_sim.flip
 
-.. autofunction:: MRzeroCore.simulation.spin_sim.grad_precess
+.. autofunction:: MRzeroCore.simulation.isochromat_sim.grad_precess
 
-.. autofunction:: MRzeroCore.simulation.spin_sim.B0_precess
+.. autofunction:: MRzeroCore.simulation.isochromat_sim.B0_precess
 
-.. autofunction:: MRzeroCore.simulation.spin_sim.intravoxel_precess
+.. autofunction:: MRzeroCore.simulation.isochromat_sim.intravoxel_precess
 ```

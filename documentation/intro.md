@@ -7,6 +7,8 @@
 - [x] Integrate and document BrainWeb
 - [x] Rename matrics to "emitted signal" and "latent signal"
 - [ ] Add more graph plotting functions
+- [x] Rename spin_sim to isochromat_sim
+- [ ] Document the pulseq importer and mention gradient / diffusion limitation
 
 ## MRzero Overview
 
