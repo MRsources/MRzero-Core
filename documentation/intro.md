@@ -5,7 +5,7 @@
 - [ ] Rename and document "cartesian pulseq exporter"
 - [x] Describe how to NUFFT reco in the reco page
 - [x] Integrate and document BrainWeb
-- [ ] Rename matrics to "emitted signal" and "latent signal"
+- [x] Rename matrics to "emitted signal" and "latent signal"
 - [ ] Add more graph plotting functions
 
 ## MRzero Overview

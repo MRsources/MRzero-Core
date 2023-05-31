@@ -27,7 +27,7 @@ struct PyDistribution {
     #[pyo3(get)]
     signal: f32,
     #[pyo3(get)]
-    rel_signal: f32,
+    emitted_signal: f32,
     #[pyo3(get)]
     prepass_kt_vec: [f32; 4],
 }
@@ -44,7 +44,7 @@ impl PyDistribution {
             prepass_mag: Some(PyComplex::from_doubles(py, 0.0, 0.0).into()),
             latent_signal: 0.0,
             signal: 0.0,
-            rel_signal: 0.0,
+            emitted_signal: 0.0,
             prepass_kt_vec: [0.0, 0.0, 0.0, 0.0],
         }
     }
@@ -238,7 +238,7 @@ fn compute_graph<'p>(
             };
             py_dist.latent_signal = dist.latent_signal;
             py_dist.signal = dist.signal;
-            py_dist.rel_signal = dist.rel_signal;
+            py_dist.emitted_signal = dist.emitted_signal;
             py_dist.prepass_kt_vec = dist.kt_vec;
             // Insert the PyDistribution into map
             mapping.insert(

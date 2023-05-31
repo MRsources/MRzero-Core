@@ -45,7 +45,7 @@ pub struct Distribution {
     pub mag: Complex32,
     pub regrown_mag: f32, // Don't propagate to ancestors if its the own mag
     pub signal: f32,
-    pub rel_signal: f32, // relative to the strongest dist in the repetition
+    pub emitted_signal: f32, // relative to the strongest dist in the repetition
     pub kt_vec: [f32; 4],
     pub dist_type: DistType,
     pub ancestors: Vec<Edge>,
@@ -317,7 +317,7 @@ pub fn analyze_graph(graph: &mut Vec<Vec<RcDist>>) {
             .expect("Tried to find maximum signal but repetition is empty");
 
         for mut dist in rep.iter().map(|d| d.borrow_mut()) {
-            dist.rel_signal = if max_signal < 1e-9 {
+            dist.emitted_signal = if max_signal < 1e-9 {
                 0.0
             } else {
                 dist.signal / max_signal
@@ -332,7 +332,7 @@ pub fn analyze_graph(graph: &mut Vec<Vec<RcDist>>) {
     for rep in graph.iter().rev() {
         for mut dist in rep.iter().map(|d| d.borrow_mut()) {
             // Own signal is latent_signal if larger than what children produce
-            dist.latent_signal = f32::max(dist.latent_signal, dist.rel_signal);
+            dist.latent_signal = f32::max(dist.latent_signal, dist.emitted_signal);
 
             let max_contrib = std::iter::once(dist.regrown_mag)
                 .chain(
