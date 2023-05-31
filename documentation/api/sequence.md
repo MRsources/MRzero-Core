@@ -35,11 +35,31 @@ for i in range(64):
     rep.adc_phase[2:-2] = pi - rep.pulse.phase
 ```
 
+Sequences can also be imported from [Pulseq](https://pulseq.github.io/) `.seq` files using the {meth}`Sequence.from_seq_file` method.
 
-## PulseUsage
+:::{note}
+The importer tries to minimize the amount of events for imported sequences. This can be undesirable for diffusion-weighted sequences that rely on spoiler gradients, which might be removed in this process. For that reason, this behaviour might be removed in the future. Furthermore, MRzero currently uses instantaneous pulses and will ignore slice selection, off-resonance etc.
+:::
+
+Sometimes it might be desirable to measure multiple contrasts in a single sequence. This can be realized by combining sequences with {func}`chain`, followed by masking the simulated signal using {meth}`Sequence.get_contrasts()`. Alternatively, {attr}`Repetition.adc_usage` allows to manually assign ADC samples to different contrasts.
+
+
+## Sequence
 
 ```{eval-rst}
-.. autoclass:: PulseUsage
+.. autoclass:: Sequence
+    :members:
+
+.. autofunction:: chain
+```
+
+
+## Repetition
+
+In MRzero, a repetition describes a section of the sequence starting with an RF pulse and ending just before the next. This is intuitive for sequences that consists of many similar sections (usually identical apart from phase encoding), but is used more loosely here as a general term even for sequences, where those "repetitions" are completely different.
+
+```{eval-rst}
+.. autoclass:: Repetition
     :members:
 ```
 
@@ -52,19 +72,9 @@ for i in range(64):
 ```
 
 
-## Repetition
-
-In MR0, a repetition describes a section of the sequence starting with an RF pulse and ending just before the next. This is intuitive for sequences that consists of many similar sections (usually identical apart from phase encoding), but is used more loosely here as a general term even for sequences, where those "repetitions" are completely different.
+## PulseUsage
 
 ```{eval-rst}
-.. autoclass:: Repetition
-    :members:
-```
-
-
-## Sequence
-
-```{eval-rst}
-.. autoclass:: Sequence
+.. autoclass:: PulseUsage
     :members:
 ```

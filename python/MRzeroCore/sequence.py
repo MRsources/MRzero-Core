@@ -1,5 +1,3 @@
-"""Classes needed for sequence definition."""
-
 from __future__ import annotations
 import torch
 from enum import Enum
@@ -9,7 +7,29 @@ from .pulseq.pulseq_loader import intermediate, PulseqFile, Adc, Spoiler
 
 
 class PulseUsage(Enum):
-    """Enumerates all pulse usages, needed for reconstruction."""
+    """:class:`Enum` of all pulse usages, needed for reconstruction.
+
+    The simulation always simulates all magnetization pathways and will ignore
+    the pulse usage. It is only used for reconstruction, by the
+    :meth:`Sequence.get_kspace` method, to understand the role of a pulse.
+    Additionally, Pulseq exportes might use the pulse usage to select the correct pulse type.
+    
+    Attributes
+    ----------
+    UNDEF : str
+        ``"undefined"``: No specified use case.
+    EXIT : str
+        ``"excitation"``: Will set the kspace position back to zero
+        or the position stored by the last `STORE` pulse.
+    REFOC : str
+        ``"refocussing"``: Mirrors the kspace position.
+    STORE : str
+        ``"storing"``: Stores the current kspace position.
+        Can be used for DREAM-like sequences.
+    FATSAT : str
+        ``"fatsaturation"``: Not handled differently by the simulation, but
+        can be used by Pulseq exporters to emit a fat-saturation pulse.
+    """
 
     UNDEF = "undefined"
     EXCIT = "excitation"
@@ -51,6 +71,7 @@ class Pulse:
         self.selective = selective
 
     def cpu(self) -> Pulse:
+        """Move this pulse to the CPU and return it."""
         return Pulse(
             self.usage,
             torch.as_tensor(self.angle, dtype=torch.float).cpu(),
@@ -58,16 +79,18 @@ class Pulse:
             self.selective
         )
 
-    def cuda(self) -> Pulse:
+    def cuda(self, device: int = None) -> Pulse:
+        """Move this pulse to the specified CUDA device and return it."""
         return Pulse(
             self.usage,
-            torch.as_tensor(self.angle, dtype=torch.float).cuda(),
-            torch.as_tensor(self.phase, dtype=torch.float).cuda(),
+            torch.as_tensor(self.angle, dtype=torch.float).cuda(device),
+            torch.as_tensor(self.phase, dtype=torch.float).cuda(device),
             self.selective
         )
 
     @property
     def device(self) -> torch.device:
+        """Return the device this pulse is stored on."""
         return self.angle.device
 
     @classmethod
@@ -149,16 +172,18 @@ class Repetition:
         self.adc_phase = adc_phase
         self.adc_usage = adc_usage
 
-    def cuda(self) -> Repetition:
+    def cuda(self, device: int = None) -> Repetition:
+        """Move this repetition to the specified CUDA device and return it."""
         return Repetition(
-            self.pulse.cuda(),
-            self.event_time.cuda(),
-            self.gradm.cuda(),
-            self.adc_phase.cuda(),
-            self.adc_usage.cuda()
+            self.pulse.cuda(device),
+            self.event_time.cuda(device),
+            self.gradm.cuda(device),
+            self.adc_phase.cuda(device),
+            self.adc_usage.cuda(device)
         )
 
     def cpu(self) -> Repetition:
+        """Move this repetition to the CPU and return it."""
         return Repetition(
             self.pulse.cpu(),
             self.event_time.cpu(),
@@ -169,6 +194,7 @@ class Repetition:
 
     @property
     def device(self) -> torch.device:
+        """Return the repetition this pulse is stored on."""
         return self.gradm.device
 
     @classmethod
@@ -228,13 +254,16 @@ class Sequence(list):
         super().__init__(repetitions)
 
     def cuda(self) -> Sequence:
+        """Move this sequence to the specified CUDA device and return it."""
         return Sequence([rep.cuda() for rep in self])
 
     def cpu(self) -> Sequence:
+        """Move this sequence to the CPU and return it."""
         return Sequence([rep.cpu() for rep in self])
 
     @property
     def device(self) -> torch.device:
+        """Return the sequence this pulse is stored on."""
         return self[0].device
 
     def clone(self) -> Sequence:
@@ -307,13 +336,24 @@ class Sequence(list):
         """Return a mask for a specific contrast as bool tensor.
 
         The returned tensor only contains measured events and is designed to be
-        used together with ``get_kspace()`` or the simulated signal:
-        ```
-        signal = execute_graph(graph, seq, data)
-        kspace = seq.get_kspace()
-        mask = seq.get_contrast_mask(7)
-        contrast_reco = reco(signal[mask], kspace[mask])
-        ```
+        used together with ``get_kspace()`` or the simulated signal.
+
+        Parameters
+        ----------
+        contrast : int
+            The index for the contrast of which the signal mask is requested.
+        
+        Returns
+        -------
+        torch.Tensor
+            The signal mask for the requested contrast as bool tensor
+
+        Examples
+        --------
+        >>> signal = execute_graph(graph, seq, data)
+        >>> kspace = seq.get_kspace()
+        >>> mask = seq.get_contrast_mask(7)
+        >>> contrast_reco = reco(signal[mask], kspace[mask])
         """
         return torch.cat(
             [rep.adc_usage[rep.adc_usage != 0] == contrast for rep in self]
@@ -342,17 +382,34 @@ class Sequence(list):
         return sum(rep.event_time.sum().item() for rep in self)
 
     @classmethod
-    def from_seq_file(cls, seq_file: PulseqFile) -> Sequence:
+    def from_seq_file(cls, file_name: str) -> Sequence:
+        """Import a sequence from a pulseq .seq file.
+        
+        The importer currently minimizes the amount of used `mr0` sequence events.
+        This can be problematic for diffusion weighted sequences, because gradients
+        that are not directly measured by ADC samples can be removed from the
+        sequence, even if they are important for the targeted contrast.
+
+        Parameters
+        ----------
+        file_name : str
+            Path to the imported .seq file
+        
+        Returns
+        -------
+        Sequence
+            Imported sequence, converted to MRzero
+        """
         seq = Sequence()
         rep = None
-        for tmp_rep in intermediate(seq_file):
+        for tmp_rep in intermediate(PulseqFile(file_name)):
             rep = seq.new_rep(tmp_rep[0])
             rep.pulse.angle = torch.as_tensor(tmp_rep[1].angle, dtype=torch.float)
             rep.pulse.phase = torch.as_tensor(tmp_rep[1].phase, dtype=torch.float)
 
             # Refocussing pulses are pulses with > 90° angle.
             # Pulses are potentially pTx but we don't have B1 maps: use a rough CP approximation
-            flip = rep.pulse.angle.mean() / np.sqrt(1 / rep.pulse.angle.numel())
+            flip = rep.pulse.angle.mean() / torch.sqrt(1 / rep.pulse.angle.numel())
 
             if flip > 100 * torch.pi/180:
                 rep.pulse.usage = PulseUsage.REFOC
@@ -372,7 +429,7 @@ class Sequence(list):
                     num = len(block.event_time)
                     rep.event_time[i:i+num] = torch.tensor(block.event_time)
                     rep.gradm[i:i+num, :] = torch.tensor(block.gradm)
-                    rep.adc_phase[i:i+num] = np.pi/2 - block.phase
+                    rep.adc_phase[i:i+num] = torch.pi/2 - block.phase
                     rep.adc_usage[i:i+num] = 1
                     i += num
             assert i == tmp_rep[0]
@@ -411,13 +468,12 @@ class Sequence(list):
         if plot_timeline:
             plt.subplot(211)
         for i, (rep_traj, mask) in enumerate(zip(kspace, adc_mask)):
-            kx = to_numpy(rep_traj[:, dim_map[plotting_dims[0]]])
-            ky = to_numpy(rep_traj[:, dim_map[plotting_dims[1]]])
-            measured = to_numpy(mask)
+            kx = rep_traj[:, dim_map[plotting_dims[0]]]
+            ky = rep_traj[:, dim_map[plotting_dims[1]]]
 
             plt.plot(kx, ky, c=cmap(i / len(kspace)))
-            plt.plot(kx[measured], ky[measured], 'r.')
-            plt.plot(kx[~measured], ky[~measured], 'k.')
+            plt.plot(kx[mask], ky[mask], 'r.')
+            plt.plot(kx[~mask], ky[~mask], 'k.')
         plt.xlabel(f"$k_{plotting_dims[0]}$")
         plt.ylabel(f"$k_{plotting_dims[1]}$")
         plt.grid()
@@ -426,9 +482,8 @@ class Sequence(list):
             plt.subplot(212)
             event = 0
             for i, rep_traj in enumerate(kspace):
-                x = np.arange(event, event + rep_traj.shape[0], 1)
+                x = torch.arange(event, event + rep_traj.shape[0], 1)
                 event += rep_traj.shape[0]
-                rep_traj = to_numpy(rep_traj)
 
                 if i == 0:
                     plt.plot(x, rep_traj[:, 0], c='r', label="$k_x$")
@@ -444,13 +499,6 @@ class Sequence(list):
             plt.grid()
 
         plt.show()
-
-
-# TODO: Remove this funciton and all references to it
-import numpy as np
-def to_numpy(x: torch.Tensor) -> np.ndarray:
-    """Convert a torch tensor to a numpy ndarray."""
-    return x.detach().cpu().numpy()
 
 
 def chain(*sequences: Sequence, oneshot: bool = False) -> Sequence:
