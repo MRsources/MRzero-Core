@@ -23,7 +23,7 @@ from ..sequence import Sequence, PulseUsage
 from ..phantom.sim_data import SimData
 
 
-def spin_sim(seq: Sequence, data: SimData, spin_count: int,
+def isochromat_sim(seq: Sequence, data: SimData, spin_count: int,
              perfect_spoiling=False
              ) -> torch.Tensor:
     """

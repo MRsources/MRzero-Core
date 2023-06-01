@@ -15,8 +15,8 @@ import numpy as np
 def execute_graph(graph: Graph,
                   seq: Sequence,
                   data: SimData,
-                  min_signal: float = 1e-2,
-                  min_weight: float = 1e-2,
+                  min_emitted_signal: float = 1e-2,
+                  min_latent_signal: float = 1e-2,
                   ) -> torch.Tensor:
     """Calculate the signal of the sequence by computing the graph.
 
@@ -32,11 +32,11 @@ def execute_graph(graph: Graph,
         Sequence that will be simulated and was used to create :attr:`graph`.
     data : SimData
         Physical properties of phantom and scanner.
-    min_signal : float
-        Minimum relative signal of a state for it to be measured.
-    min_weight : float
-        Minimum "weight" metric of a state for it to be simulated. Should be
-        less than min_signal.
+    min_emitted_signal : float
+        Minimum "emitted_signal" metric of a state for it to be measured.
+    min_latent_signal : float
+        Minimum "latent_signal" metric of a state for it to be simulated.
+        Should be <= than min_emitted_signal.
 
     Returns
     -------
@@ -128,7 +128,7 @@ def execute_graph(graph: Graph,
                 lambda edge: edge[1].mag is not None, dist.ancestors
             ))
 
-            if dist.dist_type != 'z0' and dist.weight < min_weight:
+            if dist.dist_type != 'z0' and dist.latent_signal < min_latent_signal:
                 continue  # skip unimportant distributions
             if dist.dist_type != 'z0' and len(ancestors) == 0:
                 continue  # skip dists for which no ancestors were simulated
@@ -168,7 +168,7 @@ def execute_graph(graph: Graph,
             # important for the numerical precision. An error of 4% is achieved
             # just by switching 2pi * (pos @ grad) to 2pi * pos @ grad
 
-            if dist.dist_type == '+' and dist.rel_signal >= min_signal:
+            if dist.dist_type == '+' and dist.emitted_signal >= min_emitted_signal:
                 T2 = torch.exp(-trajectory[:, 3:] / torch.abs(data.T2))
                 T2dash = torch.exp(-torch.abs(dist_traj[:, 3:]) / torch.abs(data.T2dash))
                 rot = torch.exp(2j * np.pi * (

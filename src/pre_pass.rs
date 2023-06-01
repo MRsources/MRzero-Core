@@ -45,13 +45,13 @@ pub struct Distribution {
     pub mag: Complex32,
     pub regrown_mag: f32, // Don't propagate to ancestors if its the own mag
     pub signal: f32,
-    pub rel_signal: f32, // relative to the strongest dist in the repetition
+    pub emitted_signal: f32, // relative to the strongest dist in the repetition
     pub kt_vec: [f32; 4],
     pub dist_type: DistType,
     pub ancestors: Vec<Edge>,
-    /// Weight metric: if you want to measure states with a minimum signal of x,
-    /// you should simulate states with a minimum weight of <= x
-    pub weight: f32,
+    /// latent_signal metric: if you want to measure states with a minimum signal of x,
+    /// you should simulate states with a minimum latent_signal of <= x
+    pub latent_signal: f32,
 }
 
 impl Distribution {
@@ -317,7 +317,7 @@ pub fn analyze_graph(graph: &mut Vec<Vec<RcDist>>) {
             .expect("Tried to find maximum signal but repetition is empty");
 
         for mut dist in rep.iter().map(|d| d.borrow_mut()) {
-            dist.rel_signal = if max_signal < 1e-9 {
+            dist.emitted_signal = if max_signal < 1e-9 {
                 0.0
             } else {
                 dist.signal / max_signal
@@ -325,14 +325,14 @@ pub fn analyze_graph(graph: &mut Vec<Vec<RcDist>>) {
         }
     }
 
-    // Calculate the weight metric that is used to determine which states to simulate:
-    // The weight is the maximum of the own signal of the state or one of the propagated
-    // weights of its children. Propagation is relattive to the state with the largest
-    // contribution: This ancestor is propagated the whole wheight.
+    // Calculate the latent_signal metric that is used to determine which states to simulate:
+    // The latent_signal is the maximum of the own signal of the state or one of the propagated
+    // latent_signals of its children. Propagation is relattive to the state with the largest
+    // contribution: This ancestor is propagated the whole latent_signal.
     for rep in graph.iter().rev() {
         for mut dist in rep.iter().map(|d| d.borrow_mut()) {
-            // Own signal is weight if larger than what children produce
-            dist.weight = f32::max(dist.weight, dist.rel_signal);
+            // Own signal is latent_signal if larger than what children produce
+            dist.latent_signal = f32::max(dist.latent_signal, dist.emitted_signal);
 
             let max_contrib = std::iter::once(dist.regrown_mag)
                 .chain(
@@ -343,11 +343,11 @@ pub fn analyze_graph(graph: &mut Vec<Vec<RcDist>>) {
                 .max_by(|x, y| x.partial_cmp(y).unwrap())
                 .unwrap();
 
-            // max_contrib could be the regrown mag, in this case no ancestor gets the full weight
+            // max_contrib could be the regrown mag, in this case no ancestor gets the full latent_signal
             for anc in dist.ancestors.iter() {
                 let contrib = (anc.rot_mat_factor * anc.dist.borrow().mag).norm() / max_contrib;
-                let old_weight = anc.dist.borrow().weight;
-                anc.dist.borrow_mut().weight = f32::max(old_weight, dist.weight * contrib);
+                let tmp = anc.dist.borrow().latent_signal;
+                anc.dist.borrow_mut().latent_signal = f32::max(tmp, dist.latent_signal * contrib);
             }
         }
     }

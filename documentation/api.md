@@ -4,10 +4,6 @@
 NOTE: Don't use autosummary as it is impossible to configure to produce the desired output. Instead, write all documentation pages yourself and use autodoc to include the dcstrings.
 ```
 
-```{warning}
-Integrate two pulseq exporters (cartesian and freetraj, both with pTx support) and document them as their own category.
-```
-
 All functionality provided by MRzeroCore is re-exported at the top level. It is recommended to import MRzeroCore as follows:
 
 ```

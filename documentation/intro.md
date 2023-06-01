@@ -1,13 +1,5 @@
 # Introduction
 
-## ToDo
-
-- [ ] Rename and document "cartesian pulseq exporter"
-- [x] Describe how to NUFFT reco in the reco page
-- [x] Integrate and document BrainWeb
-- [ ] Rename matrics to "emitted signal" and "latent signal"
-- [ ] Add more graph plotting functions
-
 ## MRzero Overview
 
 MRzero {cite}`loktyushin_mrzero_2021` is a framework that replicates the whole MRI pipeline consisting of sequence and phantom definition, signal simulation, and image reconstruction. It uses a state-of-the-art PDG Bloch simulation, capable of calculating an accurate ADC signal comparable to that returned by a in vivo measurement of the signal in less time and while exhibiting no noise compared to isochromat based Monte-Carlo simulations.

@@ -1,8 +1,13 @@
 # -*- coding: utf-8 -*-
 from types import SimpleNamespace
 import sys
-import numpy as np
 import torch
+import numpy as np
+# HACK for pypulseq that still uses the following, which was deprecated some time ago
+np.float = float
+np.int = int
+np.complex = complex
+
 from ..sequence import Sequence as Seq
 
 # TODO: maybe replace with import pypulseq as pp
@@ -10,7 +15,7 @@ from pypulseq.Sequence.sequence import Sequence
 from pypulseq.make_adc import make_adc as _make_adc
 from pypulseq.make_delay import make_delay as _make_delay
 from pypulseq.make_sinc_pulse import make_sinc_pulse
-from pypulseq.make_trap_pulse import make_trapezoid as _make_trapezoid
+from pypulseq.make_trapezoid import make_trapezoid as _make_trapezoid
 from pypulseq.make_gauss_pulse import make_gauss_pulse
 from pypulseq.make_block_pulse import make_block_pulse
 from pypulseq.opts import Opts
@@ -251,7 +256,8 @@ def pulseq_write_EPG(seq_param, path, FOV, plot_seq=False):
     
     append_header(path, FOV,slice_thickness)
 
-def pulseq_write_EPG_3D(seq_param, path, FOV, plot_seq=False, num_slices=1, write_data=1):
+def pulseq_write_cartesian(seq_param, path, FOV, plot_seq=False, num_slices=1, write_data=1):
+    """Export the `seq_param` mr0 sequence as a Pulseq .seq file."""
     bdw_start = 0
     
     # save pulseq definition
