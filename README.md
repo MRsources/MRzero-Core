@@ -30,6 +30,9 @@ The MRzero Core contains the following, which can be imported with e.g.:
 from MRzeroCore.phantom import VoxelGridPhantom
 ```
 
+# TODO:
+Mention pTx support for pulseq / simulation
+
 > NOTE:
 >
 > This list is currently WIP and does not reflect the actual state of MRzero Core.

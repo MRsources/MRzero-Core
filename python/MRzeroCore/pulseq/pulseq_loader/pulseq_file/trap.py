@@ -18,7 +18,7 @@ class Trap:
 
     @classmethod
     def parse(cls, line: str, version: int) -> tuple[int, Trap]:
-        assert 120 <= version <= 140
+        assert 120 <= version <= 149
         vals = line.split()
         assert len(vals) == 6
         grad_id = int(vals[0])

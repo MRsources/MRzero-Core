@@ -27,7 +27,7 @@ class Rf:
 
     @classmethod
     def parse(cls, line: str, version: int) -> tuple[int, Rf]:
-        assert 120 <= version <= 140
+        assert 120 <= version <= 149
 
         vals = line.split()
         rf_id = int(vals.pop(0))
@@ -39,8 +39,8 @@ class Rf:
             int(vals.pop(0)) * 1e-6,
             float(vals.pop(0)),
             float(vals.pop(0)),
-            0 if version != 139 else int(vals.pop(0)),
-            0 if version != 139 else int(vals.pop(0)),
+            0 if version != 145 else int(vals.pop(0)),
+            0 if version != 145 else int(vals.pop(0)),
         )
         assert len(vals) == 0
         return rf_id, rf

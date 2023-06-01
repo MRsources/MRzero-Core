@@ -32,13 +32,13 @@ class Block:
         """
         assert (
             (120 <= version < 140 and delays is not None) or
-            (version == 140 and block_duration_raster is not None)
+            (version >= 140 and block_duration_raster is not None)
         )
 
         vals = line.split()
         assert len(vals) == 7 if version < 130 else 8
 
-        if version == 140:
+        if version >= 140:
             assert block_duration_raster is not None
             duration = int(vals[1]) * block_duration_raster
         else:

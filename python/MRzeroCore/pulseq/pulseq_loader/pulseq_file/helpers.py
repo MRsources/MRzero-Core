@@ -73,7 +73,7 @@ def write_version(file, version: int):
 
 
 def parse_delays(lines: list[str], version: int) -> dict[int, float]:
-    assert 120 <= version <= 140
+    assert 120 <= version <= 149
     delays = {}
 
     for line in lines:
@@ -89,7 +89,7 @@ def parse_delays(lines: list[str], version: int) -> dict[int, float]:
 
 
 def parse_shape(lines: list[str], version: int) -> tuple[int, np.ndarray]:
-    assert 120 <= version <= 140
+    assert 120 <= version <= 149
     assert len(lines) >= 3  # at least id, num and one sample
 
     shape_id = int(lines[0].split()[1])
@@ -98,7 +98,7 @@ def parse_shape(lines: list[str], version: int) -> tuple[int, np.ndarray]:
 
     # Uncompressed shapes are introduced with 1.4.0 but also used
     # for pTx pulses by Martin's pTx extension
-    if len(compressed) == count and (version == 140 or version == 139):
+    if len(compressed) == count and version >= 140:
         # No compression
         return shape_id, np.array(compressed)
 

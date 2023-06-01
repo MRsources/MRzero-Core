@@ -17,14 +17,14 @@ class Gradient:
 
     @classmethod
     def parse(cls, line: str, version: int) -> tuple[int, Gradient]:
-        assert 120 <= version <= 140
+        assert 120 <= version <= 149
         vals = line.split()
 
         gradient_id = int(vals.pop(0))
         gradient = cls(
             float(vals.pop(0)),
             int(vals.pop(0)),
-            int(vals.pop(0)) if version == 140 else 0,  # default raster
+            int(vals.pop(0)) if version >= 140 else 0,  # default raster
             int(vals.pop(0)) * 1e-6,
         )
         assert len(vals) == 0

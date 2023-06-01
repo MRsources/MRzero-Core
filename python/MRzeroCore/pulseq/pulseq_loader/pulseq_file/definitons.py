@@ -27,7 +27,7 @@ class Definitions:
 
     @classmethod
     def parse(cls, lines: list[str], version: int):
-        assert 120 <= version <= 140
+        assert 120 <= version <= 149
         defs = {}
 
         for line in lines:
@@ -35,7 +35,7 @@ class Definitions:
             assert len(item) == 2  # No support for defs without a value
             defs[item[0]] = item[1]
 
-        if version == 140:
+        if version >= 140:
             # Required in 1.4.0, could also use defaults if this violation of
             # the spec is common (but could give suprises if defaults change)
             assert "GradientRasterTime" in defs
