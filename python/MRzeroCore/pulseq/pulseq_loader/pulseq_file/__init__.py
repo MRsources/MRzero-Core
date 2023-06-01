@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Supports version 1.2.0 to 1.4.0, python representation is modeled after 1.4.0 with pTx
-# Supports Martin Freudensprung's pTx extension for 1.4.x as version "1.4.5"
+# Supports Martin Freudensprung's pTx extension as pulseq version 1.3.9 and 1.4.5
 
 
 class PulseqFile:

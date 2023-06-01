@@ -39,8 +39,8 @@ class Rf:
             int(vals.pop(0)) * 1e-6,
             float(vals.pop(0)),
             float(vals.pop(0)),
-            0 if version != 145 else int(vals.pop(0)),
-            0 if version != 145 else int(vals.pop(0)),
+            int(vals.pop(0)) if version in [139, 145] else 0,
+            int(vals.pop(0)) if version in [139, 145] else 0,
         )
         assert len(vals) == 0
         return rf_id, rf
