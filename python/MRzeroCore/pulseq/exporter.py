@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-from ..sequence import Sequence, PulseUsage
+from ..sequence import Sequence, PulseUsage, Pulse
 import pypulseq as pp
 from types import SimpleNamespace
 import torch
@@ -11,20 +10,73 @@ np.int = int
 np.complex = complex
 
 
-# TODO: This needs a cleanup before using it.
-# Also, this only supports cartesian readouts. Clearly state that until we can
-# provide a general verison.
+# Versions with Martin's pTx extension are labelled 1.3.90 and 1.4.5
+supports_ptx = (pp.Sequence.version_minor, pp.Sequence.version_revision) in [(3, 90), (4, 5)]
 
 
-def rectify_flips(flips):
-    flip_angle = flips.angle.cpu()
-    flip_phase = flips.phase.cpu()
+def rectify_flips(pulse: Pulse) -> tuple[np.ndarray, np.ndarray]:
+    flip_angle = torch.as_tensor(pulse.angle).detach().cpu().numpy()
+    flip_phase = torch.as_tensor(pulse.phase).detach().cpu().numpy()
 
-    if flips.angle < 0:
-        flip_angle = -flips.angle
-        flip_phase = flips.phase + np.pi
-        flip_phase = torch.fmod(flip_phase, 2*np.pi)
-    return flip_angle.item(), flip_phase.item()
+    mask = flip_angle < 0
+    flip_angle[mask] *= -1
+    flip_phase[mask] += np.pi
+    flip_phase = np.fmod(flip_phase, 2*np.pi)
+
+    if flip_angle.size > 1 and not supports_ptx:
+        raise Exception("Currently installed pypulseq does not support pTx")
+
+    return flip_angle, flip_phase
+
+
+def make_block_pulse(flip_angle: np.ndarray, flip_phase: np.ndarray,
+                     duration: float, system: pp.Opts):
+    if flip_angle.size > 1:
+        flip_angle = np.asarray(flip_angle)
+        flip_phase = np.asarray(flip_phase)
+        assert flip_angle.size == flip_phase.size
+
+        angle = np.mean(flip_angle)
+        flip_angle /= angle
+        shim_array = np.stack([flip_angle, flip_phase], axis=1)
+    
+        return pp.make_block_pulse_rf_shim(
+            flip_angle=flip_angle, phase_offset=flip_phase, duration=duration,
+            system=system, shim_array=shim_array
+        )
+    else:
+        return pp.make_block_pulse(
+            flip_angle=flip_angle, phase_offset=flip_phase, duration=duration,
+            system=system
+        )
+
+
+def make_sinc_pulse(flip_angle: np.ndarray, flip_phase: np.ndarray,
+                    duration: float, slice_thickness: float,
+                    apodization: float, time_bw_product: float,
+                    system: pp.Opts):
+    if flip_angle.size > 1:
+        flip_angle = np.asarray(flip_angle)
+        flip_phase = np.asarray(flip_phase)
+        assert flip_angle.size == flip_phase.size
+
+        angle = np.mean(flip_angle)
+        flip_angle /= angle
+        shim_array = np.stack([flip_angle, flip_phase], axis=1)
+    
+        return pp.make_sinc_pulse_rf_shim(
+            flip_angle=flip_angle, flip_phase=flip_phase, duration=duration,
+            slice_thickness=slice_thickness, apodization=apodization,
+            time_bw_product=time_bw_product, system=system,
+            shim_array=shim_array
+        )
+    else:
+        return pp.make_sinc_pulse(
+            flip_angle=flip_angle, flip_phase=flip_phase, duration=duration,
+            slice_thickness=slice_thickness, apodization=apodization,
+            time_bw_product=time_bw_product, system=system,
+            return_gz=True
+        )
 
 
 # Modified versions of make_delay, make_adc and make_trapezoid that ensure that
@@ -41,9 +93,14 @@ def make_adc(num_samples: int, system: pp.Opts = pp.Opts(), dwell: float = 0,
              phase_offset: float = 0) -> SimpleNamespace:
     """make_adc wrapper that modifies the delay such that the total duration
     is on the gradient time raster."""
-    # TODO: the total duration might not be on the gradient raster. If a
-    # sequence with optimized ADC durations fails the timing check, implement
-    # this functions to round the timing as necessary.
+    raster = system.adc_raster_time
+    if dwell != 0:
+        dwell = round(dwell / raster) * raster
+    if duration != 0:
+        duration = round(duration / raster) * raster
+    
+    raster = system.grad_raster_time
+    delay = round((delay + duration) / raster) * raster - duration 
 
     return pp.make_adc(
         num_samples=num_samples, system=system, dwell=dwell, duration=duration,
@@ -56,13 +113,13 @@ def make_trapezoid(channel: str, amplitude: float = 0, area: float = None, delay
                    rise_time: float = 0, system: pp.Opts = pp.Opts()) -> SimpleNamespace:
     """make_trapezoid wrapper that rounds gradients to the raster."""
     raster = system.grad_raster_time
-    if delay != -1:
+    if delay != 0:
         delay = round(delay / raster) * raster
-    if rise_time != -1:
+    if rise_time != 0:
         rise_time = round(rise_time / raster) * raster
     if flat_time != -1:
         flat_time = round(flat_time / raster) * raster
-    if duration != -1:
+    if duration != 0:
         duration = round(duration / raster) * raster
 
     return pp.make_trapezoid(
@@ -105,9 +162,8 @@ def pulseq_write_cartesian(seq_param: Sequence, path: str, FOV: float,
                     if rep.pulse.usage == PulseUsage.UNDEF:
                         RFdur = 1e-3
                         if torch.abs(rep.pulse.angle) > 1e-8:
-                            rf = pp.make_block_pulse(
-                                flip_angle=flip_angle, system=system,
-                                duration=RFdur, phase_offset=flip_phase
+                            rf = make_block_pulse(
+                                flip_angle, flip_phase, RFdur, system
                             )
                             seq.add_block(rf)
                             seq.add_block(make_delay(1e-4))
@@ -117,18 +173,15 @@ def pulseq_write_cartesian(seq_param: Sequence, path: str, FOV: float,
                         if torch.abs(rep.pulse.angle) > 1e-8:
                             if rep.pulse.selective:
                                 RFdur = 1e-3
-                                rf = pp.make_block_pulse(
-                                    flip_angle=flip_angle, system=system,
-                                    duration=RFdur, phase_offset=flip_phase
+                                rf = make_block_pulse(
+                                    flip_angle, flip_phase, RFdur, system
                                 )
                                 seq.add_block(rf)
                             else:
                                 RFdur = 1e-3
-                                rf, gz, gzr = pp.make_sinc_pulse(
-                                    flip_angle=flip_angle, system=system,
-                                    duration=RFdur, slice_thickness=slice_thickness,
-                                    apodization=0.15, time_bw_product=2,
-                                    phase_offset=flip_phase, return_gz=True
+                                rf, gz, gzr = make_sinc_pulse(
+                                    flip_angle, flip_phase, RFdur,
+                                    slice_thickness, 0.15, 2, system
                                 )
                                 seq.add_block(gzr)
                                 seq.add_block(rf, gz)
@@ -141,22 +194,18 @@ def pulseq_write_cartesian(seq_param: Sequence, path: str, FOV: float,
                         if torch.abs(rep.pulse.angle) > 1e-8:
                             if rep.pulse.selective:
                                 RFdur = 1e-3
-                                rf = pp.make_block_pulse(
-                                    flip_angle=flip_angle, system=system,
-                                    duration=RFdur, phase_offset=flip_phase
+                                rf = make_block_pulse(
+                                    flip_angle, flip_phase, RFdur, system
                                 )
                                 seq.add_block(rf)
                             else:
                                 RFdur = 1e-3
-                                rf, gz_ref, gzr = pp.make_sinc_pulse(
-                                    flip_angle=flip_angle, system=system,
-                                    duration=RFdur,
-                                    slice_thickness=slice_thickness,
-                                    apodization=0.5, time_bw_product=4,
-                                    phase_offset=flip_phase, return_gz=True
+                                rf, gz, gzr = make_sinc_pulse(
+                                    flip_angle, flip_phase, RFdur,
+                                    slice_thickness, 0.5, 4, system
                                 )
                                 seq.add_block(gzr)
-                                seq.add_block(rf, gz_ref)
+                                seq.add_block(rf, gz)
                                 seq.add_block(gzr)
 
                     elif rep.pulse.usage == PulseUsage.FATSAT:
@@ -313,7 +362,7 @@ def pulseq_write_cartesian(seq_param: Sequence, path: str, FOV: float,
                     adc_delay = np.max(
                         [rise_time_x, rise_time_y, rise_time_z])+shift
                     kwargs_for_adc = {"num_samples": idx_T.size()[0], "duration": dur, "delay": (
-                        adc_delay), "phase_offset": rf_ex.phase_offset - np.pi/4}
+                        adc_delay), "phase_offset": rf.phase_offset - np.pi/4}
                     adc = make_adc(**kwargs_for_adc)
 
                     # dont play zero grads (cant even do FID otherwise)
