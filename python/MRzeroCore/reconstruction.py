@@ -74,10 +74,11 @@ def reco_adjoint(signal: torch.Tensor,
         print(f"Detected resolution: {resolution}")
 
     # Same grid as defined in SimData
-    pos_x = torch.linspace(-0.5, 0.5, resolution[0] + 1, device=kspace.device)[:-1] * FOV[0]
-    pos_y = torch.linspace(-0.5, 0.5, resolution[1] + 1, device=kspace.device)[:-1] * FOV[1]
-    pos_z = torch.linspace(-0.5, 0.5, resolution[2] + 1, device=kspace.device)[:-1] * FOV[2]
-    pos_x, pos_y, pos_z = torch.meshgrid(pos_x, pos_y, pos_z)
+    pos_x, pos_y, pos_z = torch.meshgrid(
+        FOV[0] * torch.fft.fftshift(torch.fft.fftfreq(resolution[0], device=kspace.device)),
+        FOV[1] * torch.fft.fftshift(torch.fft.fftfreq(resolution[1], device=kspace.device)),
+        FOV[2] * torch.fft.fftshift(torch.fft.fftfreq(resolution[2], device=kspace.device)),
+    )
 
     voxel_pos = torch.stack([
         pos_x.flatten(),
