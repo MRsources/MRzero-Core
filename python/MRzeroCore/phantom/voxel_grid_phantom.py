@@ -120,9 +120,9 @@ class VoxelGridPhantom:
         fov = (self.base_fov * self.rel_fov) if use_SI_FoV else (self.rel_fov)
         shape = torch.tensor(mask.shape)
         pos_x, pos_y, pos_z = torch.meshgrid(
-            torch.linspace(-fov[0]/2, fov[0]/2, shape[0] + 1, device=self.PD.device)[:-1],
-            torch.linspace(-fov[1]/2, fov[1]/2, shape[1] + 1, device=self.PD.device)[:-1],
-            torch.linspace(-fov[2]/2, fov[2]/2, shape[2] + 1, device=self.PD.device)[:-1],
+            fov[0] * torch.fft.fftshift(torch.fft.fftfreq(int(shape[0]), device=self.PD.device)),
+            fov[1] * torch.fft.fftshift(torch.fft.fftfreq(int(shape[1]), device=self.PD.device)),
+            fov[2] * torch.fft.fftshift(torch.fft.fftfreq(int(shape[2]), device=self.PD.device)),
         )
 
         voxel_pos = torch.stack([
