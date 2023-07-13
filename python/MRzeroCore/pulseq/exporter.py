@@ -11,20 +11,20 @@ np.complex = complex
 
 
 # Versions with Martin's pTx extension are labelled 1.3.90 and 1.4.5
-supports_ptx = (pp.Sequence.version_minor, pp.Sequence.version_revision) in [(3, 90), (4, 5)]
+supports_ptx = (pp.Sequence.version_minor, pp.Sequence.version_revision) in [(3, '90'), (4, 5)]
+if supports_ptx:
+    from pypulseq.make_block_pulse_rf_shim import make_block_pulse_rf_shim
+    from pypulseq.make_sinc_pulse_rf_shim import make_sinc_pulse_rf_shim
 
 
 def rectify_flips(pulse: Pulse) -> tuple[np.ndarray, np.ndarray]:
-    flip_angle = torch.as_tensor(pulse.angle).detach().cpu().numpy()
-    flip_phase = torch.as_tensor(pulse.phase).detach().cpu().numpy()
+    flip_angle = torch.as_tensor(pulse.angle, dtype=torch.float).detach().cpu().numpy()
+    flip_phase = torch.as_tensor(pulse.phase, dtype=torch.float).detach().cpu().numpy()
 
     mask = flip_angle < 0
     flip_angle[mask] *= -1
     flip_phase[mask] += np.pi
     flip_phase = np.fmod(flip_phase, 2*np.pi)
-
-    if flip_angle.size > 1 and not supports_ptx:
-        raise Exception("Currently installed pypulseq does not support pTx")
 
     return flip_angle, flip_phase
 
@@ -32,16 +32,17 @@ def rectify_flips(pulse: Pulse) -> tuple[np.ndarray, np.ndarray]:
 def make_block_pulse(flip_angle: np.ndarray, flip_phase: np.ndarray,
                      duration: float, system: pp.Opts):
     if flip_angle.size > 1:
+        assert supports_ptx
         flip_angle = np.asarray(flip_angle)
         flip_phase = np.asarray(flip_phase)
         assert flip_angle.size == flip_phase.size
 
-        angle = np.mean(flip_angle)
+        angle = np.max(np.abs(flip_angle))
         flip_angle /= angle
         shim_array = np.stack([flip_angle, flip_phase], axis=1)
-    
-        return pp.make_block_pulse_rf_shim(
-            flip_angle=flip_angle, phase_offset=flip_phase, duration=duration,
+
+        return make_block_pulse_rf_shim(
+            flip_angle=angle, phase_offset=0, duration=duration,
             system=system, shim_array=shim_array
         )
     else:
@@ -56,23 +57,24 @@ def make_sinc_pulse(flip_angle: np.ndarray, flip_phase: np.ndarray,
                     apodization: float, time_bw_product: float,
                     system: pp.Opts):
     if flip_angle.size > 1:
+        assert supports_ptx
         flip_angle = np.asarray(flip_angle)
         flip_phase = np.asarray(flip_phase)
         assert flip_angle.size == flip_phase.size
 
-        angle = np.mean(flip_angle)
+        angle = np.max(np.abs(flip_angle))
         flip_angle /= angle
         shim_array = np.stack([flip_angle, flip_phase], axis=1)
-    
-        return pp.make_sinc_pulse_rf_shim(
-            flip_angle=flip_angle, flip_phase=flip_phase, duration=duration,
+
+        return make_sinc_pulse_rf_shim(
+            flip_angle=angle, phase_offset=0, duration=duration,
             slice_thickness=slice_thickness, apodization=apodization,
             time_bw_product=time_bw_product, system=system,
             shim_array=shim_array
         )
     else:
         return pp.make_sinc_pulse(
-            flip_angle=flip_angle, flip_phase=flip_phase, duration=duration,
+            flip_angle=flip_angle, phase_offset=flip_phase, duration=duration,
             slice_thickness=slice_thickness, apodization=apodization,
             time_bw_product=time_bw_product, system=system,
             return_gz=True
@@ -85,7 +87,7 @@ def make_sinc_pulse(flip_angle: np.ndarray, flip_phase: np.ndarray,
 
 def make_delay(d: float) -> SimpleNamespace:
     """make_delay wrapper that rounds delay to the gradient time raster."""
-    return pp.make_delay(round(d / 10e-6) * 10e-6)
+    return pp.make_delay(round(d, 5))
 
 
 def make_adc(num_samples: int, system: pp.Opts = pp.Opts(), dwell: float = 0,
@@ -93,14 +95,12 @@ def make_adc(num_samples: int, system: pp.Opts = pp.Opts(), dwell: float = 0,
              phase_offset: float = 0) -> SimpleNamespace:
     """make_adc wrapper that modifies the delay such that the total duration
     is on the gradient time raster."""
-    raster = system.adc_raster_time
     if dwell != 0:
-        dwell = round(dwell / raster) * raster
+        dwell = round(dwell, 5)
     if duration != 0:
-        duration = round(duration / raster) * raster
-    
-    raster = system.grad_raster_time
-    delay = round((delay + duration) / raster) * raster - duration 
+        duration = round(duration, 5)
+
+    delay = round((delay + duration), 5) - duration
 
     return pp.make_adc(
         num_samples=num_samples, system=system, dwell=dwell, duration=duration,
@@ -161,7 +161,7 @@ def pulseq_write_cartesian(seq_param: Sequence, path: str, FOV: float,
                 if event == 0:
                     if rep.pulse.usage == PulseUsage.UNDEF:
                         RFdur = 1e-3
-                        if torch.abs(rep.pulse.angle) > 1e-8:
+                        if torch.as_tensor(rep.pulse.angle).abs().sum() > 1e-8:
                             rf = make_block_pulse(
                                 flip_angle, flip_phase, RFdur, system
                             )
@@ -170,8 +170,8 @@ def pulseq_write_cartesian(seq_param: Sequence, path: str, FOV: float,
 
                     elif (rep.pulse.usage == PulseUsage.EXCIT or
                           rep.pulse.usage == PulseUsage.STORE):
-                        if torch.abs(rep.pulse.angle) > 1e-8:
-                            if rep.pulse.selective:
+                        if torch.as_tensor(rep.pulse.angle).abs().sum() > 1e-8:
+                            if not rep.pulse.selective:
                                 RFdur = 1e-3
                                 rf = make_block_pulse(
                                     flip_angle, flip_phase, RFdur, system
@@ -191,8 +191,8 @@ def pulseq_write_cartesian(seq_param: Sequence, path: str, FOV: float,
                                          + gzr.flat_time + gzr.fall_time)
 
                     elif rep.pulse.usage == PulseUsage.REFOC:
-                        if torch.abs(rep.pulse.angle) > 1e-8:
-                            if rep.pulse.selective:
+                        if torch.as_tensor(rep.pulse.angle).abs().sum() > 1e-8:
+                            if not rep.pulse.selective:
                                 RFdur = 1e-3
                                 rf = make_block_pulse(
                                     flip_angle, flip_phase, RFdur, system
