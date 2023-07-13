@@ -39,10 +39,12 @@ def make_block_pulse(flip_angle: np.ndarray, flip_phase: np.ndarray,
 
         angle = np.max(np.abs(flip_angle))
         flip_angle /= angle
+        phase = np.mean(flip_phase)
+        flip_phase = np.fmod(flip_phase - phase, 2*np.pi)
         shim_array = np.stack([flip_angle, flip_phase], axis=1)
 
         return make_block_pulse_rf_shim(
-            flip_angle=angle, phase_offset=0, duration=duration,
+            flip_angle=angle, phase_offset=phase, duration=duration,
             system=system, shim_array=shim_array
         )
     else:
@@ -64,10 +66,12 @@ def make_sinc_pulse(flip_angle: np.ndarray, flip_phase: np.ndarray,
 
         angle = np.max(np.abs(flip_angle))
         flip_angle /= angle
+        phase = np.mean(flip_phase)
+        flip_phase = np.fmod(flip_phase - phase, 2*np.pi)
         shim_array = np.stack([flip_angle, flip_phase], axis=1)
 
         return make_sinc_pulse_rf_shim(
-            flip_angle=angle, phase_offset=0, duration=duration,
+            flip_angle=angle, phase_offset=phase, duration=duration,
             slice_thickness=slice_thickness, apodization=apodization,
             time_bw_product=time_bw_product, system=system,
             shim_array=shim_array
