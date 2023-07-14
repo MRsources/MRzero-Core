@@ -1,7 +1,4 @@
 jupyter-book
+sphinx-toolbox
 enum_tools[spinx]
-
-torch
-matplotlib
-pypulseq
-scipy
+MRzeroCore
