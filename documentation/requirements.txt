@@ -1,3 +1,7 @@
 jupyter-book
+enum_tools[spinx]
+
+torch
 matplotlib
-numpy
+pypulseq
+scipy
