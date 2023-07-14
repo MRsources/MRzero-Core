@@ -4,7 +4,7 @@
 [VERSION]
 major 1
 minor 3
-  revision 9
+revision 9
 
 [DEFINITIONS]
 Total duration 1.42208 
@@ -1499,13 +1499,9 @@ num_samples 1020
 shape_id 3
 num_samples 8
 0.35
-0.35
-0.35
-0.35
-0.35
-0.35
-0.35
-0.35
+0
+0
+5
 
 shape_id 4
 num_samples 8

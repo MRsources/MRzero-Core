@@ -1498,22 +1498,13 @@ num_samples 1020
 
 shape_id 3
 num_samples 8
-1.0
-1.0
-1.0
-1.0
-1.0
-1.0
-1.0
-1.0
+0.35
+0
+0
+5
 
 shape_id 4
 num_samples 8
 0
 0
-0
-0
-0
-0
-0
-0
+6
