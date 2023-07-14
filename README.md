@@ -3,6 +3,7 @@
 import MRZeroCore as mr0
 ```
 
+Documentation: https://mrzero-core.readthedocs.io/
 
 MRzero Core contains all essential parts of MRzero that are (close to) finalized.
 Over time, more and more functionality should be pushed from MRzero to the Core,

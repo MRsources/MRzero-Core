@@ -21,11 +21,12 @@ dependencies = [
     "pypulseq",
     "matplotlib",
     "scipy",
+    "scikit-image",
 ]
 
 [project.urls]
 Repository = "https://gitlab.cs.fau.de/mrzero/MRzero-Core"
-Documentation = "https://mrzerocore.readthedocs.io"
+Documentation = "https://mrzero-core.readthedocs.io/"
 MRzero-Paper = "https://arxiv.org/abs/2002.04265"
 
 [tool.maturin]
