@@ -9,11 +9,11 @@ build:
   jobs:
     pre_build:
       # Generate the Sphinx configuration for this Jupyter Book so it builds.
-      - "jupyter-book config sphinx docs/"
+      - "jupyter-book config sphinx documentation/"
 
 python:
   install:
-    - requirements: docs/requirements.txt
+    - requirements: documentation/requirements.txt
 
 sphinx:
   builder: html
