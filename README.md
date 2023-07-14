@@ -10,20 +10,18 @@ while experimental scripts and WIP functionality stays in the MRzero git.
 Everything contained in the Core should be documented, have a stable API and,
 in the near future, be tested.
 
-# BUILDING from Windows...
+# Building and uploading
+This is for Windows as host operating system. Requires docker to be installed
+for manylinux compilation. Crosscompilation from Linux for Windows is currently
+not setup, but theoretically possible. https://www.maturin.rs/distribution.html
 
 ## ...for Windows
 ```
 maturin build --interpreter python
-```
-
-## ... for Linux
-Crosscompiling for linux requires docker to be installed.
-```
 docker run --rm -v D:/repos/MRzero-Core:/io ghcr.io/pyo3/maturin build
+
+maturin upload target/wheels/MRzeroCore-{ version }-cp37-abi3-win_amd64.whl target/wheels/MRzeroCore-{ version }-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl -u <pypi-user> -p <pypi-pwd>
 ```
-This builds a manylinux verison of the wheel but fails to add all the python scripts to it.
-Copy the .dist-info folder and the _prepass.abi3.so file into a windows wheel.
 
 To build the documentation, run
 ```
@@ -31,10 +29,6 @@ jupyter-book build documentation/
 ```
 in the root folder of this project. This requires jupyter-book, as well as MRzeroCore itself to be installed.
 
-# UPLOAD to PyPI
-```
-maturin upload target/wheels/<windows-file>.whl target/wheels/<linux-file>.whl -u <pypi-user> -p <pypi-pwd>
-```
 
 # CHANGELOG
 

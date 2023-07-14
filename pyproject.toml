@@ -4,21 +4,29 @@ build-backend = "maturin"
 
 [project]
 name = "MRzeroCore"
-requires-python = ">=3.7"
-license = "AGPL-3.0-only"
-repository = "https://gitlab.cs.fau.de/mrzero/MRzero-Core"
-documentation = "https://mrzerocore.readthedocs.io"
+description = "Core functionality of MRzero"
+authors = [
+    {name = "Jonathan Endres", email = "jonathan.endres@uk-erlangen.de"},
+]
+readme = "README.md"
 classifiers = [
     "Programming Language :: Rust",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
+    "License :: OSI Approved :: GNU Affero General Public License v3",
 ]
+requires-python = ">=3.7"
 dependencies = [
     "torch>=1.12",
     "pypulseq",
     "matplotlib",
-    "scipy"
+    "scipy",
 ]
+
+[project.urls]
+Repository = "https://gitlab.cs.fau.de/mrzero/MRzero-Core"
+Documentation = "https://mrzerocore.readthedocs.io"
+MRzero-Paper = "https://arxiv.org/abs/2002.04265"
 
 [tool.maturin]
 profile = "release"
