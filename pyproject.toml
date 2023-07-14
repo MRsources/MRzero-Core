@@ -5,10 +5,19 @@ build-backend = "maturin"
 [project]
 name = "MRzeroCore"
 requires-python = ">=3.7"
+license = "AGPL-3.0-only"
+repository = "https://gitlab.cs.fau.de/mrzero/MRzero-Core"
+documentation = "https://mrzerocore.readthedocs.io"
 classifiers = [
     "Programming Language :: Rust",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
+]
+dependencies = [
+    "torch>=1.12",
+    "pypulseq",
+    "matplotlib",
+    "scipy"
 ]
 
 [tool.maturin]

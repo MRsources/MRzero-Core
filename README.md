@@ -1,12 +1,24 @@
+# MR Zero Core
+```python
+import MRZeroCore as mr0
+```
+
+
 MRzero Core contains all essential parts of MRzero that are (close to) finalized.
 Over time, more and more functionality should be pushed from MRzero to the Core,
 while experimental scripts and WIP functionality stays in the MRzero git.
 Everything contained in the Core should be documented, have a stable API and,
 in the near future, be tested.
 
-# BUILDING
+# BUILDING from Windows...
 
-Building for linux requires docker to be installed. Run:
+## ...for Windows
+```
+maturin build --interpreter python
+```
+
+## ... for Linux
+Crosscompiling for linux requires docker to be installed.
 ```
 docker run --rm -v D:/repos/MRzero-Core:/io ghcr.io/pyo3/maturin build
 ```
@@ -18,6 +30,11 @@ To build the documentation, run
 jupyter-book build documentation/
 ```
 in the root folder of this project. This requires jupyter-book, as well as MRzeroCore itself to be installed.
+
+# UPLOAD to PyPI
+```
+maturin upload target/wheels/<windows-file>.whl target/wheels/<linux-file>.whl -u <pypi-user> -p <pypi-pwd>
+```
 
 # CHANGELOG
 
