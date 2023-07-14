@@ -1,13 +1,13 @@
-from ..sequence import Sequence, PulseUsage, Pulse
-import pypulseq as pp
-from types import SimpleNamespace
-import torch
 import numpy as np
-
 # HACK for pypulseq that still uses the following, which was deprecated some time ago
 np.float = float
 np.int = int
 np.complex = complex
+
+import pypulseq as pp
+from types import SimpleNamespace
+import torch
+from ..sequence import Sequence, PulseUsage, Pulse
 
 
 # Versions with Martin's pTx extension are labelled 1.3.90 and 1.4.5
