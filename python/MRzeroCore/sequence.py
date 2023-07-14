@@ -409,7 +409,7 @@ class Sequence(list):
 
             # Refocussing pulses are pulses with > 90° angle.
             # Pulses are potentially pTx but we don't have B1 maps: use a rough CP approximation
-            flip = rep.pulse.angle.mean() / torch.sqrt(1 / rep.pulse.angle.numel())
+            flip = rep.pulse.angle.mean() * rep.pulse.angle.numel()**0.5
 
             if flip > 100 * torch.pi/180:
                 rep.pulse.usage = PulseUsage.REFOC
