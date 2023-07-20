@@ -1,73 +1,64 @@
-# MR Zero Core
-```python
-import MRZeroCore as mr0
+# MRzero Core
+
+The MRzero Core contains the core functionality of [MRzero](https://arxiv.org/abs/2002.04265) like MRI sequence building, simulation and reconstruction. MRzero Core does not force you to take any particular approach to e.g., reconstruction, as it targets easy integration in existing projects. Nevertheless, more tools can be added in the future if they helpful for the general application space.
+
+## Usage
+
+MRzero Core is written in [Python](https://www.python.org/), heavily relying on [PyTorch](https://pytorch.org/) for fast (GPU-) Tensor calculations.
+To improve performance, parts of the simulation are written in [Rust](https://www.rust-lang.org/) and compiled for x86 Windows and Linux, other platforms are currently not supported.
+
+Install with pip:
 ```
+pip install MRzeroCore
+```
+
+The typical way of using it is like the following:
+```python
+import MRzeroCore as mr0
+```
+
+Examples on how to use can be found on [Google Colab](https://colab.research.google.com/drive/1zY9B51nJeVjNDxhQHrkimxaeXsx8zEGr), as well as in the [Documentation](https://mrzero-core.readthedocs.io/en/latest/examples.html)
+
+## Links
 
 Documentation: https://mrzero-core.readthedocs.io/
 
-MRzero Core contains all essential parts of MRzero that are (close to) finalized.
-Over time, more and more functionality should be pushed from MRzero to the Core,
-while experimental scripts and WIP functionality stays in the MRzero git.
-Everything contained in the Core should be documented, have a stable API and,
-in the near future, be tested.
+Examples: [Google Colab](https://colab.research.google.com/drive/1zY9B51nJeVjNDxhQHrkimxaeXsx8zEGr)
 
-# Building and uploading
-This is for Windows as host operating system. Requires docker to be installed
-for manylinux compilation. Crosscompilation from Linux for Windows is currently
-not setup, but theoretically possible. https://www.maturin.rs/distribution.html
+PyPI: https://pypi.org/project/mrzerocore/
 
-## ...for Windows
+Original MRzero Paper: https://arxiv.org/abs/2002.04265
+
+## Building from source
+
+This assumes windows as host operating system. For building the python wheel, you need:
+- the Rust toolchain: [rustup](https://rustup.rs/)
+- the rust-python build tool tool: [pip install maturin](https://github.com/PyO3/maturin)
+- for Linux crosscompilation: [docker](https://www.docker.com/)
+- to build the documentation: [pip install jupyter-book](https://jupyterbook.org/en/stable/intro.html)
+
+**Building for Windows**
 ```
 maturin build --interpreter python
-docker run --rm -v D:/repos/MRzero-Core:/io ghcr.io/pyo3/maturin build
-
-maturin upload target/wheels/MRzeroCore-{ version }-cp37-abi3-win_amd64.whl target/wheels/MRzeroCore-{ version }-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl -u <pypi-user> -p <pypi-pwd>
+```
+**Building for Linux**
+```
+docker run --rm -v <path-to-repo>/MRzero-Core:/io ghcr.io/pyo3/maturin build
 ```
 
-To build the documentation, run
+To **build the documentation**, run
 ```
 jupyter-book build documentation/
 ```
-in the root folder of this project. This requires jupyter-book, as well as MRzeroCore itself to be installed.
+in the root folder of this project. This requires jupyter-book as well as MRzeroCore itself to be installed.
 
 
-# CHANGELOG
+## Official builds
 
-We really should start tracking all the changes...
+The [python wheels](https://pypi.org/project/mrzerocore/) hosted by [PyPI](https://pypi.org/) is built as described above, and uploaded as following:
 
-# CONTENTS
-
-The MRzero Core contains the following, which can be imported with e.g.:
-```python
-from MRzeroCore.phantom import VoxelGridPhantom
+```
+maturin upload target/wheels/MRzeroCore-{ version }-cp37-abi3-win_amd64.whl target/wheels/MRzeroCore-{ version }-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl -u <pypi-user> -p <pypi-pwd>
 ```
 
-# TODO:
-Mention pTx support for pulseq / simulation
-
-> NOTE:
->
-> This list is currently WIP and does not reflect the actual state of MRzero Core.
-> Before publishing v1.0 of MRzero Core, it should be changed to reflect what is
-> currently contained and what is still TODO.
-
-### MRzeroCore
-- phantom
-    - CustomVoxelPhantom
-    - VoxelGridPhantom
-    - SimData
-- pulseq
-    - Pulseq Interpreter
-    - Pulseq Sequence Exporter
-- reconstruction
-    - Adjoint
-    - FFT
-    - NUFFT (requires torchkbnufft dependency)
-    - Grappa
-- sequence
-    - Tools for sequence design and visualisation
-    - Templates for simple GRE, TSE, ... sequences
-- simulation
-    - Prepass
-    - PDG
-    - Isochromats
+The [documentation](https://mrzero-core.readthedocs.io/en/latest/intro.html) is built using [readthedocs](https://readthedocs.org/), which works the same as described above.
