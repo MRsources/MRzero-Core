@@ -25,7 +25,7 @@ dependencies = [
 ]
 
 [project.urls]
-Repository = "https://gitlab.cs.fau.de/mrzero/MRzero-Core"
+Repository = "https://github.com/MRsources/MRzero-Core"
 Documentation = "https://mrzero-core.readthedocs.io/"
 MRzero-Paper = "https://arxiv.org/abs/2002.04265"
 
