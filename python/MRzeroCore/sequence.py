@@ -231,7 +231,7 @@ class Repetition:
 
     def get_contrasts(self) -> list[int]:
         """Return a sorted list of contrasts used by this ``Repetition``."""
-        return sorted(torch.unique(self.adc_usage).tolist())
+        return sorted(self.adc_usage[self.adc_usage > 0].unique().tolist())
 
     def shift_contrasts(self, offset: int):
         """Increment all contrasts used by this repetition by ``offset``.
@@ -342,7 +342,7 @@ class Sequence(list):
         ----------
         contrast : int
             The index for the contrast of which the signal mask is requested.
-        
+
         Returns
         -------
         torch.Tensor
