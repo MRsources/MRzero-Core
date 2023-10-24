@@ -151,7 +151,7 @@ class VoxelGridPhantom:
             self.coil_sens[:, mask],
             self.base_fov * self.rel_fov,  # Always SI, only used for diffusion
             voxel_pos,
-            torch.tensor(shape, device=self.PD.device) / 2,
+            torch.tensor(shape, device=self.PD.device) / 2 / fov,
             dephasing_func,
             recover_func=lambda d: recover(mask, self.base_fov, self.rel_fov, d)
         )
@@ -340,8 +340,6 @@ class VoxelGridPhantom:
 
         This uses torch.nn.functional.interpolate in 'area' mode, which is not
         very good: Assumes pixels are squares -> has strong aliasing.
-
-        Use :meth:`resample_fft` instead.
 
         Parameters
         ----------
