@@ -28,8 +28,8 @@ Here we share links to example colabs that contain various MR sequences or let y
 
 | Sequence | Google Colab |
 | -------- | ------------ |
-| [Simulate pypulseq example sequences](link) | [bla.ipynb](colab.com/...) |
-| [Simulate own uploaded seq files](link) | [bla.ipynb](colab.com/...) |
+| [Simulate pypulseq example sequences](mr0_pypulseq_example) | [mr0_pypulseq_exmpls_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_pypulseq_exmpls_seq.ipynb) |
+| [Simulate own uploaded seq files](mr0_upload_seq) | [mr0_upload_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_upload_seq.ipynb) |
 
 
 ## MR-zero optimization (gradient descent)
