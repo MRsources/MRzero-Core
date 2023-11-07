@@ -19,8 +19,8 @@ Here we share links to example colabs that contain various MR sequences or let y
 | [bSSFP 2D sequence](bSSFP_2D_seq) | [mr0_bSSFP_2D_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_bSSFP_2D_seq.ipynb) |
 | [Diffusion weighted Gradient Echo](DWI_GRE_2D_seq) | [mr0_DWI_GRE_2D_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_DWI_GRE_2D_seq.ipynb) |
 | [Interactive GRE to FLASH](GRE2FLASH_seq) | [mr0_GRE_to_FLASH.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_GRE_to_FLASH.ipynb) |
-| [DREAM STE for B0, B1, TxRx mapping](DREAM_STE_seq) | [bla.ipynb](colab.com/...) |
-| [DREAM STID for B0, B1, TxRx mapping](DREAM_STID_seq) | [bla.ipynb](colab.com/...) |
+| [DREAM STE for B0, B1, TxRx mapping](DREAM_STE_seq) | [mr0_DREAM_STE_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_DREAM_STE_seq.ipynb) |
+| [DREAM STID for B0, B1, TxRx mapping](DREAM_STID_seq) | [mr0_DREAM_STID_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_DREAM_STID_seq.ipynb) |
 | Burst TSE | TODO |
 
 

@@ -27,3 +27,5 @@ chapters:
   - file: playground_mr0/mr0_RARE_2D_seq.ipynb
   - file: playground_mr0/mr0_GRE_to_FLASH.ipynb
   - file: playground_mr0/mr0_DWI_GRE_2D_seq.ipynb
+  - file: playground_mr0/mr0_DREAM_STID_seq.ipynb
+  - file: playground_mr0/mr0_DREAM_STE_seq.ipynb
