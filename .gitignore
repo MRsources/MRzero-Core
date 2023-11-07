@@ -1,6 +1,7 @@
 /target
 /documentation/_autosummary
 /documentation/_build
+out/
 
 *.pdf
 
