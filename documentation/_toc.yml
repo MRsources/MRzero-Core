@@ -18,3 +18,4 @@ chapters:
   - file: playground_mr0/flash
   - file: playground_mr0/pulseq_flash
   - file: playground_mr0/pulseq_sim_pTx
+  - file: playground_mr0/mr0_bSSFP_2D_seq.ipynb
