@@ -25,3 +25,4 @@ chapters:
   - file: playground_mr0/mr0_EPI_2D_seq.ipynb
   - file: playground_mr0/mr0_FLASH_2D_seq.ipynb
   - file: playground_mr0/mr0_RARE_2D_seq.ipynb
+  - file: playground_mr0/mr0_GRE_to_FLASH.ipynb
