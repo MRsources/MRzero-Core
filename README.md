@@ -1,3 +1,5 @@
+[![Documentation Status](https://readthedocs.org/projects/mrzero-core/badge/?version=latest)](https://mrzero-core.readthedocs.io/en/latest/?badge=latest)
+
 # MRzero Core
 
 The MRzero Core contains the core functionality of [MRzero](https://arxiv.org/abs/2002.04265) like MRI sequence building, simulation and reconstruction. MRzero Core does not force you to take any particular approach to e.g., reconstruction, as it targets easy integration in existing projects. Nevertheless, more tools can be added in the future if they helpful for the general application space.

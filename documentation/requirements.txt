@@ -1,4 +1,4 @@
 jupyter-book
 sphinx-toolbox
-enum_tools[spinx]
+enum-tools[sphinx]
 MRzeroCore
