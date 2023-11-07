@@ -11,7 +11,7 @@ Here we share links to example colabs that contain various MR sequences or let y
 | Sequence | Google Colab |
 | -------- | ------------ |
 | [Free Induction Decay](FID_seq) | [mr0_FID_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_FID_seq.ipynb) |
-| [Spin Echo CPMG](SE_CPMG_seq) | [mr0_SE_CPMG_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_SE_CPMG_seq.seq) |
+| [Spin Echo CPMG](SE_CPMG_seq) | [mr0_SE_CPMG_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_SE_CPMG_seq.ipynb) |
 | [Stimulated Echo 3 pulses - 5 echoes](STE_3pulses_5echoes_seq) | [mr0_STE_3pulses_5echoes_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_STE_3pulses_5echoes_seq.ipynb) |
 | [FLASH 2D sequence](FLASH_2D_seq) | [bla.ipynb](colab.com/...) |
 | [EPI 2D sequence](EPI_2D_seq) | [bla.ipynb](colab.com/...) |
