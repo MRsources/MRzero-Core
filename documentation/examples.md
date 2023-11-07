@@ -22,3 +22,7 @@ Flash sequence, interpreted from a .seq file
 Compressed Sensing reconstruction
 :::
 ::::
+
+
+```{nb-exec-table}
+```

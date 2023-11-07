@@ -23,10 +23,3 @@ MRzeroCore also contains a pulseq .seq file parser and sequence exporter. It is 
 This documentation builds on Jupyter Notebooks to represent text, code and outputs in an easy and reproducible way.
 For the best user experience, it is recommended to install MRzeroCore locally and to use Python scripts for development. Editors like [PyCharm](https://www.jetbrains.com/de-de/pycharm/), [Spyder](https://www.spyder-ide.org/) or [VSCode](https://code.visualstudio.com/) provide autocompletion, an interactive console and direct access to the extensive documentation of MRzero.
 ```
-
-## Build Process
-
-The following Jupyter notebooks are executed when building this documentation, in order to keep all outputs up to date:
-
-```{nb-exec-table}
-```
