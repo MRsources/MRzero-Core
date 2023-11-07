@@ -2,6 +2,7 @@
 /documentation/_autosummary
 /documentation/_build
 out/
+*.seq
 
 *.pdf
 
