@@ -13,8 +13,8 @@ chapters:
     sections:
     - file: api/simulation/pdg_sim
     - file: api/simulation/isochromat_sim
-- file: examples
+- file: playground_mr0/overview
   sections:
-  - file: examples/flash
-  - file: examples/pulseq_flash
-  - file: examples/pulseq_sim_pTx
+  - file: playground_mr0/flash
+  - file: playground_mr0/pulseq_flash
+  - file: playground_mr0/pulseq_sim_pTx
