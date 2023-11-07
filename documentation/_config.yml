@@ -31,6 +31,8 @@ html:
 # See https://jupyterbook.org/en/stable/interactive/launchbuttons.html
 launch_buttons:
   colab_url: "https://colab.research.google.com"
+  binderhub_url: "https://mybinder.org"
+  notebook_interface: "jupyterlab"
 
 sphinx:
   extra_extensions:
