@@ -18,4 +18,3 @@ chapters:
   - file: examples/flash
   - file: examples/pulseq_flash
   - file: examples/pulseq_sim_pTx
-  - file: examples/solF02_radialssfp_CS_reco.ipynb
