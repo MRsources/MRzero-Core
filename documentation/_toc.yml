@@ -15,19 +15,22 @@ chapters:
     - file: api/simulation/isochromat_sim
 - file: playground_mr0/overview
   sections:
+  - file: playground_mr0/mr0_FID_seq.ipynb
+  - file: playground_mr0/mr0_SE_CPMG_seq.ipynb
+  - file: playground_mr0/mr0_STE_3pulses_5echoes_seq.ipynb
+  - file: playground_mr0/mr0_FLASH_2D_seq.ipynb
+  - file: playground_mr0/mr0_EPI_2D_seq.ipynb
+  - file: playground_mr0/mr0_RARE_2D_seq.ipynb
+  - file: playground_mr0/mr0_bSSFP_2D_seq.ipynb
+  - file: playground_mr0/mr0_DWI_GRE_2D_seq.ipynb
+  - file: playground_mr0/mr0_GRE_to_FLASH.ipynb
+  - file: playground_mr0/mr0_DREAM_STE_seq.ipynb
+  - file: playground_mr0/mr0_DREAM_STID_seq.ipynb
+  - file: playground_mr0/mr0_burst_TSE_seq.ipynb
+
+  - file: playground_mr0/mr0_pypulseq_exmpls_seq.ipynb
+  - file: playground_mr0/mr0_upload_seq.ipynb
+
   - file: playground_mr0/flash
   - file: playground_mr0/pulseq_flash
   - file: playground_mr0/pulseq_sim_pTx
-  - file: playground_mr0/mr0_bSSFP_2D_seq.ipynb
-  - file: playground_mr0/mr0_STE_3pulses_5echoes_seq.ipynb
-  - file: playground_mr0/mr0_FID_seq.ipynb
-  - file: playground_mr0/mr0_SE_CPMG_seq.ipynb
-  - file: playground_mr0/mr0_EPI_2D_seq.ipynb
-  - file: playground_mr0/mr0_FLASH_2D_seq.ipynb
-  - file: playground_mr0/mr0_RARE_2D_seq.ipynb
-  - file: playground_mr0/mr0_GRE_to_FLASH.ipynb
-  - file: playground_mr0/mr0_DWI_GRE_2D_seq.ipynb
-  - file: playground_mr0/mr0_DREAM_STID_seq.ipynb
-  - file: playground_mr0/mr0_DREAM_STE_seq.ipynb
-  - file: playground_mr0/mr0_pypulseq_exmpls_seq.ipynb
-  - file: playground_mr0/mr0_upload_seq.ipynb
