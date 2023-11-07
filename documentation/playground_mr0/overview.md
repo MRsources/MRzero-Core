@@ -12,7 +12,7 @@ Here we share links to example colabs that contain various MR sequences or let y
 | -------- | ------------ |
 | [Free Induction Decay](FID_seq) | [bla.ipynb](colab.com/...) |
 | [Spin Echo CPMG](SE_CPMG_seq) | [bla.ipynb](colab.com/...) |
-| [Stimulated Echo 3 pulses - 5 echoes](STE_3pulses_5echoes_seq) | [bla.ipynb](colab.com/...) |
+| [Stimulated Echo 3 pulses - 5 echoes](STE_3pulses_5echoes_seq) | [mr0_STE_3pulses_5echoes_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_STE_3pulses_5echoes_seq.ipynb) |
 | [FLASH 2D sequence](FLASH_2D_seq) | [bla.ipynb](colab.com/...) |
 | [EPI 2D sequence](EPI_2D_seq) | [bla.ipynb](colab.com/...) |
 | [RARE 2D sequence](RARE_2D_seq) | [bla.ipynb](colab.com/...) |
