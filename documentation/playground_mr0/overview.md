@@ -13,9 +13,9 @@ Here we share links to example colabs that contain various MR sequences or let y
 | [Free Induction Decay](FID_seq) | [mr0_FID_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_FID_seq.ipynb) |
 | [Spin Echo CPMG](SE_CPMG_seq) | [mr0_SE_CPMG_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_SE_CPMG_seq.ipynb) |
 | [Stimulated Echo 3 pulses - 5 echoes](STE_3pulses_5echoes_seq) | [mr0_STE_3pulses_5echoes_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_STE_3pulses_5echoes_seq.ipynb) |
-| [FLASH 2D sequence](FLASH_2D_seq) | [bla.ipynb](colab.com/...) |
-| [EPI 2D sequence](EPI_2D_seq) | [bla.ipynb](colab.com/...) |
-| [RARE 2D sequence](RARE_2D_seq) | [bla.ipynb](colab.com/...) |
+| [FLASH 2D sequence](FLASH_2D_seq) | [mr0_FLASH_2D_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_FLASH_2D_seq.ipynb) |
+| [EPI 2D sequence](EPI_2D_seq) | [mr0_EPI_2D_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_EPI_2D_seq.ipynb) |
+| [RARE 2D sequence](RARE_2D_seq) | [mr0_RARE_2D_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_RARE_2D_seq.ipynb) |
 | [bSSFP 2D sequence](bSSFP_2D_seq) | [mr0_bSSFP_2D_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_bSSFP_2D_seq.ipynb) |
 | [Diffusion weighted Gradient Echo](DWI_GRE_2D_seq) | [bla.ipynb](colab.com/...) |
 | [Interactive GRE to FLASH](GRE2FLASH_seq) | [bla.ipynb](colab.com/...) |

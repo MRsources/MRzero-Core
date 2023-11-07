@@ -22,3 +22,6 @@ chapters:
   - file: playground_mr0/mr0_STE_3pulses_5echoes_seq.ipynb
   - file: playground_mr0/mr0_FID_seq.ipynb
   - file: playground_mr0/mr0_SE_CPMG_seq.ipynb
+  - file: playground_mr0/mr0_EPI_2D_seq.ipynb
+  - file: playground_mr0/mr0_FLASH_2D_seq.ipynb
+  - file: playground_mr0/mr0_RARE_2D_seq.ipynb
