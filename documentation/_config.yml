@@ -19,13 +19,18 @@ latex:
 repository:
   url: https://github.com/MRsources/MRzero-Core  # Online location of your book
   path_to_book: documentation  # Optional path to your book, relative to the repository root
-  branch: documentation  # Which branch of the repository should be used when creating links (optional)
+  branch: main  # Which branch of the repository should be used when creating links (optional)
 
 # Add GitHub buttons to your book
 # See https://jupyterbook.org/customize/config.html#add-a-link-to-your-repository
 html:
   use_issues_button: true
   use_repository_button: true
+
+# Launch notebooks in Google Colab
+# See https://jupyterbook.org/en/stable/interactive/launchbuttons.html
+launch_buttons:
+  colab_url: "https://colab.research.google.com"
 
 sphinx:
   extra_extensions:
