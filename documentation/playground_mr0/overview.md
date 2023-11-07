@@ -36,7 +36,7 @@ Here we share links to example colabs that contain various MR sequences or let y
 
 | Sequence | Google Colab |
 | -------- | ------------ |
-| [IR FLASH 2D sequence for T1 mapping using a fit](link) | [bla.ipynb](colab.com/...) |
+| [IR FLASH 2D sequence for T1 mapping using a fit](IR_FLASH_fit) | [mr0_opt_FLASH_2D_IR_Fit_T1.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_opt_FLASH_2D_IR_Fit_T1.ipynb) |
 | [IR FLASH 2D sequence for T1 mapping using a NN](link) | [bla.ipynb](colab.com/...) |
 
 
