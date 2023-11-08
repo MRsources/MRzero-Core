@@ -3,3 +3,4 @@ sphinx-toolbox
 enum-tools[sphinx]
 MRzeroCore
 jupyterplot
+nevergrad

@@ -32,6 +32,9 @@ chapters:
   - file: playground_mr0/mr0_upload_seq.ipynb
 
   - file: playground_mr0/mr0_opt_FLASH_2D_IR_Fit_T1.ipynb
+  - file: playground_mr0/mr0_opt_FLASH_2D_IR_voxelNN_T1.ipynb
+
+  - file: playground_mr0/mr00_FLASH_2D_ernstAngle_opt.ipynb
 
   - file: playground_mr0/flash
   - file: playground_mr0/pulseq_flash
