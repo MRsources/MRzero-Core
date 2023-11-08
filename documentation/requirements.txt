@@ -4,3 +4,4 @@ enum-tools[sphinx]
 MRzeroCore
 jupyterplot
 nevergrad
+scikit-image
