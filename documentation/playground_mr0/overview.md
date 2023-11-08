@@ -25,6 +25,8 @@ These .seq files could also be measured on any MRI scanner using a Pulseq interp
 | [DREAM STE for B0, B1, TxRx mapping](DREAM_STE_seq) | [mr0_DREAM_STE_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_DREAM_STE_seq.ipynb) |
 | [DREAM STID for B0, B1, TxRx mapping](DREAM_STID_seq) | [mr0_DREAM_STID_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_DREAM_STID_seq.ipynb) |
 | [Burst TSE](burst_TSE_seq) | [mr0_burst_TSE.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_burst_TSE.ipynb) |
+| [Compressed Sensing cartesian](mr0_CS_cartesian_seq) | [mr0_CS_cartesian_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_CS_cartesian_seq.ipynb) |
+| [Compressed Sensing radial](mr0_CS_radial_seq) | [mr0_CS_radial_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_CS_radial_seq.ipynb) |
 
 
 ## Plot and simulate predifined .seq files
