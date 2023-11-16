@@ -107,7 +107,14 @@ def pulseq_plot(seq: Sequence, type: str = 'Gradient', time_range=(0, np.inf), t
     t0 = 0
     t_adc = []
     N_adc=[0,0]
-    for iB in range(1, len(seq.dict_block_events) + 1):
+# >>>> Changed
+    try:
+        block_events = seq.dict_block_events
+    except AttributeError:
+        block_events = seq.block_events
+
+    for iB in range(1, len(block_events) + 1):
+# <<<< End of change
         block = seq.get_block(iB)
         is_valid = time_range[0] <= t0 <= time_range[1]
         if is_valid:
