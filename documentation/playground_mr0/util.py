@@ -118,14 +118,14 @@ def pulseq_plot(seq: Sequence, type: str = 'Gradient', time_range=(0, np.inf), t
         block = seq.get_block(iB)
         is_valid = time_range[0] <= t0 <= time_range[1]
         if is_valid:
-            if hasattr(block, 'adc'):
+            if getattr(block, 'adc', None) is not None:
                 adc = block.adc
                 t = adc.delay + [(x * adc.dwell) for x in range(0, int(adc.num_samples))]
                 sp11.plot((t0 + t), np.zeros(len(t)), 'rx')
                 t_adc = np.append(t_adc, t0 + t)  # >>>> Changed: store adc samples <<<<
                 N_adc[1]+=1
                 N_adc[0]+=int(adc.num_samples)
-            if hasattr(block, 'rf'):
+            if getattr(block, 'rf', None) is not None:
                 rf = block.rf
                 tc, ic = calc_rf_center(rf)
                 t = rf.t + rf.delay
@@ -142,7 +142,7 @@ def pulseq_plot(seq: Sequence, type: str = 'Gradient', time_range=(0, np.inf), t
 # <<<< End of change
             grad_channels = ['gx', 'gy', 'gz']
             for x in range(0, len(grad_channels)):
-                if hasattr(block, grad_channels[x]):
+                if getattr(block, grad_channels[x], None) is not None:
                     grad = getattr(block, grad_channels[x])
                     if grad.type == 'grad':
                         # In place unpacking of grad.t with the starred expression
