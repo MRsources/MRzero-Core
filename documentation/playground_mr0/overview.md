@@ -28,7 +28,7 @@ These .seq files could also be measured on any MRI scanner using a Pulseq interp
 | [Burst TSE](burst_TSE_seq) | [mr0_burst_TSE.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_burst_TSE.ipynb) |
 | [Compressed Sensing cartesian](mr0_CS_cartesian_seq) | [mr0_CS_cartesian_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_CS_cartesian_seq.ipynb) |
 | [Compressed Sensing radial](mr0_CS_radial_seq) | [mr0_CS_radial_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_CS_radial_seq.ipynb) |
-
+| [Pulseq with RF shimming](pulseq_ptx) | [pulseq_rf_shim.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/pulseq_rf_shim.ipynb) |
 
 ## Plot and simulate predifined .seq files
 

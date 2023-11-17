@@ -29,6 +29,7 @@ chapters:
   - file: playground_mr0/mr0_burst_TSE.ipynb
   - file: playground_mr0/mr0_CS_cartesian_seq.ipynb
   - file: playground_mr0/mr0_CS_radial_seq.ipynb
+  - file: playground_mr0/pulseq_rf_shim.ipynb
 
   - file: playground_mr0/mr0_pypulseq_exmpls_seq.ipynb
   - file: playground_mr0/mr0_upload_seq.ipynb
