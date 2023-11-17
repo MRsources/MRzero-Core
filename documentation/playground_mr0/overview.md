@@ -1,3 +1,4 @@
+(playground_mr0)=
 # Playground MR0
 
 Welcome to Playground MR0, a playground to share, vary and simulate MR sequences.

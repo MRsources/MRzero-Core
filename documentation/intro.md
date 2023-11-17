@@ -1,10 +1,15 @@
 # Introduction
 
+
 ## MRzero Overview
 
 [MRzero](https://onlinelibrary.wiley.com/doi/abs/10.1002/mrm.28727) is a framework that replicates the whole MRI pipeline consisting of sequence and phantom definition, signal simulation, and image reconstruction. It uses a state-of-the-art PDG Bloch simulation, capable of calculating an accurate ADC signal comparable to that returned by a in vivo measurement of the signal in less time and while exhibiting no noise compared to isochromat based Monte-Carlo simulations.
 
 The MRzero Framework is built using [PyTorch](https://pytorch.org/), enabling it to run on CUDA capable GPUs and providing automatic differentiation via backpropagation of the whole pipeline. This means that sequence parameters or phantom values can be optimized based on loss functions that consider the reconstructed image of the simulated signal.
+## Playground MR0
+
+MRzero Core can be used in Jupyter Notebooks and can be used in online services like Google Colab.
+A constantly increasing selection of example script can be found in the [Playground MR0](playground_mr0)
 
 ## Getting Started
 
