@@ -14,28 +14,28 @@ These .seq files could also be measured on any MRI scanner using a Pulseq interp
 
 | Sequence | Google Colab |
 | -------- | ------------ |
-| [Free Induction Decay](FID_seq) | [mr0_FID_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_FID_seq.ipynb) |
-| [Spin Echo CPMG](SE_CPMG_seq) | [mr0_SE_CPMG_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_SE_CPMG_seq.ipynb) |
-| [Stimulated Echo 3 pulses - 5 echoes](STE_3pulses_5echoes_seq) | [mr0_STE_3pulses_5echoes_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_STE_3pulses_5echoes_seq.ipynb) |
-| [FLASH 2D sequence](FLASH_2D_seq) | [mr0_FLASH_2D_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_FLASH_2D_seq.ipynb) |
-| [EPI 2D sequence](EPI_2D_seq) | [mr0_EPI_2D_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_EPI_2D_seq.ipynb) |
-| [RARE 2D sequence](RARE_2D_seq) | [mr0_RARE_2D_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_RARE_2D_seq.ipynb) |
-| [bSSFP 2D sequence](bSSFP_2D_seq) | [mr0_bSSFP_2D_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_bSSFP_2D_seq.ipynb) |
-| [Diffusion weighted Gradient Echo](DWI_GRE_2D_seq) | [mr0_DWI_GRE_2D_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_DWI_GRE_2D_seq.ipynb) |
-| [Interactive GRE to FLASH](GRE2FLASH_seq) | [mr0_GRE_to_FLASH.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_GRE_to_FLASH.ipynb) |
-| [DREAM STE for B0, B1, TxRx mapping](DREAM_STE_seq) | [mr0_DREAM_STE_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_DREAM_STE_seq.ipynb) |
-| [DREAM STID for B0, B1, TxRx mapping](DREAM_STID_seq) | [mr0_DREAM_STID_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_DREAM_STID_seq.ipynb) |
-| [Burst TSE](burst_TSE_seq) | [mr0_burst_TSE.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_burst_TSE.ipynb) |
-| [Compressed Sensing cartesian](mr0_CS_cartesian_seq) | [mr0_CS_cartesian_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_CS_cartesian_seq.ipynb) |
-| [Compressed Sensing radial](mr0_CS_radial_seq) | [mr0_CS_radial_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_CS_radial_seq.ipynb) |
-| [Pulseq with RF shimming](pulseq_ptx) | [pulseq_rf_shim.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/pulseq_rf_shim.ipynb) |
+| [Free Induction Decay](FID_seq) | <a target="_blank" href="https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_FID_seq.ipynb">mr0_FID_seq.ipynb</a> |
+| [Spin Echo CPMG](SE_CPMG_seq) | <a target="_blank" href="https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_SE_CPMG_seq.ipynb">mr0_SE_CPMG_seq.ipynb</a> |
+| [Stimulated Echo 3 pulses - 5 echoes](STE_3pulses_5echoes_seq) | <a target="_blank" href="https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_STE_3pulses_5echoes_seq.ipynb">mr0_STE_3pulses_5echoes_seq.ipynb</a> |
+| [FLASH 2D sequence](FLASH_2D_seq) | <a target="_blank" href="https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_FLASH_2D_seq.ipynb">mr0_FLASH_2D_seq.ipynb</a> |
+| [EPI 2D sequence](EPI_2D_seq) | <a target="_blank" href="https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_EPI_2D_seq.ipynb">mr0_EPI_2D_seq.ipynb</a> |
+| [RARE 2D sequence](RARE_2D_seq) | <a target="_blank" href="https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_RARE_2D_seq.ipynb">mr0_RARE_2D_seq.ipynb</a> |
+| [bSSFP 2D sequence](bSSFP_2D_seq) | <a target="_blank" href="https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_bSSFP_2D_seq.ipynb">mr0_bSSFP_2D_seq.ipynb</a> |
+| [Diffusion weighted Gradient Echo](DWI_GRE_2D_seq) | <a target="_blank" href="https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_DWI_GRE_2D_seq.ipynb">mr0_DWI_GRE_2D_seq.ipynb</a> |
+| [Interactive GRE to FLASH](GRE2FLASH_seq) | <a target="_blank" href="https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_GRE_to_FLASH.ipynb">mr0_GRE_to_FLASH.ipynb</a> |
+| [DREAM STE for B0, B1, TxRx mapping](DREAM_STE_seq) | <a target="_blank" href="https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_DREAM_STE_seq.ipynb">mr0_DREAM_STE_seq.ipynb</a> |
+| [DREAM STID for B0, B1, TxRx mapping](DREAM_STID_seq) | <a target="_blank" href="https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_DREAM_STID_seq.ipynb">mr0_DREAM_STID_seq.ipynb</a> |
+| [Burst TSE](burst_TSE_seq) | <a target="_blank" href="https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_burst_TSE.ipynb">mr0_burst_TSE.ipynb</a> |
+| [Compressed Sensing cartesian](mr0_CS_cartesian_seq) | <a target="_blank" href="https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_CS_cartesian_seq.ipynb">mr0_CS_cartesian_seq.ipynb</a> |
+| [Compressed Sensing radial](mr0_CS_radial_seq) | <a target="_blank" href="https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_CS_radial_seq.ipynb">mr0_CS_radial_seq.ipynb</a> |
+| [Pulseq with RF shimming](pulseq_ptx) | <a target="_blank" href="https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/pulseq_rf_shim.ipynb">pulseq_rf_shim.ipynb</a> |
 
 ## Plot and simulate predifined .seq files
 
 | Sequence | Google Colab |
 | -------- | ------------ |
-| [Simulate pypulseq example sequences](mr0_pypulseq_example) | [mr0_pypulseq_exmpls_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_pypulseq_exmpls_seq.ipynb) |
-| [Simulate own uploaded seq files](mr0_upload_seq) | [mr0_upload_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_upload_seq.ipynb) |
+| [Simulate pypulseq example sequences](mr0_pypulseq_example) | <a target="_blank" href="https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_pypulseq_exmpls_seq.ipynb">mr0_pypulseq_exmpls_seq.ipynb</a> |
+| [Simulate own uploaded seq files](mr0_upload_seq) | <a target="_blank" href="https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_upload_seq.ipynb">mr0_upload_seq.ipynb</a> |
 
 
 ## MR-zero optimization
@@ -44,8 +44,8 @@ Gradient descent optimizations using automatic differentiation by backpropagatio
 
 | Sequence | Google Colab |
 | -------- | ------------ |
-| [IR FLASH 2D sequence for T1 mapping using a fit](IR_FLASH_fit) | [mr0_opt_FLASH_2D_IR_Fit_T1.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_opt_FLASH_2D_IR_Fit_T1.ipynb) |
-| [IR FLASH 2D sequence for T1 mapping using a NN](IR_FLASH_NN) | [mr0_opt_FLASH_2D_IR_voxelNN_T1.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_opt_FLASH_2D_IR_voxelNN_T1.ipynb) |
+| [IR FLASH 2D sequence for T1 mapping using a fit](IR_FLASH_fit) | <a target="_blank" href="https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_opt_FLASH_2D_IR_Fit_T1.ipynb">mr0_opt_FLASH_2D_IR_Fit_T1.ipynb</a> |
+| [IR FLASH 2D sequence for T1 mapping using a NN](IR_FLASH_NN) | <a target="_blank" href="https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_opt_FLASH_2D_IR_voxelNN_T1.ipynb">mr0_opt_FLASH_2D_IR_voxelNN_T1.ipynb</a> |
 
 
 ## MR-double-zero optimization
@@ -54,7 +54,7 @@ Gradient-free optimization with [nevergrad](https://github.com/facebookresearch/
 
 | Sequence | Google Colab |
 | -------- | ------------ |
-| [Ernst angle optimization](mr00_FLASH_2D_ernstAngle_opt) | [mr00_FLASH_2D_ernstAngle_opt.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr00_FLASH_2D_ernstAngle_opt.ipynb) |
+| [Ernst angle optimization](mr00_FLASH_2D_ernstAngle_opt) | <a target="_blank" href="https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr00_FLASH_2D_ernstAngle_opt.ipynb">mr00_FLASH_2D_ernstAngle_opt.ipynb</a> |
 
 
 ## MR plot wall of fame
@@ -66,9 +66,9 @@ famous historic plots recreated
 
 | Sequence | Google Colab |
 | -------- | ------------ |
-| [Pure `MR0` FLASH](flash) | [flash.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/examples/flash.ipynb) |
-| [pulseq FLASH](pulseq_flash) | [pulseq_flash.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/examples/pulseq_flash.ipynb) |
-| [pulseq pTx FLASH](pulseq_pTx) | [pulseq_sim_pTx.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/examples/pulseq_sim_pTx.ipynb) |
+| [Pure `MR0` FLASH](flash) | <a target="_blank" href="https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/examples/flash.ipynb">flash.ipynb</a> |
+| [pulseq FLASH](pulseq_flash) | <a target="_blank" href="https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/examples/pulseq_flash.ipynb">pulseq_flash.ipynb</a> |
+| [pulseq pTx FLASH](pulseq_pTx) | <a target="_blank" href="https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/examples/pulseq_sim_pTx.ipynb">pulseq_sim_pTx.ipynb</a> |
 
 
 ## Notebook execution results
