@@ -28,3 +28,11 @@ MRzeroCore also contains a pulseq .seq file parser and sequence exporter. It is 
 This documentation builds on Jupyter Notebooks to represent text, code and outputs in an easy and reproducible way.
 For the best user experience, it is recommended to install MRzeroCore locally and to use Python scripts for development. Editors like [PyCharm](https://www.jetbrains.com/de-de/pycharm/), [Spyder](https://www.spyder-ide.org/) or [VSCode](https://code.visualstudio.com/) provide autocompletion, an interactive console and direct access to the extensive documentation of MRzero.
 ```
+
+## Literature
+
+_Endres, J., Dang, H., Glang, F., Loktyushin, A., Weinmüller, S., Zaiss, M._ **Phase distribution graphs for differentiable and efficient simulations of arbitrary MRI sequences.** Joint Annual Meeting ISMRM-ESMRMB & ISMRT 31st Annual Meeting (ISMRM 2022). https://archive.ismrm.org/2022/0750.html
+
+_Loktyushin, A., Herz, K., Dang, H._ **MRzero - Automated discovery of MRI sequences using supervised learning.** Magn Reson Med. 2021; 86: 709–724. https://doi.org/10.1002/mrm.28727
+
+_Dang, H., Endres, J., Weinmüller, S., et al._ **MR-zero meets RARE MRI: Joint optimization of refocusing flip angles and neural networks to minimize T2-induced blurring in spin echo sequences.** Magn Reson Med. 2023; 90(4): 1345-1362. https://doi.org/10.1002/mrm.29710
