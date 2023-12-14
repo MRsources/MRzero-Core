@@ -466,7 +466,7 @@ def recover(mask, base_fov, rel_fov, sim_data: SimData) -> VoxelGridPhantom:
     def to_full(sparse):
         assert sparse.ndim < 3
         if sparse.ndim == 2:
-            full = torch.zeros([sparse.shape[0], *mask.shape])
+            full = torch.zeros([sparse.shape[0], *mask.shape], dtype = sparse.dtype)
             full[:, mask] = sparse.cpu()
         else:
             full = torch.zeros(mask.shape)
