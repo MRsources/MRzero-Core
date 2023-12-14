@@ -17,6 +17,7 @@ def execute_graph(graph: Graph,
                   data: SimData,
                   min_emitted_signal: float = 1e-2,
                   min_latent_signal: float = 1e-2,
+                  print_progress: bool = True,
                   ) -> torch.Tensor:
     """Calculate the signal of the sequence by computing the graph.
 
@@ -62,7 +63,8 @@ def execute_graph(graph: Graph,
     graph[0][0].kt_vec = torch.zeros(4, device=data.device)
 
     for i, (dists, rep) in enumerate(zip(graph[1:], seq)):
-        print(f"\rCalculating repetition {i+1} / {len(seq)}", end='')
+        if print_progress:
+            print(f"\rCalculating repetition {i+1} / {len(seq)}", end='')
 
         angle = torch.as_tensor(rep.pulse.angle)
         phase = torch.as_tensor(rep.pulse.phase)
@@ -209,7 +211,8 @@ def execute_graph(graph: Graph,
 
         signal.append(rep_sig)
 
-    print(" - done")
+    if print_progress:
+        print(" - done")
 
     # Only return measured samples
     return torch.cat([
