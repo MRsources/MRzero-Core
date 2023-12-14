@@ -4,6 +4,7 @@
 format: jb-book
 root: intro
 chapters:
+- file: phantom_generation
 - file: api
   sections:
   - file: api/sequence
