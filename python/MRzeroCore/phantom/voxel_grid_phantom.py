@@ -182,10 +182,15 @@ class VoxelGridPhantom:
         B0 -= (B0 * weight).sum()
         B1 /= (B1 * weight).sum()
 
+        try:
+            base_fov = torch.tensor(data['FOV'])
+        except KeyError:
+            base_fov = torch.tensor([0.192, 0.192, 0.192])
+
         return cls(
             PD, T1, T2, T2dash, D, B0, B1[None, ...],
             coil_sens=torch.ones(1, *PD.shape),
-            base_fov=torch.tensor([0.192, 0.192, 0.192]),
+            base_fov=base_fov,
             rel_fov=torch.ones(3)
         )
 
