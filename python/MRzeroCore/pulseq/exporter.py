@@ -10,11 +10,8 @@ import torch
 from ..sequence import Sequence, PulseUsage, Pulse
 
 
-# Versions with Martin's pTx extension are labelled 1.3.90 and 1.4.5
-supports_ptx = (pp.Sequence.version_minor, pp.Sequence.version_revision) in [(3, '90'), (4, 5)]
-if supports_ptx:
-    from pypulseq.make_block_pulse_rf_shim import make_block_pulse_rf_shim
-    from pypulseq.make_sinc_pulse_rf_shim import make_sinc_pulse_rf_shim
+# We support pTx with martins modified pulseq version 1.4.5
+supports_ptx = (pp.Sequence.version_minor, pp.Sequence.version_revision) == (4, 5)
 
 
 def rectify_flips(pulse: Pulse) -> tuple[np.ndarray, np.ndarray]:
@@ -43,7 +40,7 @@ def make_block_pulse(flip_angle: np.ndarray, flip_phase: np.ndarray,
         flip_phase = np.fmod(flip_phase - phase, 2*np.pi)
         shim_array = np.stack([flip_angle, flip_phase], axis=1)
 
-        return make_block_pulse_rf_shim(
+        return pp.make_block_pulse(
             flip_angle=angle, phase_offset=phase, duration=duration,
             system=system, shim_array=shim_array
         )
@@ -70,7 +67,7 @@ def make_sinc_pulse(flip_angle: np.ndarray, flip_phase: np.ndarray,
         flip_phase = np.fmod(flip_phase - phase, 2*np.pi)
         shim_array = np.stack([flip_angle, flip_phase], axis=1)
 
-        return make_sinc_pulse_rf_shim(
+        return pp.make_sinc_pulse(
             flip_angle=angle, phase_offset=phase, duration=duration,
             slice_thickness=slice_thickness, apodization=apodization,
             time_bw_product=time_bw_product, system=system,
