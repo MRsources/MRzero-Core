@@ -14,72 +14,49 @@ from ..sequence import Sequence, PulseUsage, Pulse
 supports_ptx = (pp.Sequence.version_minor, pp.Sequence.version_revision) == (4, 5)
 
 
-def rectify_flips(pulse: Pulse) -> tuple[np.ndarray, np.ndarray]:
+def rectify_flips(pulse: Pulse) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     flip_angle = torch.as_tensor(pulse.angle, dtype=torch.float).detach().cpu().numpy()
     flip_phase = torch.as_tensor(pulse.phase, dtype=torch.float).detach().cpu().numpy()
 
+    # NOTE: This can be simplified now that pTx is not part of angle / phase anymore
     mask = flip_angle < 0
     flip_angle[mask] *= -1
     flip_phase[mask] += np.pi
     flip_phase = np.fmod(flip_phase, 2*np.pi)
 
-    return flip_angle, flip_phase
+    return flip_angle, flip_phase, pulse.shim_array.detach().cpu().numpy()
 
 
 def make_block_pulse(flip_angle: np.ndarray, flip_phase: np.ndarray,
+                     shim_array: np.ndarray,
                      duration: float, system: pp.Opts):
-    if flip_angle.size > 1:
+    ptx_args = {}
+    if shim_array.shape[0] > 1:
         assert supports_ptx
-        flip_angle = np.asarray(flip_angle)
-        flip_phase = np.asarray(flip_phase)
-        assert flip_angle.size == flip_phase.size
+        ptx_args["shim_array"] = shim_array
 
-        angle = np.max(np.abs(flip_angle))
-        flip_angle /= angle
-        phase = np.mean(flip_phase)
-        flip_phase = np.fmod(flip_phase - phase, 2*np.pi)
-        shim_array = np.stack([flip_angle, flip_phase], axis=1)
-
-        return pp.make_block_pulse(
-            flip_angle=angle, phase_offset=phase, duration=duration,
-            system=system, shim_array=shim_array
-        )
-    else:
-        return pp.make_block_pulse(
-            flip_angle=flip_angle, phase_offset=flip_phase, duration=duration,
-            system=system
-        )
+    return pp.make_block_pulse(
+        flip_angle=flip_angle, phase_offset=flip_phase, duration=duration,
+        system=system, **ptx_args
+    )
 
 
 def make_sinc_pulse(flip_angle: np.ndarray, flip_phase: np.ndarray,
+                    shim_array: np.ndarray,
                     duration: float, slice_thickness: float,
                     apodization: float, time_bw_product: float,
                     system: pp.Opts):
-    if flip_angle.size > 1:
+    ptx_args = {}
+    if shim_array.shape[0] > 1:
         assert supports_ptx
-        flip_angle = np.asarray(flip_angle)
-        flip_phase = np.asarray(flip_phase)
-        assert flip_angle.size == flip_phase.size
+        ptx_args["shim_array"] = shim_array
 
-        angle = np.max(np.abs(flip_angle))
-        flip_angle /= angle
-        phase = np.mean(flip_phase)
-        flip_phase = np.fmod(flip_phase - phase, 2*np.pi)
-        shim_array = np.stack([flip_angle, flip_phase], axis=1)
-
-        return pp.make_sinc_pulse(
-            flip_angle=angle, phase_offset=phase, duration=duration,
-            slice_thickness=slice_thickness, apodization=apodization,
-            time_bw_product=time_bw_product, system=system,
-            shim_array=shim_array
-        )
-    else:
-        return pp.make_sinc_pulse(
-            flip_angle=flip_angle, phase_offset=flip_phase, duration=duration,
-            slice_thickness=slice_thickness, apodization=apodization,
-            time_bw_product=time_bw_product, system=system,
-            return_gz=True
-        )
+    return pp.make_sinc_pulse(
+        flip_angle=flip_angle, phase_offset=flip_phase, duration=duration,
+        slice_thickness=slice_thickness, apodization=apodization,
+        time_bw_product=time_bw_product, system=system,
+        return_gz=True, **ptx_args
+    )
 
 
 # Modified versions of make_delay, make_adc and make_trapezoid that ensure that
@@ -154,7 +131,7 @@ def pulseq_write_cartesian(seq_param: Sequence, path: str, FOV: float,
     # import pdb; pdb.set_trace()
     for i, rep in enumerate(seq_param):
         adc_start = 0
-        flip_angle, flip_phase = rectify_flips(rep.pulse)
+        flip_angle, flip_phase, shim_array = rectify_flips(rep.pulse)
         for event in range(rep.event_count):
             if torch.abs(rep.adc_usage[event]) == 0:
                 RFdur = 0
@@ -164,7 +141,8 @@ def pulseq_write_cartesian(seq_param: Sequence, path: str, FOV: float,
                         RFdur = 1e-3
                         if torch.as_tensor(rep.pulse.angle).abs().sum() > 1e-8:
                             rf = make_block_pulse(
-                                flip_angle, flip_phase, RFdur, system
+                                flip_angle, flip_phase, shim_array,
+                                RFdur, system
                             )
                             seq.add_block(rf)
                             seq.add_block(make_delay(1e-4))
@@ -175,14 +153,15 @@ def pulseq_write_cartesian(seq_param: Sequence, path: str, FOV: float,
                             if not rep.pulse.selective:
                                 RFdur = 1e-3
                                 rf = make_block_pulse(
-                                    flip_angle, flip_phase, RFdur, system
+                                    flip_angle, flip_phase, shim_array,
+                                    RFdur, system
                                 )
                                 seq.add_block(rf)
                             else:
                                 RFdur = 1e-3
                                 rf, gz, gzr = make_sinc_pulse(
-                                    flip_angle, flip_phase, RFdur,
-                                    slice_thickness, 0.15, 2, system
+                                    flip_angle, flip_phase, shim_array,
+                                    RFdur, slice_thickness, 0.5, 4, system
                                 )
                                 seq.add_block(gzr)
                                 seq.add_block(rf, gz)
@@ -196,14 +175,15 @@ def pulseq_write_cartesian(seq_param: Sequence, path: str, FOV: float,
                             if not rep.pulse.selective:
                                 RFdur = 1e-3
                                 rf = make_block_pulse(
-                                    flip_angle, flip_phase, RFdur, system
+                                    flip_angle, flip_phase, shim_array,
+                                    RFdur, system
                                 )
                                 seq.add_block(rf)
                             else:
                                 RFdur = 1e-3
                                 rf, gz, gzr = make_sinc_pulse(
-                                    flip_angle, flip_phase, RFdur,
-                                    slice_thickness, 0.5, 4, system
+                                    flip_angle, flip_phase, shim_array,
+                                    RFdur, slice_thickness, 0.5, 4, system
                                 )
                                 seq.add_block(gzr)
                                 seq.add_block(rf, gz)

@@ -68,24 +68,24 @@ def execute_graph(graph: Graph,
 
         angle = torch.as_tensor(rep.pulse.angle)
         phase = torch.as_tensor(rep.pulse.phase)
+        shim_array = torch.as_tensor(rep.pulse.shim_array)
 
         # 1Tx or pTx?
-        if angle.numel() == 1:
-            assert phase.numel() == 1
+        if shim_array.shape[0] == 1:
             B1 = data.B1.sum(0)
-            angle = angle * B1.abs()
-            phase = phase + B1.angle()
         else:
-            assert angle.numel() == phase.numel() == data.B1.shape[0]
-            B1 = (data.B1 * (angle * torch.exp(1j * phase))[:, None]).sum(0)
-            angle = B1.abs()
-            phase = B1.angle()
+            assert shim_array.shape[0] == data.B1.shape[0]
+            shim = shim_array[:, 0] * torch.exp(1j * shim_array[:, 1])
+            B1 = (data.B1 * shim[:, None]).sum(0)
+
+        angle = angle * B1.abs()
+        phase = phase + B1.angle()
 
         # Unaffected magnetisation
         z_to_z = torch.cos(angle)
         p_to_p = torch.cos(angle/2)**2
         # Excited magnetisation
-        z_to_p = -0.70710678118j * torch.sin(angle) * torch.exp(1j*phase)    
+        z_to_p = -0.70710678118j * torch.sin(angle) * torch.exp(1j*phase)
         p_to_z = -z_to_p.conj()
         m_to_z = -z_to_p
         # Refocussed magnetisation
@@ -172,16 +172,19 @@ def execute_graph(graph: Graph,
 
             if dist.dist_type == '+' and dist.emitted_signal >= min_emitted_signal:
                 T2 = torch.exp(-trajectory[:, 3:] / torch.abs(data.T2))
-                T2dash = torch.exp(-torch.abs(dist_traj[:, 3:]) / torch.abs(data.T2dash))
+                T2dash = torch.exp(-torch.abs(dist_traj[:, 3:]
+                                              ) / torch.abs(data.T2dash))
                 rot = torch.exp(2j * np.pi * (
                     (dist_traj[:, 3:] * data.B0)
                     - (dist_traj[:, :3] @ data.voxel_pos.T)
                 ))
-                dephasing = data.dephasing_func(dist_traj[:, :3], data.nyquist)[:, None]
+                dephasing = data.dephasing_func(
+                    dist_traj[:, :3], data.nyquist)[:, None]
 
                 # shape: events x voxels
                 transverse_mag = (
-                    1.41421356237 * dist.mag.unsqueeze(0)  # Add event dimension
+                    # Add event dimension
+                    1.41421356237 * dist.mag.unsqueeze(0)
                     * rot * T2 * T2dash * diffusion * dephasing
                 )
 

@@ -12,8 +12,9 @@ class PulseUsage(Enum):
     The simulation always simulates all magnetization pathways and will ignore
     the pulse usage. It is only used for reconstruction, by the
     :meth:`Sequence.get_kspace` method, to understand the role of a pulse.
-    Additionally, Pulseq exportes might use the pulse usage to select the correct pulse type.
-    
+    Additionally, Pulseq exportes might use the pulse usage to select the
+    correct pulse type.
+
     Attributes
     ----------
     UNDEF : str
@@ -49,6 +50,8 @@ class Pulse:
         Flip angle in radians
     phase : torch.Tensor
         Pulse phase in radians
+    shim_array : torch.Tensor
+        Contains B1 mag and phase, used for pTx. 2D tensor([[1, 0]]) for 1Tx.
     selective : bool
         Specifies if this pulse should be slice-selective (z-direction)
     """
@@ -56,35 +59,35 @@ class Pulse:
     def __init__(
         self,
         usage: PulseUsage,
-        angle: float | torch.Tensor,
-        phase: float | torch.Tensor,
+        angle: torch.Tensor,
+        phase: torch.Tensor,
+        shim_array: torch.Tensor,
         selective: bool,
-    ) -> None:
-        """Create a Pulse instance.
-
-        If ``angle`` and ``phase`` are floats they will be converted to
-        torch cpu tensors.
-        """
+    ):
+        """Create a Pulse instance."""
         self.usage = usage
         self.angle = angle
         self.phase = phase
+        self.shim_array = shim_array
         self.selective = selective
 
     def cpu(self) -> Pulse:
         """Move this pulse to the CPU and return it."""
         return Pulse(
             self.usage,
-            torch.as_tensor(self.angle, dtype=torch.float).cpu(),
-            torch.as_tensor(self.phase, dtype=torch.float).cpu(),
+            torch.as_tensor(self.angle, dtype=torch.float32).cpu(),
+            torch.as_tensor(self.phase, dtype=torch.float32).cpu(),
+            torch.as_tensor(self.shim_array, dtype=torch.float32).cpu(),
             self.selective
         )
 
-    def cuda(self, device: int = None) -> Pulse:
+    def cuda(self, device: int | None = None) -> Pulse:
         """Move this pulse to the specified CUDA device and return it."""
         return Pulse(
             self.usage,
-            torch.as_tensor(self.angle, dtype=torch.float).cuda(device),
-            torch.as_tensor(self.phase, dtype=torch.float).cuda(device),
+            torch.as_tensor(self.angle, dtype=torch.float32).cuda(device),
+            torch.as_tensor(self.phase, dtype=torch.float32).cuda(device),
+            torch.as_tensor(self.shim_array, dtype=torch.float32).cuda(device),
             self.selective
         )
 
@@ -96,16 +99,27 @@ class Pulse:
     @classmethod
     def zero(cls):
         """Create a pulse with zero flip and phase."""
-        return cls(PulseUsage.UNDEF, 0.0, 0.0, True)
+        return cls(
+            PulseUsage.UNDEF,
+            torch.zeros(1, dtype=torch.float32),
+            torch.zeros(1, dtype=torch.float32),
+            torch.asarray([[1, 0]], dtype=torch.float32),
+            True
+        )
 
     def clone(self) -> Pulse:
         """Return a cloned copy of self."""
         return Pulse(
-            self.usage, self.angle.clone(), self.phase.clone(), self.selective)
+            self.usage,
+            self.angle.clone(),
+            self.phase.clone(),
+            self.shim_array.clone(),
+            self.selective
+        )
 
 
 class Repetition:
-    """A :class:`Repetition` starts with a RF pulse and ends just before the next.
+    """A :class:`Repetition` starts with a RF pulse and ends before the next.
 
     Attributes
     ----------
@@ -116,7 +130,7 @@ class Repetition:
     gradm : torch.Tensor
         Gradient moment of every event, shape (:attr:`event_count`, 3)
     adc_phase : torch.Tensor
-        Float tensor describing the adc rotation, shape (:attr:`event_count`, 3)
+        Float tensor describing the adc phase, shape (:attr:`event_count`, 3)
     adc_usage: torch.Tensor
         Int tensor specifying which contrast a sample belongs to, shape
         (:attr:`event_count`, 3). Samples with ```adc_usage <= 0``` will not be
@@ -132,7 +146,7 @@ class Repetition:
         gradm: torch.Tensor,
         adc_phase: torch.Tensor,
         adc_usage: torch.Tensor
-    ) -> None:
+    ):
         """Create a repetition based on the given tensors.
 
         Raises
@@ -172,7 +186,7 @@ class Repetition:
         self.adc_phase = adc_phase
         self.adc_usage = adc_usage
 
-    def cuda(self, device: int = None) -> Repetition:
+    def cuda(self, device: int | None = None) -> Repetition:
         """Move this repetition to the specified CUDA device and return it."""
         return Repetition(
             self.pulse.cuda(device),
@@ -213,9 +227,9 @@ class Repetition:
         """
         return cls(
             Pulse.zero(),
-            torch.zeros(event_count, dtype=torch.float),
-            torch.zeros((event_count, 3), dtype=torch.float),
-            torch.zeros(event_count, dtype=torch.float),
+            torch.zeros(event_count, dtype=torch.float32),
+            torch.zeros((event_count, 3), dtype=torch.float32),
+            torch.zeros(event_count, dtype=torch.float32),
             torch.zeros(event_count, dtype=torch.int32)
         )
 
@@ -249,7 +263,7 @@ class Sequence(list):
     additionally implements MRI sequence specific methods.
     """
 
-    def __init__(self, repetitions: Iterable[Repetition] = []) -> None:
+    def __init__(self, repetitions: Iterable[Repetition] = []):
         """Create a ``Sequence`` instance by passing repetitions."""
         super().__init__(repetitions)
 
@@ -384,34 +398,34 @@ class Sequence(list):
     @classmethod
     def from_seq_file(cls, file_name: str) -> Sequence:
         """Import a sequence from a pulseq .seq file.
-        
-        The importer currently minimizes the amount of used `mr0` sequence events.
-        This can be problematic for diffusion weighted sequences, because gradients
-        that are not directly measured by ADC samples can be removed from the
-        sequence, even if they are important for the targeted contrast.
+
+        The importer currently minimizes the amount of used `mr0` sequence
+        events. This can be problematic for diffusion weighted sequences,
+        because gradients that are not directly measured by ADC samples can be
+        removed from the sequence, even if they are important for the targeted
+        contrast.
 
         Parameters
         ----------
         file_name : str
             Path to the imported .seq file
-        
+
         Returns
         -------
         Sequence
             Imported sequence, converted to MRzero
         """
         seq = Sequence()
-        rep = None
         for tmp_rep in intermediate(PulseqFile(file_name)):
             rep = seq.new_rep(tmp_rep[0])
-            rep.pulse.angle = torch.as_tensor(tmp_rep[1].angle, dtype=torch.float)
-            rep.pulse.phase = torch.as_tensor(tmp_rep[1].phase, dtype=torch.float)
+            rep.pulse.angle = torch.as_tensor(
+                tmp_rep[1].angle, dtype=torch.float32)
+            rep.pulse.phase = torch.as_tensor(
+                tmp_rep[1].phase, dtype=torch.float32)
+            rep.pulse.shim_array = torch.as_tensor(
+                tmp_rep[1].shim_array, dtype=torch.float32)
 
-            # Refocussing pulses are pulses with > 90° angle.
-            # Pulses are potentially pTx but we don't have B1 maps: use a rough CP approximation
-            flip = rep.pulse.angle.mean() * rep.pulse.angle.numel()**0.5
-
-            if flip > 100 * torch.pi/180:
+            if rep.pulse.angle > 100 * torch.pi/180:
                 rep.pulse.usage = PulseUsage.REFOC
             else:
                 rep.pulse.usage = PulseUsage.EXCIT
@@ -435,10 +449,12 @@ class Sequence(list):
             assert i == tmp_rep[0]
         return seq
 
-    def plot_kspace_trajectory(self,
-                               figsize: tuple[float, float] = (5, 5),
-                               plotting_dims: str = 'xy',
-                               plot_timeline: bool = True) -> None:
+    def plot_kspace_trajectory(
+            self,
+            figsize: tuple[float, float] = (5, 5),
+            plotting_dims: str = 'xy',
+            plot_timeline: bool = True
+        ):
         """Plot the kspace trajectory produced by self.
 
         Parameters

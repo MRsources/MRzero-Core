@@ -10,13 +10,16 @@ class Pulse:
         self,
         angle: float,
         phase: float,
+        shim_array: np.ndarray
     ) -> None:
         self.angle = angle
         self.phase = phase
+        self.shim_array = shim_array
 
     @classmethod
-    def parse(cls, block: Block, pulseq: PulseqFile
-              ) -> tuple[Spoiler, Pulse, Spoiler]:
+    def parse(
+        cls, block: Block, pulseq: PulseqFile
+    ) -> tuple[Spoiler, Pulse, Spoiler]:
         rf = pulseq.rfs[block.rf_id]
         raster_time = pulseq.definitions.rf_raster_time
 
@@ -56,17 +59,22 @@ class Pulse:
         # If there is pTx, replace angle and phase with per-channel dat
         if rf.shim_mag_id != 0:
             assert rf.shim_phase_id != 0
-            angle = angle * pulseq.shapes[rf.shim_mag_id]
-            phase = phase + pulseq.shapes[rf.shim_phase_id]
+            shim_array = np.stack([
+                pulseq.shapes[rf.shim_mag_id],
+                pulseq.shapes[rf.shim_phase_id]
+            ], 1)
+        else:
+            shim_array = np.ones((1, 2))
 
         return (
             Spoiler(t, gradm[0, :]),
-            cls(angle, phase),
+            cls(angle, phase, shim_array),
             Spoiler(block.duration - t, gradm[1, :])
         )
 
     def __repr__(self) -> str:
         return (
             f"Pulse(angle={self.angle*180/np.pi:.1f}°, "
-            f"phase={self.phase*180/np.pi:.1f}°)"
+            f"phase={self.phase*180/np.pi:.1f}°, "
+            f"shim_array={self.shim_array})"
         )
