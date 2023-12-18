@@ -11,20 +11,22 @@ from ..sequence import Sequence, PulseUsage, Pulse
 
 
 # We support pTx with martins modified pulseq version 1.4.5
-supports_ptx = (pp.Sequence.version_minor, pp.Sequence.version_revision) == (4, 5)
+supports_ptx = (pp.Sequence.version_minor,
+                pp.Sequence.version_revision) == (4, 5)
 
 
 def rectify_flips(pulse: Pulse) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    flip_angle = torch.as_tensor(pulse.angle, dtype=torch.float).detach().cpu().numpy()
-    flip_phase = torch.as_tensor(pulse.phase, dtype=torch.float).detach().cpu().numpy()
+    angle = torch.as_tensor(pulse.angle).detach().cpu().numpy()
+    phase = torch.as_tensor(pulse.phase).detach().cpu().numpy()
+    shim_array = torch.as_tensor(pulse.shim_array).detach().cpu().numpy()
 
-    # NOTE: This can be simplified now that pTx is not part of angle / phase anymore
-    mask = flip_angle < 0
-    flip_angle[mask] *= -1
-    flip_phase[mask] += np.pi
-    flip_phase = np.fmod(flip_phase, 2*np.pi)
+    if angle < 0:
+        angle = -angle
+        phase = phase + np.pi
+    angle = np.fmod(angle)
+    phase = np.fmod(phase)
 
-    return flip_angle, flip_phase, pulse.shim_array.detach().cpu().numpy()
+    return angle, phase, shim_array
 
 
 def make_block_pulse(flip_angle: np.ndarray, flip_phase: np.ndarray,
@@ -265,7 +267,7 @@ def pulseq_write_cartesian(seq_param: Sequence, path: str, FOV: float,
                     grads.append(gy)
                 if gz_gradmom != 0:
                     grads.append(gz)
-                
+
                 if len(grads) > 0:
                     seq.add_block(*grads)
                 else:
@@ -277,7 +279,8 @@ def pulseq_write_cartesian(seq_param: Sequence, path: str, FOV: float,
                 else:
                     adc_start = 1
                     if bdw_start == 0:
-                        bwd = (1/rep.event_time[event]) / torch.sum(rep.adc_usage > 0)
+                        bwd = (1/rep.event_time[event]) / \
+                            torch.sum(rep.adc_usage > 0)
                         print('Bandwidth is %4d Hz/pixel' % (bwd))
                         bdw_start = 1
 
