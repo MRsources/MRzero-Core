@@ -22,7 +22,7 @@ dependencies = [
     "matplotlib>=3.5",
     "scipy>=1.7",
     "requests>=2.20",
-    "perlin_numpy@git+https://github.com/pvigier/perlin-numpy",
+    # "perlin_numpy@git+https://github.com/pvigier/perlin-numpy",
     "pydisseqt"
 ]
 
