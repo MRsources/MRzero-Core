@@ -4,7 +4,7 @@ import gzip
 import requests
 import os
 import numpy as np
-from perlin_numpy import generate_perlin_noise_3d
+# from perlin_numpy import generate_perlin_noise_3d
 
 
 # Load the brainweb data file that contains info about tissues, subjects, ...
@@ -54,7 +54,8 @@ def gen_noise(range: float, res: np.ndarray) -> np.ndarray:
     else:
         freq = 20
         padded_res = (res + freq - 1) // freq * freq
-        noise = generate_perlin_noise_3d(padded_res, (freq, freq, freq))
+        # noise = generate_perlin_noise_3d(padded_res, (freq, freq, freq))
+        noise = np.random.random(padded_res)
         return 1 + range * noise[:res[0], :res[1], :res[2]]
 
 
