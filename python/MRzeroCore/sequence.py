@@ -1,9 +1,14 @@
 from __future__ import annotations
+from time import time
 import torch
+import numpy as np
 from enum import Enum
 from typing import Iterable
 import matplotlib.pyplot as plt
+
+# TODO: if everything is working, deprecate old pulseq loader
 from .pulseq.pulseq_loader import intermediate, PulseqFile, Adc, Spoiler
+import pydisseqt
 
 
 class PulseUsage(Enum):
@@ -396,8 +401,148 @@ class Sequence(list):
         return sum(rep.event_time.sum().item() for rep in self)
 
     @classmethod
+    def import_file(cls, file_name: str,
+                    exact_trajectories: bool = True,
+                    print_stats: bool = False
+                    ) -> Sequence:
+        """Import a pulseq .seq file.
+
+        Parameters
+        ----------
+        file_name : str
+            The path to the file that is imported
+        exact_trajectories : bool
+            If true, the gradients before and after the ADC blocks are imported
+            exactly. If false, they are summed into a single event. Depending
+            on the sequence, simulation might be faster if set to false, but
+            the simulated diffusion changes with simplified trajectoreis.
+        print_stats : bool
+            If set to true, additional information is printed during import
+
+        Returns
+        -------
+        mr0.Sequence
+            The imported file as mr0 Sequence
+        """
+        start = time()
+        parser = pydisseqt.load_pulseq(file_name)
+        if print_stats:
+            print(f"Importing the .seq file took {time() - start} s")
+        start = time()
+        seq = cls()
+
+        # We should do at least _some_ guess for the pulse usage
+        def pulse_usage(angle: float) -> PulseUsage:
+            if abs(angle) < 100 * np.pi / 180:
+                return PulseUsage.EXCIT
+            else:
+                return PulseUsage.REFOC
+
+        # Get time points of all pulses
+        pulses = []  # Contains pairs of (pulse_start, pulse_end)
+        tmp = parser.encounter("rf", 0.0)
+        while tmp is not None:
+            pulses.append(tmp)
+            tmp = parser.encounter("rf", tmp[1])  # pulse_end
+
+        # Iterate over all repetitions (we ignore stuff before the first pulse)
+        for i in range(len(pulses)):
+            # Calculate repetition start and end time based on pulse centers
+            rep_start = (pulses[i][0] + pulses[i][1]) / 2
+            if i + 1 < len(pulses):
+                rep_end = (pulses[i + 1][0] + pulses[i + 1][1]) / 2
+            else:
+                rep_end = parser.duration()
+
+            # Fetch additional data needed for building the mr0 sequence
+            pulse = parser.integrate_one(pulses[i][0], pulses[i][1]).pulse
+
+            adcs = parser.events("adc", rep_start, rep_end)
+
+            # To simulate diffusion, we want to more exactly simulate gradient
+            # trajectories between pulses and the ADC block
+            if exact_trajectories:
+                # First and last timepoint in repetition with a gradient sample
+                first = pulses[i][1]
+                last = (pulses[i + 1][0] if i + 1 < len(pulses) else rep_end)
+                eps = 1e-6  # Move a bit past start / end of repetition
+                # Gradient samples can be duplicated between x, y, z.
+                # They are deduplicated after rounding to `precision` digits
+                precision = 6
+
+                if len(adcs) > 0:
+                    grad_before = sorted(set([round(t, precision) for t in (
+                        parser.events("grad x", first + eps, adcs[0] - eps) +
+                        parser.events("grad y", first + eps, adcs[0] - eps) +
+                        parser.events("grad z", first + eps, adcs[0] - eps)
+                    )]))
+                    grad_after = sorted(set([round(t, precision) for t in (
+                        parser.events("grad x", adcs[-1] + eps, last - eps) +
+                        parser.events("grad y", adcs[-1] + eps, last - eps) +
+                        parser.events("grad z", adcs[-1] + eps, last - eps)
+                    )]))
+                    # Last repetition: no pulse, ignore [last, rep_end]
+                    if i == len(pulses) - 1:
+                        abs_times = [rep_start, first] + grad_before + adcs
+                    else:
+                        abs_times = ([rep_start, first] + grad_before + adcs +
+                                     grad_after + [last, rep_end])
+                    # Index of first ADC: -1 - we count spans between indices
+                    adc_start = 2 + len(grad_before) - 1
+                else:
+                    grad = sorted(set([round(t, precision) for t in (
+                        parser.events("grad x", first + eps, last - eps) +
+                        parser.events("grad y", first + eps, last - eps) +
+                        parser.events("grad z", first + eps, last - eps)
+                    )]))
+                    # Last repetition: no pulse, ignore [last, rep_end]
+                    if i == len(pulses) - 1:
+                        abs_times = [rep_start, first] + grad
+                    else:
+                        abs_times = [rep_start, first] + grad + [last, rep_end]
+                    adc_start = None
+            else:
+                # No gradient samples, only adc and one final to the next pulse
+                abs_times = [rep_start] + adcs + [rep_end]
+                adc_start = 0
+
+            event_count = len(abs_times) - 1
+            samples = parser.sample(adcs)
+            moments = parser.integrate(abs_times)
+
+            if print_stats:
+                print(
+                    f"Rep. {i + 1}: {event_count} samples, of which "
+                    f"{len(adcs)} are ADC (starting at {adc_start})"
+                )
+
+            # -- Now we build the mr0 Sequence repetition --
+
+            rep = seq.new_rep(event_count)
+            rep.pulse.angle = pulse.angle
+            rep.pulse.phase = pulse.phase
+            rep.pulse.usage = pulse_usage(pulse.angle)
+
+            rep.event_time[:] = torch.as_tensor(np.diff(abs_times))
+
+            rep.gradm[:, 0] = torch.as_tensor(moments.gradient.x)
+            rep.gradm[:, 1] = torch.as_tensor(moments.gradient.y)
+            rep.gradm[:, 2] = torch.as_tensor(moments.gradient.z)
+
+            if adc_start is not None:
+                phases = np.pi / 2 - torch.as_tensor(samples.adc.phase)
+                rep.adc_usage[adc_start:adc_start + len(adcs)] = 1
+                rep.adc_phase[adc_start:adc_start + len(adcs)] = phases
+
+        if print_stats:
+            print(f"Converting the sequence to mr0 took {time() - start} s")
+        return seq
+
+    @classmethod
     def from_seq_file(cls, file_name: str) -> Sequence:
         """Import a sequence from a pulseq .seq file.
+
+        # This function is deprecated, use `Sequence.import_file` instead
 
         The importer currently minimizes the amount of used `mr0` sequence
         events. This can be problematic for diffusion weighted sequences,
@@ -415,6 +560,10 @@ class Sequence(list):
         Sequence
             Imported sequence, converted to MRzero
         """
+        print(
+            "WARNING: Use of deprecated Sequence.from_seq_file,"
+            "use Sequence.import_file instead"
+        )
         seq = Sequence()
         for tmp_rep in intermediate(PulseqFile(file_name)):
             rep = seq.new_rep(tmp_rep[0])
@@ -449,12 +598,11 @@ class Sequence(list):
             assert i == tmp_rep[0]
         return seq
 
-    def plot_kspace_trajectory(
-            self,
-            figsize: tuple[float, float] = (5, 5),
-            plotting_dims: str = 'xy',
-            plot_timeline: bool = True
-        ):
+    def plot_kspace_trajectory(self,
+                               figsize: tuple[float, float] = (5, 5),
+                               plotting_dims: str = 'xy',
+                               plot_timeline: bool = True
+                               ):
         """Plot the kspace trajectory produced by self.
 
         Parameters
