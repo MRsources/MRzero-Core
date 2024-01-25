@@ -5,6 +5,7 @@
 
 # Phantom
 
+Phantoms based on BrainWeb data can be downloaded and generated easily, as explained [here](generating_phantoms).
 The data required by the simulation is stored in the {class}`SimData` class. It holds all the necessary maps as sparse tensors of voxels, the voxel position is stored in one of those tensors. {class}`SimData` should not be created directly, but rather by using one of the phantoms. Currently, there are two phantom classes available:
 
 ::::{grid}
@@ -40,23 +41,6 @@ When building {class}`SimData`, a voxel shape can be selected. Following options
 | `"sinc"`       | The hard edge of the `"exact_sinc"` in k-space can be problematic for optimization. The default `"sinc"` shape has uses a sigmoid to smoothly drop to zero between the Nyquist frequency and the next k-space sample |
 | `"box"`        | A box shaped voxel, with a sinc shaped k-space responce. When used for simulation, this responce will blur the image and at the same time introduce higher frequencies.
 | `"gauss"`      | Normal distribution shaped voxels. Voxel size describes the variance. Only available for {class}`CustomVoxelPhantom`. |
-
-
-## BrainWeb
-
-Phantoms are built from [BrainWeb](https://brainweb.bic.mni.mcgill.ca/) data. This data is not included directly. Instead, a BrainWeb downloader is part of `mr0`, that can be run once to download all segmentation data provided by BrainWeb, which is then filled to produce files that can be loaded as mentioned [above](load_brainweb). To download all 20 available phantoms at full resolution, stored by default into `<current-working-directory>/brainweb`, run the following code:
-
-```python
-import MRzeroCore as mr0
-
-for subject in mr0.brainweb.SUBJECTS:
-    mr0.brainweb.generate_phantom(subject)
-```
-
-
-```{eval-rst}
-.. autofunction:: MRzeroCore.brainweb.generate_phantom
-```
 
 
 (voxel_grid_phantom)=

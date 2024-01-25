@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing import Literal
 from scipy import io
 import numpy as np
 import torch
@@ -42,13 +43,6 @@ class VoxelGridPhantom:
     As it is bandwidth limited, we assume that there is no signal above the
     Nyquist frequency. This leads to the usage of sinc-shaped voxels.
 
-    This phantom has two FOVs: ``base_fov`` encodes the physical size in meters
-    and is set on load. ``rel_fov`` is initially 1 and is changed by some
-    operations like reducing the phantom to a few slices. This allows to either
-    use only ``rel_fov`` in the simulation so that the sequence can still
-    assume an FOV of 1, or to use ``base_fov * rel_fov`` and use SI units in
-    the sequence definition.
-
     Attributes
     ----------
     PD : torch.Tensor
@@ -67,10 +61,8 @@ class VoxelGridPhantom:
         (coil_count, sx, sy, sz) tensor of RF coil profiles
     coil_sens : torch.Tensor
         (coil_count, sx, sy, sz) tensor of coil sensitivities
-    base_fov : torch.Tensor
-        Base size of the original loaded data, in meters.
-    rel_fov : torch.Tensor
-        Actual phantom size relative to ``base_fov``.
+    size : torch.Tensor
+        Size of the data, in meters.
     """
 
     def __init__(
@@ -83,8 +75,7 @@ class VoxelGridPhantom:
         B0: torch.Tensor,
         B1: torch.Tensor,
         coil_sens: torch.Tensor,
-        base_fov: torch.Tensor,
-        rel_fov: torch.Tensor,
+        size: torch.Tensor,
     ) -> None:
         """Set the phantom attributes to the provided parameters.
 
@@ -99,30 +90,31 @@ class VoxelGridPhantom:
         self.B0 = B0
         self.B1 = B1
         self.coil_sens = coil_sens
-        self.base_fov = base_fov
-        self.rel_fov = rel_fov
+        self.size = size
 
     def build(self, PD_threshold: float = 1e-6,
-              use_SI_FoV: bool = False, voxel_shape="sinc") -> SimData:
+              voxel_shape: Literal["sinc", "box", "point"] = "sinc"
+              ) -> SimData:
         """Build a :class:`SimData` instance for simulation.
 
         Arguments
         ---------
-        PD_threshold: float
+        PD_threshold : float
             All voxels with a proton density below this value are ignored.
-        use_SI_FoV: bool
-            If set to ``True``, the built :class:`SimData` will use its
-            physical size in meters. If set to ``False``, the ``rel_fov`` is
-            used, which means a sequence FOV of 1 is assumed.
         """
         mask = self.PD > PD_threshold
 
-        fov = (self.base_fov * self.rel_fov) if use_SI_FoV else (self.rel_fov)
         shape = torch.tensor(mask.shape)
         pos_x, pos_y, pos_z = torch.meshgrid(
-            fov[0] * torch.fft.fftshift(torch.fft.fftfreq(int(shape[0]), device=self.PD.device)),
-            fov[1] * torch.fft.fftshift(torch.fft.fftfreq(int(shape[1]), device=self.PD.device)),
-            fov[2] * torch.fft.fftshift(torch.fft.fftfreq(int(shape[2]), device=self.PD.device)),
+            self.size[0] *
+            torch.fft.fftshift(torch.fft.fftfreq(
+                int(shape[0]), device=self.PD.device)),
+            self.size[1] *
+            torch.fft.fftshift(torch.fft.fftfreq(
+                int(shape[1]), device=self.PD.device)),
+            self.size[2] *
+            torch.fft.fftshift(torch.fft.fftfreq(
+                int(shape[2]), device=self.PD.device)),
         )
 
         voxel_pos = torch.stack([
@@ -132,11 +124,11 @@ class VoxelGridPhantom:
         ], dim=1)
 
         if voxel_shape == "box":
-            dephasing_func = lambda t, n: sinc(t, 0.5 / n)
+            def dephasing_func(t, n): return sinc(t, 0.5 / n)
         elif voxel_shape == "sinc":
-            dephasing_func = lambda t, n: sigmoid(t, n)
+            def dephasing_func(t, n): return sigmoid(t, n)
         elif voxel_shape == "point":
-            dephasing_func = lambda t, _: identity(t)
+            def dephasing_func(t, _): return identity(t)
         else:
             raise ValueError(f"Unsupported voxel shape '{voxel_shape}'")
 
@@ -149,11 +141,12 @@ class VoxelGridPhantom:
             self.B0[mask],
             self.B1[:, mask],
             self.coil_sens[:, mask],
-            self.base_fov * self.rel_fov,  # Always SI, only used for diffusion
+            self.size,
             voxel_pos,
-            torch.tensor(shape, device=self.PD.device) / 2 / fov,
+            torch.tensor(shape, device=self.PD.device) / 2 / self.size,
             dephasing_func,
-            recover_func=lambda d: recover(mask, self.base_fov, self.rel_fov, d)
+            recover_func=lambda d: recover(
+                mask, self.base_fov, self.rel_fov, d)
         )
 
     @classmethod
@@ -182,11 +175,14 @@ class VoxelGridPhantom:
         B0 -= (B0 * weight).sum()
         B1 /= (B1 * weight).sum()
 
+        try:
+            size = torch.tensor(data['FOV'])
+        except KeyError:
+            size = torch.tensor([0.192, 0.192, 0.192])
+
         return cls(
             PD, T1, T2, T2dash, D, B0, B1[None, ...],
-            coil_sens=torch.ones(1, *PD.shape),
-            base_fov=torch.tensor([0.192, 0.192, 0.192]),
-            rel_fov=torch.ones(3)
+            torch.ones(1, *PD.shape), size,
         )
 
     @classmethod
@@ -255,8 +251,7 @@ class VoxelGridPhantom:
             data[..., 3],  # B0
             data[..., 4][None, ...],  # B1
             coil_sens=torch.ones(1, *data.shape[:-1]),
-            base_fov=torch.tensor([0.2, 0.2, 0.008]),
-            rel_fov=torch.ones(3)
+            size=torch.tensor([0.2, 0.2, 0.008]),
         )
 
     def slices(self, slices: list[int]) -> VoxelGridPhantom:
@@ -274,9 +269,6 @@ class VoxelGridPhantom:
         """
         assert 0 <= any([slices]) < self.PD.shape[2]
 
-        # fov = self.rel_fov.clone()
-        # fov[2] *= len(slices) / self.PD.shape[2]
-
         def select(tensor: torch.Tensor):
             return tensor[..., slices].view(
                 *list(self.PD.shape[:2]), len(slices)
@@ -291,8 +283,7 @@ class VoxelGridPhantom:
             select(self.B0),
             select(self.B1).unsqueeze(0),
             select(self.coil_sens).unsqueeze(0),
-            self.base_fov.clone(),
-            self.rel_fov.clone(),
+            self.size.clone(),
         )
 
     def scale_fft(self, x: int, y: int, z: int) -> VoxelGridPhantom:
@@ -331,8 +322,7 @@ class VoxelGridPhantom:
             scale(self.B0),
             scale(self.B1.squeeze()).unsqueeze(0),
             scale(self.coil_sens.squeeze()).unsqueeze(0),
-            self.base_fov.clone(),
-            self.rel_fov.clone(),
+            self.size.clone(),
         )
 
     def interpolate(self, x: int, y: int, z: int) -> VoxelGridPhantom:
@@ -379,17 +369,13 @@ class VoxelGridPhantom:
             resample(self.B0),
             resample_multicoil(self.B1),
             resample_multicoil(self.coil_sens),
-            self.base_fov.clone(),
-            self.rel_fov.clone(),
+            self.size.clone(),
         )
 
     def plot(self) -> None:
         """Print and plot all data stored in this phantom."""
         print("VoxelGridPhantom")
-        print(
-            f"FOV: base * rel = {self.base_fov} * {self.rel_fov} "
-            f"= {self.base_fov * self.rel_fov}"
-        )
+        print(f"size = {self.size}")
         # Center slice
         s = self.PD.shape[2] // 2
         # Warn if we only print a part of all data
@@ -434,39 +420,37 @@ class VoxelGridPhantom:
         plt.imshow(self.coil_sens[0, :, :, s].T.cpu(), vmin=0, origin="lower")
         plt.colorbar()
         plt.show()
-        
+
     def plot3D(self, data2print: int = 0) -> None:
         """Print and plot all slices of one selected data stored in this phantom."""
         print("VoxelGridPhantom")
-        print(
-            f"FOV: base * rel = {self.base_fov} * {self.rel_fov} "
-            f"= {self.base_fov * self.rel_fov}"
-        )
+        print(f"size = {self.size}")
         print()
-        
+
         label = ['PD', 'T1', 'T2', "T2'", "D", "B0", "B1", "coil sens"]
-        
+
         tensors = [
-            self.PD, self.T1, self.T2, self.T2dash, self.D, self.B0, 
+            self.PD, self.T1, self.T2, self.T2dash, self.D, self.B0,
             self.B1.squeeze(0), self.coil_sens
         ]
-        
+
         # Warn if we only print a part of all data
         print(f"Plotting {label[data2print]}")
-        
+
         tensor = tensors[data2print].squeeze(0)
-        
-        util.plot3D(tensor,figsize=(20, 5))
+
+        util.plot3D(tensor, figsize=(20, 5))
         plt.title(label[data2print])
         plt.show()
 
 
-def recover(mask, base_fov, rel_fov, sim_data: SimData) -> VoxelGridPhantom:
+def recover(mask, sim_data: SimData) -> VoxelGridPhantom:
     """Provided to :class:`SimData` to reverse the ``build()``"""
     def to_full(sparse):
         assert sparse.ndim < 3
         if sparse.ndim == 2:
-            full = torch.zeros([sparse.shape[0], *mask.shape])
+            full = torch.zeros(
+                [sparse.shape[0], *mask.shape], dtype=sparse.dtype)
             full[:, mask] = sparse.cpu()
         else:
             full = torch.zeros(mask.shape)
@@ -482,8 +466,7 @@ def recover(mask, base_fov, rel_fov, sim_data: SimData) -> VoxelGridPhantom:
         to_full(sim_data.B0),
         to_full(sim_data.B1),
         to_full(sim_data.coil_sens),
-        base_fov,
-        rel_fov
+        sim_data.size
     )
 
 

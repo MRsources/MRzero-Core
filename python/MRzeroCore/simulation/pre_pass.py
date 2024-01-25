@@ -23,7 +23,7 @@ def compute_graph(
         max_state_count,
         min_state_mag,
         data.nyquist.tolist(),
-        data.fov.tolist(),
+        data.size.tolist(),
         data.avg_B1_trig
     )
 
@@ -37,7 +37,7 @@ def compute_graph_ext(
     max_state_count: int = 200,
     min_state_mag: float = 1e-4,
     nyquist: tuple[float, float, float] = (float('inf'), float('inf'), float('inf')),
-    fov: tuple[float, float, float] = (1.0, 1.0, 1.0),
+    size: tuple[float, float, float] = (1.0, 1.0, 1.0),
     avg_b1_trig: torch.Tensor | None = None,
 ) -> Graph:
     """Compute the PDG from the sequence and phantom data provided.
@@ -60,8 +60,8 @@ def compute_graph_ext(
         Minimum magnetization of a state to be simulated.
     nyquist : (float, float, float)
         Nyquist frequency of simulated data. Signal is cut off for higher frequencies.
-    fov : (float, float, float)
-        Size of the simulated phantom. Used for diffusion.
+    size : (float, float, float)
+        Size of the simulated phantom. Used for scaling grads for normalized seqs.
     avg_b1_trig : torch.Tensor | None
         Tensor containing the B1-averaged trigonometry used in the rotation matrix.
         Default values are used if `None` is passed.
@@ -81,7 +81,7 @@ def compute_graph_ext(
         seq,
         T1, T2, T2dash, D,
         max_state_count, min_state_mag,
-        nyquist, fov,
+        nyquist, size, seq.normalized_grads,
         avg_b1_trig
     ))
 

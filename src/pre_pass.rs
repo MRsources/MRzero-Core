@@ -1,6 +1,7 @@
 use num_complex::Complex32;
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::f32::consts::TAU;
 use std::iter;
 use std::rc::Rc;
 
@@ -91,7 +92,7 @@ pub fn comp_graph(
     max_dist_count: usize,
     min_dist_mag: f32,
     nyquist: [f32; 3],
-    k_to_si: [f32; 3], // convert sequence k to SI units
+    grad_scale: [f32; 3], // scale gradients to SI if they are normalized
     avg_b1_trig: &[[f32; 3]],
 ) -> Vec<Vec<RcDist>> {
     let mut graph: Vec<Vec<RcDist>> = Vec::new();
@@ -140,14 +141,14 @@ pub fn comp_graph(
                 .zip(&rep.adc_mask)
             {
                 let k1 = dist.kt_vec;
-                dist.kt_vec[0] += gradm[0];
-                dist.kt_vec[1] += gradm[1];
-                dist.kt_vec[2] += gradm[2];
+                dist.kt_vec[0] += gradm[0] * grad_scale[0];
+                dist.kt_vec[1] += gradm[1] * grad_scale[1];
+                dist.kt_vec[2] += gradm[2] * grad_scale[2];
                 dist.kt_vec[3] += dt;
                 let k2 = dist.kt_vec;
 
-                let k1 = [k1[0] * k_to_si[0], k1[1] * k_to_si[1], k1[2] * k_to_si[2]];
-                let k2 = [k2[0] * k_to_si[0], k2[1] * k_to_si[1], k2[2] * k_to_si[2]];
+                let k1 = [k1[0] * TAU, k1[1] * TAU, k1[2] * TAU];
+                let k2 = [k2[0] * TAU, k2[1] * TAU, k2[2] * TAU];
 
                 // Integrating (dt omitted) over k²(t) = ((1-x)*k1 + x*k2)^2
                 // gives 1/3 * (k1^2 + k1*k2 + k2^2)
@@ -176,9 +177,8 @@ pub fn comp_graph(
 
         for mut dist in dists_z.iter().map(|d| d.borrow_mut()) {
             let sqr = |x| x * x;
-            let k2 = sqr(dist.kt_vec[0] * k_to_si[0])
-                + sqr(dist.kt_vec[1] * k_to_si[1])
-                + sqr(dist.kt_vec[2] * k_to_si[2]);
+            let k2 =
+                sqr(dist.kt_vec[0] * TAU) + sqr(dist.kt_vec[1] * TAU) + sqr(dist.kt_vec[2] * TAU);
 
             dist.mag *= r1 * (-d * rep_time * k2).exp();
         }

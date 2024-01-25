@@ -24,8 +24,9 @@ from ..phantom.sim_data import SimData
 
 
 def isochromat_sim(seq: Sequence, data: SimData, spin_count: int,
-             perfect_spoiling=False
-             ) -> torch.Tensor:
+                   perfect_spoiling=False,
+                   print_progress: bool = True,
+                   ) -> torch.Tensor:
     """
     Simulate ``seq`` on ``data`` with ``spin_count`` spins per voxel.
 
@@ -87,7 +88,8 @@ def isochromat_sim(seq: Sequence, data: SimData, spin_count: int,
     signal = []
 
     for r, rep in enumerate(seq):
-        print(f"\r {r+1} / {len(seq)}", end="")
+        if print_progress:
+            print(f"\r {r+1} / {len(seq)}", end="")
 
         if perfect_spoiling and rep.pulse.usage == PulseUsage.EXCIT:
             spins[:, :, :2] = 0
@@ -117,7 +119,8 @@ def isochromat_sim(seq: Sequence, data: SimData, spin_count: int,
                 adc_rot = torch.exp(1j * rep.adc_phase[e])
                 rep_sig[e, :] = measure(spins, coil_sensitivity) * adc_rot
 
-    print(" - done")
+    if print_progress:
+        print(" - done")
     # Only return measured samples
     return torch.cat([
         sig[rep.adc_usage > 0, :] for sig, rep in zip(signal, seq)

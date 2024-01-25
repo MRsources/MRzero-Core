@@ -33,8 +33,9 @@ from .adc import Adc
 # pracitce anyways.
 
 
-def intermediate(file: PulseqFile
-                 ) -> list[tuple[int, Pulse, list[Spoiler | Adc]]]:
+def intermediate(
+    file: PulseqFile
+) -> list[tuple[int, Pulse, list[Spoiler | Adc]]]:
     seq = []
     # Convert to intermediate representation
     for block in file.blocks.values():

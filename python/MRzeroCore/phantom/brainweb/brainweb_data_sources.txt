@@ -1,3 +1,8 @@
+! NOTE
+7T maps are not checked as thrououghly. Only source so far:
+https://cds.ismrm.org/protected/14MProceedings/PDFfiles/3208.pdf
+
+
 # T1 and T2 times, taken from:
 # https://mri-q.com/uploads/3/4/5/7/34572113/normal_relaxation_times_at_3t.pdf
 # Value taken from paper with most participants (draw: closest to mean of all)

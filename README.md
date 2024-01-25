@@ -19,17 +19,14 @@ The typical way of using it is like the following:
 import MRzeroCore as mr0
 ```
 
-Examples on how to use can be found on [Google Colab](https://colab.research.google.com/drive/1zY9B51nJeVjNDxhQHrkimxaeXsx8zEGr), as well as in the [Documentation](https://mrzero-core.readthedocs.io/en/latest/examples.html)
+Examples on how to use can be found in the [Playground](https://mrzero-core.readthedocs.io/en/latest/playground_mr0/overview.html).
 
 ## Links
 
-Documentation: https://mrzero-core.readthedocs.io/
-
-Examples: [Google Colab](https://colab.research.google.com/drive/1zY9B51nJeVjNDxhQHrkimxaeXsx8zEGr)
-
-PyPI: https://pypi.org/project/mrzerocore/
-
-Original MRzero Paper: https://arxiv.org/abs/2002.04265
+- Documentation: https://mrzero-core.readthedocs.io/
+- Examples: [Playground](https://mrzero-core.readthedocs.io/en/latest/playground_mr0/overview.html)
+- PyPI: https://pypi.org/project/mrzerocore/
+- Original MRzero Paper: https://arxiv.org/abs/2002.04265
 
 ## Building from source
 
