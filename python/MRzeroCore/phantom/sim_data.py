@@ -32,9 +32,9 @@ class SimData:
         (coil_count, voxel_count) Per coil and per voxel B1 inhomogenity
     coil_sens : torch.Tensor
         (coil_count, voxel_count) Per coil sensitivity (arbitrary units)
-    fov : torch.Tensor
-        Physical size of the phantom, needed for diffusion (meters).
-        More specifically, a gradient moment of 1 has a wavelength of fov
+    size : torch.Tensor
+        Physical size of the phantom. If a sequence with normalized gradients
+        is simulated, size is used to scale them to match the phantom.
     avg_B1_trig : torch.Tensor
         (361, 3) values containing the PD-weighted avg of sin/cos/sin²(B1*flip)
     voxel_pos : torch.Tensor
@@ -60,7 +60,7 @@ class SimData:
         B0: torch.Tensor,
         B1: torch.Tensor,
         coil_sens: torch.Tensor,
-        fov: torch.Tensor,
+        size: torch.Tensor,
         voxel_pos: torch.Tensor,
         nyquist: torch.Tensor,
         dephasing_func: Callable[[torch.Tensor, torch.Tensor], torch.Tensor],
@@ -93,7 +93,7 @@ class SimData:
         self.B0 = B0.clone()
         self.B1 = B1.clone()
         self.coil_sens = coil_sens.clone()
-        self.fov = fov.clone()
+        self.size = size.clone()
         self.voxel_pos = voxel_pos.clone()
         self.avg_B1_trig = calc_avg_B1_trig(B1, PD)
         self.nyquist = nyquist.clone()
@@ -102,7 +102,7 @@ class SimData:
 
     def cuda(self) -> SimData:
         """Move the simulation data to the default CUDA device.
-        
+
         The returned :class:`SimData` is equivalent to :attr:`self` if the data
         already was on the GPU.
         """
@@ -115,7 +115,7 @@ class SimData:
             self.B0.cuda(),
             self.B1.cuda(),
             self.coil_sens.cuda(),
-            self.fov.cuda(),
+            self.size.cuda(),
             self.voxel_pos.cuda(),
             self.nyquist.cuda(),
             self.dephasing_func,
@@ -124,7 +124,7 @@ class SimData:
 
     def cpu(self) -> SimData:
         """Move the simulation data to the CPU.
-        
+
         The returned :class:`SimData` is equivalent to :attr:`self` if the data
         already was on the CPU.
         """
@@ -137,7 +137,7 @@ class SimData:
             self.B0.cpu(),
             self.B1.cpu(),
             self.coil_sens.cpu(),
-            self.fov.cpu(),
+            self.size.cpu(),
             self.voxel_pos.cpu(),
             self.nyquist.cpu(),
             self.dephasing_func,

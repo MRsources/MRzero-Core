@@ -268,9 +268,24 @@ class Sequence(list):
     additionally implements MRI sequence specific methods.
     """
 
-    def __init__(self, repetitions: Iterable[Repetition] = []):
-        """Create a ``Sequence`` instance by passing repetitions."""
+    def __init__(self, repetitions: Iterable[Repetition] = [],
+                 normalized_grads: bool = True):
+        """Create a ``Sequence`` instance by passing repetitions.
+
+        Parameters
+        ----------
+        repetitions
+            Initialize this Sequence directly with a list of repetitions
+        normalized_grads : bool
+            When this sequence is loaded from pulseq, this is set to `False`.
+            The default of `True` flags this sequence for using normalized
+            k-values, which is what is usually desired when building the
+            sequence in mr0, using gradient steps of 1. If true, these
+            gradients are then scaled to the phantom size on simulation.
+            If false, no scaling happens and SI units are assumed.
+        """
         super().__init__(repetitions)
+        self.normalized_grads = normalized_grads
 
     def cuda(self) -> Sequence:
         """Move this sequence to the specified CUDA device and return it."""
@@ -287,7 +302,7 @@ class Sequence(list):
 
     def clone(self) -> Sequence:
         """Return a deepcopy of self."""
-        return Sequence(rep.clone() for rep in self)
+        return Sequence([rep.clone() for rep in self], self.normalized_grads)
 
     def new_rep(self, event_count) -> Repetition:
         """Return a zeroed out repetition that is part of this ``Sequence``."""
@@ -429,7 +444,7 @@ class Sequence(list):
         if print_stats:
             print(f"Importing the .seq file took {time() - start} s")
         start = time()
-        seq = cls()
+        seq = cls(normalized_grads=False)
 
         # We should do at least _some_ guess for the pulse usage
         def pulse_usage(angle: float) -> PulseUsage:
@@ -564,7 +579,7 @@ class Sequence(list):
             "WARNING: Use of deprecated Sequence.from_seq_file,"
             "use Sequence.import_file instead"
         )
-        seq = Sequence()
+        seq = Sequence(normalized_grads=False)
         for tmp_rep in intermediate(PulseqFile(file_name)):
             rep = seq.new_rep(tmp_rep[0])
             rep.pulse.angle = torch.as_tensor(

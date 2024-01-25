@@ -44,7 +44,10 @@ def execute_graph(graph: Graph,
     signal : torch.Tensor
         The simulated signal of the sequence.
     """
-    k_to_si = 2*np.pi / data.fov
+    if seq.normalized_grads:
+        grad_scale = 1 / data.size
+    else:
+        grad_scale = torch.ones_like(data.size)
     signal: list[torch.Tensor] = []
 
     # Proton density can be baked into coil sensitivity. shape: voxels x coils
@@ -113,7 +116,7 @@ def execute_graph(graph: Graph,
 
         # shape: events x 4
         trajectory = torch.cumsum(torch.cat([
-            rep.gradm, rep.event_time[:, None]
+            rep.gradm * grad_scale[None, :], rep.event_time[:, None]
         ], 1), 0)
         dt = rep.event_time
 
@@ -149,9 +152,9 @@ def execute_graph(graph: Graph,
             dist_traj = dist.kt_vec + trajectory
 
             # Diffusion
-            k2 = dist_traj[:, :3] * k_to_si
+            k2 = dist_traj[:, :3] * 2 * np.pi
             k1 = torch.empty_like(k2)  # Calculate k-space at start of event
-            k1[0, :] = dist.kt_vec[:3] * k_to_si
+            k1[0, :] = dist.kt_vec[:3] * 2 * np.pi
             k1[1:, :] = k2[:-1, :]
             # Integrate over each event to get b factor (lin. interp. grad)
             b = 1/3 * dt * (k1**2 + k1*k2 + k2**2).sum(1)
@@ -197,7 +200,7 @@ def execute_graph(graph: Graph,
                 dist.mag = dist.mag * r2 * diffusion[-1, :]
                 dist.kt_vec = dist_traj[-1]
             else:  # z or z0
-                k = torch.linalg.vector_norm(dist.kt_vec[:3] * k_to_si)
+                k = torch.linalg.vector_norm(dist.kt_vec[:3] * 2 * np.pi)
                 diffusion = torch.exp(-1e-9 * data.D * total_time * k**2)
                 dist.mag = dist.mag * r1 * diffusion
             if dist.dist_type == 'z0':

@@ -90,7 +90,7 @@ impl PyDistribution {
     }
 }
 
-/// compute_graph(seq, t1, t2, t2dash, max_dist_count, min_dist_mag, nyquist, fov)
+/// compute_graph(seq, t1, t2, t2dash, max_dist_count, min_dist_mag, nyquist, size, normalized_grads)
 /// --
 ///
 /// Computes a graph for the given sequence and parameters.
@@ -103,7 +103,8 @@ impl PyDistribution {
 /// max_dist_count: Maximum number of + or z distributions simulated
 /// min_dist_mag: Minimum absolute magnetisation of a simulated distributions
 /// nyquist: Frequency cutoff above no signal will be generated
-/// fov: Size of FOV [m], needed for diffusion
+/// size: Size [m], only needed if normalized_grads=True to scale them
+/// normalized_grads: if true scale gradients by size
 #[pyfunction]
 #[allow(clippy::too_many_arguments)]
 fn compute_graph<'p>(
@@ -116,7 +117,8 @@ fn compute_graph<'p>(
     max_dist_count: usize,
     min_dist_mag: f32,
     nyquist: [f32; 3],
-    fov: [f32; 3],
+    size: [f32; 3],
+    normalized_grads: bool,
     avg_b1_trig: &PyAny,
 ) -> PyResult<&'p PyList> {
     println!(">>>> Rust - compute_graph(...) >>>");
@@ -124,9 +126,9 @@ fn compute_graph<'p>(
     let mut sequence = Vec::new();
 
     let tensor = avg_b1_trig.getattr("cpu")?.call0()?;
-    let size: usize = tensor.getattr("numel")?.call0()?.extract()?;
+    let lut_size: usize = tensor.getattr("numel")?.call0()?.extract()?;
     // NOTE: We should also check if the type is torch.float32
-    assert_eq!(size, 3 * 361);
+    assert_eq!(lut_size, 3 * 361);
     let data_ptr: usize = tensor.getattr("data_ptr")?.call0()?.extract()?;
     let avg_b1_trig = unsafe { from_raw_parts(data_ptr as *mut [f32; 3], 361).to_vec() };
 
@@ -167,7 +169,11 @@ fn compute_graph<'p>(
     let start = Instant::now();
     println!("Compute Graph");
 
-    let tau = std::f32::consts::TAU;
+    let grad_scale = if normalized_grads {
+        [1.0 / size[0], 1.0 / size[1], 1.0 / size[2]]
+    } else {
+        [1.0, 1.0, 1.0]
+    };
     let mut graph = comp_graph(
         &sequence,
         t1,
@@ -177,7 +183,7 @@ fn compute_graph<'p>(
         max_dist_count,
         min_dist_mag,
         nyquist,
-        [tau / fov[0], tau / fov[1], tau / fov[2]], // convert to 1/m,
+        grad_scale,
         &avg_b1_trig,
     );
 
