@@ -120,9 +120,15 @@ class VoxelGridPhantom:
         fov = (self.base_fov * self.rel_fov) if use_SI_FoV else (self.rel_fov)
         shape = torch.tensor(mask.shape)
         pos_x, pos_y, pos_z = torch.meshgrid(
-            fov[0] * torch.fft.fftshift(torch.fft.fftfreq(int(shape[0]), device=self.PD.device)),
-            fov[1] * torch.fft.fftshift(torch.fft.fftfreq(int(shape[1]), device=self.PD.device)),
-            fov[2] * torch.fft.fftshift(torch.fft.fftfreq(int(shape[2]), device=self.PD.device)),
+            fov[0] *
+            torch.fft.fftshift(torch.fft.fftfreq(
+                int(shape[0]), device=self.PD.device)),
+            fov[1] *
+            torch.fft.fftshift(torch.fft.fftfreq(
+                int(shape[1]), device=self.PD.device)),
+            fov[2] *
+            torch.fft.fftshift(torch.fft.fftfreq(
+                int(shape[2]), device=self.PD.device)),
         )
 
         voxel_pos = torch.stack([
@@ -132,11 +138,11 @@ class VoxelGridPhantom:
         ], dim=1)
 
         if voxel_shape == "box":
-            dephasing_func = lambda t, n: sinc(t, 0.5 / n)
+            def dephasing_func(t, n): return sinc(t, 0.5 / n)
         elif voxel_shape == "sinc":
-            dephasing_func = lambda t, n: sigmoid(t, n)
+            def dephasing_func(t, n): return sigmoid(t, n)
         elif voxel_shape == "point":
-            dephasing_func = lambda t, _: identity(t)
+            def dephasing_func(t, _): return identity(t)
         else:
             raise ValueError(f"Unsupported voxel shape '{voxel_shape}'")
 
@@ -153,7 +159,8 @@ class VoxelGridPhantom:
             voxel_pos,
             torch.tensor(shape, device=self.PD.device) / 2 / fov,
             dephasing_func,
-            recover_func=lambda d: recover(mask, self.base_fov, self.rel_fov, d)
+            recover_func=lambda d: recover(
+                mask, self.base_fov, self.rel_fov, d)
         )
 
     @classmethod
@@ -439,7 +446,7 @@ class VoxelGridPhantom:
         plt.imshow(self.coil_sens[0, :, :, s].T.cpu(), vmin=0, origin="lower")
         plt.colorbar()
         plt.show()
-        
+
     def plot3D(self, data2print: int = 0) -> None:
         """Print and plot all slices of one selected data stored in this phantom."""
         print("VoxelGridPhantom")
@@ -448,20 +455,20 @@ class VoxelGridPhantom:
             f"= {self.base_fov * self.rel_fov}"
         )
         print()
-        
+
         label = ['PD', 'T1', 'T2', "T2'", "D", "B0", "B1", "coil sens"]
-        
+
         tensors = [
-            self.PD, self.T1, self.T2, self.T2dash, self.D, self.B0, 
+            self.PD, self.T1, self.T2, self.T2dash, self.D, self.B0,
             self.B1.squeeze(0), self.coil_sens
         ]
-        
+
         # Warn if we only print a part of all data
         print(f"Plotting {label[data2print]}")
-        
+
         tensor = tensors[data2print].squeeze(0)
-        
-        util.plot3D(tensor,figsize=(20, 5))
+
+        util.plot3D(tensor, figsize=(20, 5))
         plt.title(label[data2print])
         plt.show()
 
@@ -471,7 +478,8 @@ def recover(mask, base_fov, rel_fov, sim_data: SimData) -> VoxelGridPhantom:
     def to_full(sparse):
         assert sparse.ndim < 3
         if sparse.ndim == 2:
-            full = torch.zeros([sparse.shape[0], *mask.shape], dtype = sparse.dtype)
+            full = torch.zeros(
+                [sparse.shape[0], *mask.shape], dtype=sparse.dtype)
             full[:, mask] = sparse.cpu()
         else:
             full = torch.zeros(mask.shape)
