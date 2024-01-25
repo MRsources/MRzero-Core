@@ -62,13 +62,13 @@ Gradient-free optimization with [nevergrad](https://github.com/facebookresearch/
 famous historic plots recreated
 
 
-## FLASH (temporary notebooks)
+## FLASH (pure MR0 example notebooks)
 
 | Sequence | Google Colab |
 | -------- | ------------ |
-| [Pure `MR0` FLASH](flash) | <a target="_blank" href="https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/examples/flash.ipynb">flash.ipynb</a> |
-| [pulseq FLASH](pulseq_flash) | <a target="_blank" href="https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/examples/pulseq_flash.ipynb">pulseq_flash.ipynb</a> |
-| [pulseq pTx FLASH](pulseq_pTx) | <a target="_blank" href="https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/examples/pulseq_sim_pTx.ipynb">pulseq_sim_pTx.ipynb</a> |
+| [Pure `MR0` FLASH](flash) | <a target="_blank" href="https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/flash.ipynb">flash.ipynb</a> |
+| [pulseq FLASH](pulseq_flash) | <a target="_blank" href="https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/pulseq_flash.ipynb">pulseq_flash.ipynb</a> |
+| [pulseq pTx FLASH](pulseq_pTx) | <a target="_blank" href="https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/pulseq_sim_pTx.ipynb">pulseq_sim_pTx.ipynb</a> |
 
 
 ## Notebook execution results
