@@ -38,6 +38,8 @@ def execute_graph(graph: Graph,
     min_latent_signal : float
         Minimum "latent_signal" metric of a state for it to be simulated.
         Should be <= than min_emitted_signal.
+    print_progress : bool
+        If true, the current repetition is printed while simulating.
 
     Returns
     -------
