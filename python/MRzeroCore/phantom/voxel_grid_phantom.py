@@ -145,8 +145,7 @@ class VoxelGridPhantom:
             voxel_pos,
             torch.tensor(shape, device=self.PD.device) / 2 / self.size,
             dephasing_func,
-            recover_func=lambda d: recover(
-                mask, self.base_fov, self.rel_fov, d)
+            recover_func=lambda data: recover(mask, data)
         )
 
     @classmethod

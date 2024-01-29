@@ -152,8 +152,7 @@ class SimData:
     def recover(self) -> Any:
         """Recover the data that was used to build this instance."""
         if self.recover_func is None:
-            print("No recover function was provided")
-            return None
+            raise Exception("No recover function was provided")
         else:
             return self.recover_func(self)
 
