@@ -2,7 +2,7 @@
   - Change sign in gradient simulation - flips orientation of old reconstructions
   - Included util file in mr0
   - Improved plot function to support pypulseq 1.4.0-dev
-  - (TODO) Add util to documentation
+  - Add util to documentation
 - 0.2.8
   - Updated playground notebook to use new FOV definitions
   - Fixed SimData.recover()
