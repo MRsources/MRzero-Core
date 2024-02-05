@@ -3,7 +3,6 @@
   - Included util file in mr0
   - Improved plot function to support pypulseq 1.4.0-dev
   - (TODO) Add util to documentation
-  - (TODO) Add NUFFT reco to mr0 and use in scripts
 - 0.2.8
   - Updated playground notebook to use new FOV definitions
   - Fixed SimData.recover()
