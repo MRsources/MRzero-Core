@@ -9,6 +9,7 @@ chapters:
   sections:
   - file: api/sequence
   - file: api/reco
+  - file: api/util
   - file: api/phantom
   - file: api/simulation
     sections:

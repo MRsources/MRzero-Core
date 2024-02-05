@@ -8,6 +8,7 @@ from .simulation.pre_pass import compute_graph, compute_graph_ext, Graph
 from .simulation.main_pass import execute_graph
 from .reconstruction import reco_adjoint
 from .pulseq.exporter import pulseq_write_cartesian
+from . import util
 
 # Currently not exposed directly as it is not required by typical use cases
 # and also not documented. Used internally by Sequence.from_seq_file.

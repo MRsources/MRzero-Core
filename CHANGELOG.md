@@ -1,0 +1,14 @@
+- 0.2.9
+  - Change sign in gradient simulation - flips orientation of old reconstructions
+  - Included util file in mr0
+  - Improved plot function to support pypulseq 1.4.0-dev
+  - Add util to documentation
+- 0.2.8
+  - Updated playground notebook to use new FOV definitions
+  - Fixed SimData.recover()
+- 0.2.7
+  - Removed perlin-numpy from dependencies (git dependency not allowed by pypi)
+- 0.2.6
+  - New pulseq importer (correctly implements 1.2 - 1.4 spec)
+  - FOV / phantom size now in SI units per default
+  - Normalized gradients (when defining sequences in mr0) is now an explicit sequence flag
