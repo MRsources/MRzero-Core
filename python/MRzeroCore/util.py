@@ -1,16 +1,33 @@
 import os
 import time
+from typing import Literal
 import torch
 import numpy as np
 
 import matplotlib.pyplot as plt
-from pypulseq.calc_rf_center import calc_rf_center
-from pypulseq.calc_duration import calc_duration
-from pypulseq.Sequence.sequence import Sequence
-import math
+import pypulseq as pp
 
 
-def get_signal_from_real_system(path, NRep, NCol):
+def get_signal_from_real_system(path: str, NRep: int, NCol: int):
+    """Wait for a TWIX file and return its data.
+
+    This function assumes 20 recieve coils and a readout with equal number of
+    ADC samples for all repetitions.
+
+    Parameters
+    ----------
+    path : str
+        Path to TWIX file
+    NRep : int
+        Number of repetitions of the measured sequence
+    NCol : int
+        Number of ADC samples per repetition
+
+    Returns
+    -------
+    torch.tensor
+        A (samples x coils) tensor with the signal extracted from the file
+    """
     print('waiting for TWIX file from the scanner... ' + path)
     done_flag = False
     while not done_flag:
@@ -27,7 +44,8 @@ def get_signal_from_real_system(path, NRep, NCol):
             print(f"raw size: {raw.size}, expected size: {expected_size}")
 
             if raw.size != expected_size:
-                print("get_signal_from_real_system: SERIOUS ERROR, TWIX dimensions corrupt, returning zero array..")
+                print("get_signal_from_real_system: SERIOUS ERROR, "
+                      "TWIX dimensions corrupt, returning zero array..")
                 raw = np.zeros((NRep, ncoils, NCol + heuristic_shift, 2))
                 raw = raw[:, :, :NCol, 0] + 1j * raw[:, :, :NCol, 1]
             else:
@@ -45,15 +63,23 @@ def get_signal_from_real_system(path, NRep, NCol):
 
 # This plot function is a modified version from the one provided by
 # pypulseq 1.2.0post1, all changes are marked
-def pulseq_plot(seq: Sequence, type: str = 'Gradient', time_range=(0, np.inf), time_disp: str = 's', clear=False, signal=0, figid=(1,2)):
-    """
-    Plot `Sequence`.
+# NOTE: the parameters have changed in the 1.4 version, maybe we should adapt them
+def pulseq_plot(seq: pp.Sequence,
+                type: Literal['Gradient', 'Kspace'] = 'Gradient',
+                time_range: tuple[float, float] = (0, np.inf),
+                time_disp: Literal['s', 'ms', 'us'] = 's',
+                clear=False, signal=0, figid=(1, 2)):
+    """Modified pypulseq Sequence.plot() that includes an ADC signal.
+
     Parameters
     ----------
+    seq : pypulseq.Sequence
+        The sequence object to plot
     type : str
         Gradients display type, must be one of either 'Gradient' or 'Kspace'.
-    time_range : List
-        Time range (x-axis limits) for plotting the sequence. Default is 0 to infinity (entire sequence).
+    time_range : (float, float)
+        Time range (x-axis limits) for plotting the sequence.
+        Default is 0 to infinity (entire sequence).
     time_disp : str
         Time display type, must be one of `s`, `ms` or `us`.
     """
@@ -106,7 +132,7 @@ def pulseq_plot(seq: Sequence, type: str = 'Gradient', time_range=(0, np.inf), t
     t_factor = t_factor_list[valid_time_units.index(time_disp)]
     t0 = 0
     t_adc = []
-    N_adc=[0,0]
+    N_adc = [0, 0]
 # >>>> Changed
     try:
         block_events = seq.dict_block_events
@@ -120,47 +146,85 @@ def pulseq_plot(seq: Sequence, type: str = 'Gradient', time_range=(0, np.inf), t
         if is_valid:
             if getattr(block, 'adc', None) is not None:
                 adc = block.adc
-                t = adc.delay + [(x * adc.dwell) for x in range(0, int(adc.num_samples))]
+                t = adc.delay + [(x * adc.dwell)
+                                 for x in range(0, int(adc.num_samples))]
                 sp11.plot((t0 + t), np.zeros(len(t)), 'rx')
-                t_adc = np.append(t_adc, t0 + t)  # >>>> Changed: store adc samples <<<<
-                N_adc[1]+=1
-                N_adc[0]+=int(adc.num_samples)
+# >>>> Changed: store adc samples <<<<
+                t_adc = np.append(t_adc, t0 + t)
+                N_adc[1] += 1
+                N_adc[0] += int(adc.num_samples)
             if getattr(block, 'rf', None) is not None:
                 rf = block.rf
-                tc, ic = calc_rf_center(rf)
+                tc, ic = pp.calc_rf_center(rf)
                 t = rf.t + rf.delay
                 tc = tc + rf.delay
                 sp12.plot(t_factor * (t0 + t), abs(rf.signal))
-                sp13.plot(t_factor * (t0 + t), np.angle(
-                    rf.signal * np.exp(1j * rf.phase_offset) * np.exp(1j * 2 * math.pi * rf.t * rf.freq_offset)),
-                            t_factor * (t0 + tc), np.angle(rf.signal[ic] * np.exp(1j * rf.phase_offset) * np.exp(
-                        1j * 2 * math.pi * rf.t[ic] * rf.freq_offset)), 'xb')
+                sp13.plot(
+                    t_factor * (t0 + t),
+                    np.angle(
+                        rf.signal * np.exp(1j * rf.phase_offset) *
+                        np.exp(1j * 2 * np.pi * rf.t * rf.freq_offset)
+                    ),
+                    t_factor * (t0 + tc),
+                    np.angle(
+                        rf.signal[ic] * np.exp(1j * rf.phase_offset) *
+                        np.exp(1j * 2 * np.pi * rf.t[ic] * rf.freq_offset)
+                    ),
+                    'xb'
+                )
 # >>>> Changed
-                sp12.fill_between(t_factor * (t0 + t), 0, abs(rf.signal),alpha=0.5)
-                sp13.fill_between(t_factor * (t0 + t), 0, np.angle(rf.signal * np.exp(1j * rf.phase_offset) * np.exp(1j * 2 * np.pi * rf.t * rf.freq_offset)), alpha=0.5)
-                sp13.fill_between(t_factor * (t0 + t), 0, np.angle(rf.signal[ic] * np.exp(1j * rf.phase_offset) * np.exp(1j * 2 * np.pi * rf.t[ic] * rf.freq_offset)), alpha=0.5)
+                sp12.fill_between(
+                    t_factor * (t0 + t), 0,
+                    abs(rf.signal),
+                    alpha=0.5
+                )
+                sp13.fill_between(
+                    t_factor * (t0 + t), 0,
+                    np.angle(
+                        rf.signal * np.exp(1j * rf.phase_offset) *
+                        np.exp(1j * 2 * np.pi * rf.t * rf.freq_offset)
+                    ),
+                    alpha=0.5
+                )
+                sp13.fill_between(
+                    t_factor * (t0 + t), 0,
+                    np.angle(
+                        rf.signal[ic] * np.exp(1j * rf.phase_offset) *
+                        np.exp(1j * 2 * np.pi * rf.t[ic] * rf.freq_offset)
+                    ),
+                    alpha=0.5
+                )
 # <<<< End of change
             grad_channels = ['gx', 'gy', 'gz']
             for x in range(0, len(grad_channels)):
                 if getattr(block, grad_channels[x], None) is not None:
                     grad = getattr(block, grad_channels[x])
                     if grad.type == 'grad':
-                        # In place unpacking of grad.t with the starred expression
-                        t = grad.delay + [0, *(grad.t + (grad.t[1] - grad.t[0]) / 2),
-                                            grad.t[-1] + grad.t[1] - grad.t[0]]
+                        t = grad.delay + [
+                            0,
+                            *(grad.t + (grad.t[1] - grad.t[0]) / 2),
+                            grad.t[-1] + grad.t[1] - grad.t[0]
+                        ]
                         waveform = np.array([grad.first, grad.last])
                         waveform = 1e-3 * np.insert(waveform, 1, grad.waveform)
                     else:
-                        t = np.cumsum([0, grad.delay, grad.rise_time, grad.flat_time, grad.fall_time])
-                        waveform = 1e-3 * grad.amplitude * np.array([0, 0, 1, 1, 0])
+                        t = np.cumsum([
+                            0, grad.delay, grad.rise_time,
+                            grad.flat_time, grad.fall_time
+                        ])
+                        waveform = (
+                            1e-3 * grad.amplitude *
+                            np.array([0, 0, 1, 1, 0])
+                        )
                     fig2_sp_list[x].plot(t_factor * (t0 + t), waveform)
-        t0 += calc_duration(block)
+        t0 += pp.calc_duration(block)
 
     grad_plot_labels = ['x', 'y', 'z']
     sp11.set_ylabel('ADC')
     sp12.set_ylabel('RF mag (Hz)')
     sp13.set_ylabel('RF phase (rad)')
-    [fig2_sp_list[x].set_ylabel(f'G{grad_plot_labels[x]} (kHz/m)') for x in range(3)]
+    [fig2_sp_list[x].set_ylabel(
+        f'G{grad_plot_labels[x]} (kHz/m)') for x in range(3)]
 
 # >>>> Changed: added grid
     sp11.grid('on')
@@ -177,24 +241,27 @@ def pulseq_plot(seq: Sequence, type: str = 'Gradient', time_range=(0, np.inf), t
 
 # >>>> Changed: Plot signal and adc samples perhaps?
 
-    if np.size(signal)>1:
-        N_adc[0]=N_adc[0]/N_adc[1]
+    if np.size(signal) > 1:
+        N_adc[0] = N_adc[0]/N_adc[1]
         if N_adc[0].is_integer():
-            idx=np.arange(int(N_adc[0]),int(N_adc[0])*N_adc[1],int(N_adc[0]))
-            t_adc_p=np.insert(t_adc, idx, np.nan, axis=None)
-            signal=np.insert(signal, idx, np.nan, axis=None)
-            
+            idx = np.arange(int(N_adc[0]), int(
+                N_adc[0])*N_adc[1], int(N_adc[0]))
+            t_adc_p = np.insert(t_adc, idx, np.nan, axis=None)
+            signal = np.insert(signal, idx, np.nan, axis=None)
+
             sp11.plot(t_adc_p, np.abs(signal),  label='abs')
-            
-            sp11.plot(t_adc_p, np.real(signal), label='real',linewidth=0.5)
-            sp11.plot(t_adc_p, np.imag(signal), label='imag',linewidth=0.5)
-            
-            sp11.legend(loc='right',bbox_to_anchor=(1.12, 0.5), fontsize='xx-small')
+
+            sp11.plot(t_adc_p, np.real(signal), label='real', linewidth=0.5)
+            sp11.plot(t_adc_p, np.imag(signal), label='imag', linewidth=0.5)
+
+            sp11.legend(loc='right', bbox_to_anchor=(
+                1.12, 0.5), fontsize='xx-small')
         else:
-            print('Your ADCs seem to have different samples, this cannot be plotted.')
+            print('Your ADCs seem to have different samples, '
+                  'this cannot be plotted.')
             print(N_adc)
-           
-                            
+
+
 # <<<< End of change
     plt.show()
 
