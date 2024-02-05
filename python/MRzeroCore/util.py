@@ -61,6 +61,52 @@ def get_signal_from_real_system(path: str, NRep: int, NCol: int):
     return torch.tensor(raw, dtype=torch.complex64)
 
 
+def insert_signal_plot(seq: pp.Sequence, signal: np.ndarray):
+    """Insert a measured signal into a currently open pypulseq plot.
+
+    Usage:
+    ```
+    seq.plot(plot_now=False)
+    mr0.util.insert_signal_plot(seq, signal.numpy())
+    plt.show()
+    ```
+
+    Parameters
+    ----------
+    seq : pypulseq.Sequence
+        The sequence that is plotted and produced the signal
+    signal : np.ndarray
+        The signal that should be inserted into the ADC plot.
+        Has to have the same amount of samples as the sequence itself.
+    """
+    remaining_signal = signal.flatten().tolist()
+    t0 = 0
+    time = []
+    samples = []
+
+    for iB in range(1, len(seq.block_events) + 1):
+        block = seq.get_block(iB)
+        if getattr(block, "adc", None):
+            adc = block.adc
+            count = int(adc.num_samples)
+            time += [t0 + t * adc.dwell for t in range(count)] + [float("nan")]
+            samples += remaining_signal[:count] + [float("nan")]
+            remaining_signal = remaining_signal[count:]
+        t0 += pp.calc_duration(block)
+
+    if len(time) != len(samples) + len(remaining_signal):
+        print("Can't insert signal into pulseq plot:")
+        print("Signal and sequence have different amount of ADC samples.")
+    else:
+        sp11 = plt.figure(1).get_axes()[0]
+
+        sp11.plot(time, np.abs(samples),  label='abs')
+        sp11.plot(time, np.real(samples), label='real', linewidth=0.5)
+        sp11.plot(time, np.imag(samples), label='imag', linewidth=0.5)
+
+        sp11.legend(loc='right', bbox_to_anchor=(1.12, 0.5), fontsize='xx-small')
+
+
 # This plot function is a modified version from the one provided by
 # pypulseq 1.2.0post1, all changes are marked
 # NOTE: the parameters have changed in the 1.4 version, maybe we should adapt them
@@ -244,8 +290,9 @@ def pulseq_plot(seq: pp.Sequence,
     if np.size(signal) > 1:
         N_adc[0] = N_adc[0]/N_adc[1]
         if N_adc[0].is_integer():
-            idx = np.arange(int(N_adc[0]), int(
-                N_adc[0])*N_adc[1], int(N_adc[0]))
+            idx = np.arange(int(N_adc[0]),
+                            int(N_adc[0])*N_adc[1],
+                            int(N_adc[0]))
             t_adc_p = np.insert(t_adc, idx, np.nan, axis=None)
             signal = np.insert(signal, idx, np.nan, axis=None)
 
