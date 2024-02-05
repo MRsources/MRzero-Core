@@ -180,8 +180,8 @@ def execute_graph(graph: Graph,
                 T2dash = torch.exp(-torch.abs(dist_traj[:, 3:]
                                               ) / torch.abs(data.T2dash))
                 rot = torch.exp(2j * np.pi * (
-                    (dist_traj[:, 3:] * data.B0)
-                    - (dist_traj[:, :3] @ data.voxel_pos.T)
+                    (dist_traj[:, 3:] * data.B0) +
+                    (dist_traj[:, :3] @ data.voxel_pos.T)
                 ))
                 dephasing = data.dephasing_func(
                     dist_traj[:, :3], data.nyquist)[:, None]

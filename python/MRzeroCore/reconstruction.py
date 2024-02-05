@@ -4,11 +4,11 @@ import torch
 
 
 def reco_adjoint(signal: torch.Tensor,
-            kspace: torch.Tensor,
-            resolution: tuple[int, int, int] | float | None = None,
-            FOV: tuple[float, float, float] | float | None = None,
-            return_multicoil: bool = False,
-            ) -> torch.Tensor:
+                 kspace: torch.Tensor,
+                 resolution: tuple[int, int, int] | float | None = None,
+                 FOV: tuple[float, float, float] | float | None = None,
+                 return_multicoil: bool = False,
+                 ) -> torch.Tensor:
     """Adjoint reconstruction of the signal, based on a provided kspace.
 
     Parameters
@@ -92,7 +92,7 @@ def reco_adjoint(signal: torch.Tensor,
     # (Samples, 3) x (3, Voxels)
     phase = kspace[:, :3] @ voxel_pos
     # (Samples, Voxels): Rotation of all voxels at every event
-    rot = torch.exp(2j*pi * phase)  # Matches definition of iDFT
+    rot = torch.exp(-2j*pi * phase)  # Matches definition of forward DFT
 
     NCoils = signal.shape[1]
 
