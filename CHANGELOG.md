@@ -1,5 +1,5 @@
 - 0.2.10
-  - TODO: change default FOV in all notebooks (to what?)
+  - change default FOV in all notebooks to phantom size (200 mm)
   - Use Open in Colab badges in the playground instead of links
   - TODO: Document how to run on GPU
   - Added another pure mr0 flash DWI sequence to the playground
