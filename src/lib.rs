@@ -220,7 +220,7 @@ fn compute_graph<'p>(
                     .as_ref(py)
                     .append(PyTuple::new(
                         py,
-                        &[
+                        [
                             PyString::new(
                                 py,
                                 pre_pass::DIST_RELATION_STR[ancestor.relation as usize],

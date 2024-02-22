@@ -9,17 +9,12 @@ pub type RcDist = Rc<RefCell<Distribution>>;
 type DistVec = Vec<RcDist>;
 type DistMap = HashMap<[i32; 4], RcDist>;
 
-#[derive(PartialEq, Eq, Copy, Clone)]
+#[derive(PartialEq, Eq, Copy, Clone, Default)]
 pub enum DistType {
     P,
     Z,
+    #[default]
     Z0,
-}
-
-impl Default for DistType {
-    fn default() -> Self {
-        DistType::Z0
-    }
 }
 
 #[derive(PartialEq, Eq, Hash, Copy, Clone)]
@@ -147,22 +142,13 @@ pub fn comp_graph(
                 dist.kt_vec[3] += dt;
                 let k2 = dist.kt_vec;
 
-                let k1 = [k1[0] * TAU, k1[1] * TAU, k1[2] * TAU];
-                let k2 = [k2[0] * TAU, k2[1] * TAU, k2[2] * TAU];
-
                 // Integrating (dt omitted) over k²(t) = ((1-x)*k1 + x*k2)^2
                 // gives 1/3 * (k1^2 + k1*k2 + k2^2)
                 let b = 1.0 / 3.0
                     * dt
-                    * (k1[0] * k1[0]
-                        + k1[0] * k2[0]
-                        + k2[0] * k2[0]
-                        + k1[1] * k1[1]
-                        + k1[1] * k2[1]
-                        + k2[1] * k2[1]
-                        + k1[2] * k1[2]
-                        + k1[2] * k2[2]
-                        + k2[2] * k2[2]);
+                    * ((k1[0] * k1[0] + k1[0] * k2[0] + k2[0] * k2[0])
+                        + (k1[1] * k1[1] + k1[1] * k2[1] + k2[1] * k2[1])
+                        + (k1[2] * k1[2] + k1[2] * k2[2] + k2[2] * k2[2]));
 
                 dist.mag *= r2 * (-b * d).exp();
                 if *adc {
@@ -177,8 +163,7 @@ pub fn comp_graph(
 
         for mut dist in dists_z.iter().map(|d| d.borrow_mut()) {
             let sqr = |x| x * x;
-            let k2 =
-                sqr(dist.kt_vec[0] * TAU) + sqr(dist.kt_vec[1] * TAU) + sqr(dist.kt_vec[2] * TAU);
+            let k2 = sqr(dist.kt_vec[0]) + sqr(dist.kt_vec[1]) + sqr(dist.kt_vec[2]);
 
             dist.mag *= r1 * (-d * rep_time * k2).exp();
         }
