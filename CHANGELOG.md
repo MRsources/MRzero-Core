@@ -1,3 +1,10 @@
+- 0.2.10
+  - TODO: change default FOV in all notebooks (to what?)
+  - Use Open in Colab badges in the playground instead of links
+  - TODO: Document how to run on GPU
+  - Added another pure mr0 flash DWI sequence to the playground
+  - Bugfix: normalized_grads setting was not passed in Sequence.cuda() and .cpu()
+  - Bugfix: removed wrong 2*pi factor from Diffusion b-value calculations
 - 0.2.9
   - Change sign in gradient simulation - flips orientation of old reconstructions
   - Included util file in mr0

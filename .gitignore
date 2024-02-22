@@ -4,6 +4,7 @@
 out/
 *.seq
 *.npz
+*.env
 
 *.pdf
 
