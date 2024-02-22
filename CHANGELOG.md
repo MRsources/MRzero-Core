@@ -1,7 +1,7 @@
 - 0.2.10
   - change default FOV in all notebooks to phantom size (200 mm)
   - Use Open in Colab badges in the playground instead of links
-  - TODO: Document how to run on GPU
+  - Documented how to run on GPU
   - Added another pure mr0 flash DWI sequence to the playground
   - Bugfix: normalized_grads setting was not passed in Sequence.cuda() and .cpu()
   - Bugfix: removed wrong 2*pi factor from Diffusion b-value calculations
