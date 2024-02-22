@@ -289,11 +289,11 @@ class Sequence(list):
 
     def cuda(self) -> Sequence:
         """Move this sequence to the specified CUDA device and return it."""
-        return Sequence([rep.cuda() for rep in self])
+        return Sequence([rep.cuda() for rep in self], self.normalized_grads)
 
     def cpu(self) -> Sequence:
         """Move this sequence to the CPU and return it."""
-        return Sequence([rep.cpu() for rep in self])
+        return Sequence([rep.cpu() for rep in self], self.normalized_grads)
 
     @property
     def device(self) -> torch.device:
