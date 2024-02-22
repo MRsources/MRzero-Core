@@ -42,5 +42,6 @@ chapters:
   - file: playground_mr0/mr00_FLASH_2D_ernstAngle_opt.ipynb
 
   - file: playground_mr0/flash
+  - file: playground_mr0/flash_DWI
   - file: playground_mr0/pulseq_flash
   - file: playground_mr0/pulseq_sim_pTx
