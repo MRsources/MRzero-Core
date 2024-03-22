@@ -158,6 +158,11 @@ class VoxelGridPhantom:
             PD = torch.tensor(data['PD_map'])
             D = torch.tensor(data['D_map'])
 
+            try:
+                size = torch.tensor(data['FOV']).to(torch.float32) # FG: for some reason, brainweb npz contained torch.float64 here -> problem in execute_graph later!
+            except KeyError:
+                size = torch.tensor([0.192, 0.192, 0.192])
+
         # Generate a somewhat plausible B0 and B1 map.
         # Visually fitted to look similar to the numerical_brain_cropped
         x_pos, y_pos, z_pos = torch.meshgrid(
@@ -174,10 +179,7 @@ class VoxelGridPhantom:
         B0 -= (B0 * weight).sum()
         B1 /= (B1 * weight).sum()
 
-        try:
-            size = torch.tensor(data['FOV'])
-        except KeyError:
-            size = torch.tensor([0.192, 0.192, 0.192])
+        
 
         return cls(
             PD, T1, T2, T2dash, D, B0, B1[None, ...],
