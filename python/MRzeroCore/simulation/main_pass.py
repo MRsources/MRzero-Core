@@ -18,12 +18,9 @@ def execute_graph(graph: Graph,
                   min_emitted_signal: float = 1e-2,
                   min_latent_signal: float = 1e-2,
                   print_progress: bool = True,
-                  ) -> torch.Tensor:
-    """Calculate the signal of the sequence by computing the graph.
-
-    This function can optionally return the + or z magnetisation and the
-    encoding of all states, if requested. The encoding consists of the signal
-    of a distribution and its k-t space trajectory.
+                  return_mag_z: int | bool | None = None,
+                  ) -> torch.Tensor | list:
+    """Calculate the signal of the sequence by executing the phase graph.
 
     Parameters
     ----------
@@ -40,11 +37,18 @@ def execute_graph(graph: Graph,
         Should be <= than min_emitted_signal.
     print_progress : bool
         If true, the current repetition is printed while simulating.
+    return_mag_z : int or bool, optional
+        If set, returns the longitudinal magnetisation of either the given
+        repetition (int) or all repetitions (``True``).
+
 
     Returns
     -------
     signal : torch.Tensor
         The simulated signal of the sequence.
+    mag_z : torch.Tensor | list[torch.Tensor]
+        The longitudinal magnetisation of the specified or all repetition(s).
+
     """
     if seq.normalized_grads:
         grad_scale = 1 / data.size
@@ -67,6 +71,7 @@ def execute_graph(graph: Graph,
     # Calculate kt_vec ourselves for autograd
     graph[0][0].kt_vec = torch.zeros(4, device=data.device)
 
+    mag_z = []
     for i, (dists, rep) in enumerate(zip(graph[1:], seq)):
         if print_progress:
             print(f"\rCalculating repetition {i+1} / {len(seq)}", end='')
@@ -129,7 +134,8 @@ def execute_graph(graph: Graph,
         # Use the same adc phase for all coils
         adc_rot = torch.exp(1j * rep.adc_phase).unsqueeze(1)
 
-
+        mag_z_rep = []
+        mag_z.append(mag_z_rep)
         for dist in dists:
             # Create a list only containing ancestors that were simulated
             ancestors = list(filter(
@@ -142,6 +148,9 @@ def execute_graph(graph: Graph,
                 continue  # skip dists for which no ancestors were simulated
 
             dist.mag = sum([calc_mag(ancestor) for ancestor in ancestors])
+            if dist.dist_type in ['z0', 'z'] and return_mag_z in [i, True]:
+                mag_z_rep.append(dist.mag)
+
             # The pre_pass already calculates kt_vec, but that does not
             # work with autograd -> we need to calculate it with torch
             if dist.dist_type == 'z0':
@@ -224,6 +233,10 @@ def execute_graph(graph: Graph,
         print(" - done")
 
     # Only return measured samples
-    return torch.cat([
+    measured = torch.cat([
         sig[rep.adc_usage > 0, :] for sig, rep in zip(signal, seq)
     ])
+    if return_mag_z is not None:
+        return measured, mag_z
+    else:
+        return measured
