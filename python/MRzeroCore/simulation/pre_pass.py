@@ -68,6 +68,9 @@ def compute_graph_ext(
     avg_b1_trig : torch.Tensor | None
         Tensor containing the B1-averaged trigonometry used in the rotation matrix.
         Default values are used if `None` is passed.
+    start_mag : torch.Tensor, optional
+        If set, initialize the simulation with this z-magnetization
+        (default is 1.0 (thermal equilibrium))
     """
     if min_state_mag < 0:
         min_state_mag = 0

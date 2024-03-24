@@ -105,6 +105,7 @@ impl PyDistribution {
 /// nyquist: Frequency cutoff above no signal will be generated
 /// size: Size [m], only needed if normalized_grads=True to scale them
 /// normalized_grads: if true scale gradients by size
+/// start_mag: initial z-magnetization of the simulation (default 1.0)
 #[pyfunction]
 #[allow(clippy::too_many_arguments)]
 fn compute_graph<'p>(

@@ -41,6 +41,9 @@ def execute_graph(graph: Graph,
     return_mag_z : int or bool, optional
         If set, returns the longitudinal magnetisation of either the given
         repetition (int) or all repetitions (``True``).
+    start_mag : torch.Tensor, optional
+        If set, initialize the simulation with this z-magnetization
+        (default is all 1.0 (thermal equilibrium))
 
 
     Returns
