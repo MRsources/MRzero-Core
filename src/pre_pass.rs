@@ -89,104 +89,7 @@ pub fn comp_graph(
     nyquist: [f32; 3],
     grad_scale: [f32; 3], // scale gradients to SI if they are normalized
     avg_b1_trig: &[[f32; 3]],
-) -> Vec<Vec<RcDist>> {
-    let mut graph: Vec<Vec<RcDist>> = Vec::new();
-
-    let mut dists_p = DistVec::new();
-    let mut dists_z = DistVec::new();
-    let mut dist_z0 = Rc::new(RefCell::new(Distribution {
-        mag: Complex32::new(1.0, 0.0),
-        dist_type: DistType::Z0,
-        ..Default::default()
-    }));
-
-    graph.push(vec![dist_z0.clone()]);
-
-    for rep in seq {
-        {
-            let (_dists_p, _dists_z, _dist_z0) = apply_pulse(
-                &dists_p,
-                &dists_z,
-                &dist_z0,
-                rep,
-                max_dist_count,
-                min_dist_mag,
-                avg_b1_trig,
-            );
-            dists_p = _dists_p;
-            dists_z = _dists_z;
-            dist_z0 = _dist_z0;
-        }
-        graph.push(
-            iter::once(&dist_z0)
-                .chain(&dists_p)
-                .chain(&dists_z)
-                .cloned()
-                .collect(),
-        );
-
-        // Simulate and measure + states
-        let r2_vec: Vec<f32> = rep.event_time.iter().map(|dt| (-dt / t2).exp()).collect();
-
-        for mut dist in dists_p.iter().map(|d| d.borrow_mut()) {
-            for (((r2, gradm), dt), adc) in r2_vec
-                .iter()
-                .zip(&rep.gradm_event)
-                .zip(&rep.event_time)
-                .zip(&rep.adc_mask)
-            {
-                let k1 = dist.kt_vec;
-                dist.kt_vec[0] += gradm[0] * grad_scale[0];
-                dist.kt_vec[1] += gradm[1] * grad_scale[1];
-                dist.kt_vec[2] += gradm[2] * grad_scale[2];
-                dist.kt_vec[3] += dt;
-                let k2 = dist.kt_vec;
-
-                // Integrating (dt omitted) over k²(t) = ((1-x)*k1 + x*k2)^2
-                // gives 1/3 * (k1^2 + k1*k2 + k2^2)
-                let b = 1.0 / 3.0
-                    * dt
-                    * ((k1[0] * k1[0] + k1[0] * k2[0] + k2[0] * k2[0])
-                        + (k1[1] * k1[1] + k1[1] * k2[1] + k2[1] * k2[1])
-                        + (k1[2] * k1[2] + k1[2] * k2[2] + k2[2] * k2[2]));
-
-                dist.mag *= r2 * (-b * d).exp();
-                if *adc {
-                    dist.measure(t2dash, nyquist);
-                }
-            }
-        }
-
-        // Apply relaxation to z states
-        let rep_time: f32 = rep.event_time.iter().sum();
-        let r1 = (-rep_time / t1).exp();
-
-        for mut dist in dists_z.iter().map(|d| d.borrow_mut()) {
-            let sqr = |x| x * x;
-            let k2 = sqr(dist.kt_vec[0]) + sqr(dist.kt_vec[1]) + sqr(dist.kt_vec[2]);
-
-            dist.mag *= r1 * (-d * rep_time * k2).exp();
-        }
-        // Z0 has no diffusion because it's not dephased
-        dist_z0.borrow_mut().mag *= r1;
-        dist_z0.borrow_mut().mag += 1.0 - r1;
-        dist_z0.borrow_mut().regrown_mag += 1.0 - r1;
-    }
-    graph
-}
-
-pub fn comp_graph_ss(
-    seq: &[Repetition],
     start_mag: f32,
-    t1: f32,
-    t2: f32,
-    t2dash: f32,
-    d: f32, // expected to be defined in m²/s
-    max_dist_count: usize,
-    min_dist_mag: f32,
-    nyquist: [f32; 3],
-    grad_scale: [f32; 3], // scale gradients to SI if they are normalized
-    avg_b1_trig: &[[f32; 3]],
 ) -> Vec<Vec<RcDist>> {
     let mut graph: Vec<Vec<RcDist>> = Vec::new();
 
@@ -272,6 +175,8 @@ pub fn comp_graph_ss(
     }
     graph
 }
+
+
 
 fn apply_pulse(
     dists_p: &[RcDist],

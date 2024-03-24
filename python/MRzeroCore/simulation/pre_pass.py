@@ -11,7 +11,8 @@ def compute_graph(
     seq: Sequence,
     data: SimData,
     max_state_count: int = 200,
-    min_state_mag: float = 1e-4
+    min_state_mag: float = 1e-4,
+    start_mag: torch.Tensor = torch.tensor([1.0]),
 ) -> Graph:
     """Like :func:`pre_pass.compute_graph_ext`, but computes some args from :attr:`data`."""
     return compute_graph_ext(
@@ -24,7 +25,8 @@ def compute_graph(
         min_state_mag,
         data.nyquist.tolist(),
         data.size.tolist(),
-        data.avg_B1_trig
+        data.avg_B1_trig,
+        float(torch.mean(start_mag))
     )
 
 
@@ -39,6 +41,7 @@ def compute_graph_ext(
     nyquist: tuple[float, float, float] = (float('inf'), float('inf'), float('inf')),
     size: tuple[float, float, float] = (1.0, 1.0, 1.0),
     avg_b1_trig: torch.Tensor | None = None,
+    start_mag: torch.Tensor = torch.tensor([1.0]),
 ) -> Graph:
     """Compute the PDG from the sequence and phantom data provided.
 
@@ -82,89 +85,8 @@ def compute_graph_ext(
         T1, T2, T2dash, D,
         max_state_count, min_state_mag,
         nyquist, size, seq.normalized_grads,
-        avg_b1_trig
-    ))
-
-def compute_graph_ss(
-    seq: Sequence,
-    start_mag: torch.Tensor,
-    data: SimData,
-    max_state_count: int = 200,
-    min_state_mag: float = 1e-4
-) -> Graph:
-    """Like :func:`pre_pass.compute_graph_ext`, but computes some args from :attr:`data`."""
-    return compute_graph_ext_ss(
-        seq,
-        start_mag,
-        float(torch.mean(data.T1)),
-        float(torch.mean(data.T2)),
-        float(torch.mean(data.T2dash)),
-        float(torch.mean(data.D)),
-        max_state_count,
-        min_state_mag,
-        data.nyquist.tolist(),
-        data.size.tolist(),
-        data.avg_B1_trig
-    )
-
-
-def compute_graph_ext_ss(
-    seq: Sequence,
-    start_mag: torch.Tensor,
-    T1: float,
-    T2: float,
-    T2dash: float,
-    D: float,
-    max_state_count: int = 200,
-    min_state_mag: float = 1e-4,
-    nyquist: tuple[float, float, float] = (float('inf'), float('inf'), float('inf')),
-    size: tuple[float, float, float] = (1.0, 1.0, 1.0),
-    avg_b1_trig: torch.Tensor | None = None,
-) -> Graph:
-    """Compute the PDG from the sequence and phantom data provided.
-
-    Parameters
-    ----------
-    seq : Sequence
-        The sequence that produces the returned PDG
-    T1 : float
-        Simulated T1 relaxation time [s]
-    T2 : float
-        Simulated T2 relaxation time [s]
-    T2' : float
-        Simulated T2' relaxation time [s]
-    D : float
-        Simulated diffusion coefficient [$10^{-3} mm^2 / s$]
-    max_state_count : int
-        Maximum state count. If more states are produced, the weakest are omitted.
-    min_state_mag : float
-        Minimum magnetization of a state to be simulated.
-    nyquist : (float, float, float)
-        Nyquist frequency of simulated data. Signal is cut off for higher frequencies.
-    size : (float, float, float)
-        Size of the simulated phantom. Used for scaling grads for normalized seqs.
-    avg_b1_trig : torch.Tensor | None
-        Tensor containing the B1-averaged trigonometry used in the rotation matrix.
-        Default values are used if `None` is passed.
-    """
-    if min_state_mag < 0:
-        min_state_mag = 0
-
-    if avg_b1_trig is None:
-        angle = torch.linspace(0, 2*np.pi, 361)
-        avg_b1_trig = torch.stack([
-            torch.sin(angle),
-            torch.cos(angle),
-            torch.sin(angle/2)**2
-        ], dim=1).type(torch.float32)
-
-    return Graph(_prepass.compute_graph_ss(
-        seq,
-        start_mag,
-        T1, T2, T2dash, D,
-        max_state_count, min_state_mag,
-        nyquist, size, seq.normalized_grads,
-        avg_b1_trig
+        avg_b1_trig,
+        start_mag
     ))
 
 
