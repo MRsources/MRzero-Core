@@ -174,10 +174,15 @@ class VoxelGridPhantom:
         B1 = torch.exp(-(0.4*x_pos**2 + 0.2*y_pos**2 + 0.3*z_pos**2))
         dist2 = (0.4*x_pos**2 + 0.2*(y_pos - 0.7)**2 + 0.3*z_pos**2)
         B0 = 7 / (0.05 + dist2) - 45 / (0.3 + dist2)
-        # Normalize such that the weighted average is 0 or 1
-        weight = PD / PD.sum()
-        B0 -= (B0 * weight).sum()
-        B1 /= (B1 * weight).sum()
+        
+        # FG: restore normalization and masking from earlier days to maintain compatibility
+        PD_threshold = 1e-6
+        mask = PD > PD_threshold
+        B0 -= B0[mask].mean()
+        B1 /= B1[mask].mean()
+
+        B0 *= mask
+        B1 *= mask
 
         
 
