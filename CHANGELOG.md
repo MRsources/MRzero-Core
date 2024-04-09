@@ -1,3 +1,5 @@
+- 0.2.12
+  - Fixed Brainweb phantom loading and generation
 - 0.2.11
   - (re-)introduced return_mag_z parameter in pdg simulation
 - 0.2.10

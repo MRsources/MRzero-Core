@@ -151,7 +151,7 @@ def generate_brainweb_phantoms(
             print("Adding tissue to phantom", end="", flush=True)
             maps["PD_map"] += tissue_data["PD"] * tissue_map * noise()
             maps["T1_map"] += tissue_data["T1"] * tissue_map * noise()
-            maps["T2_map"] += tissue_data["T2"] * noise()
+            maps["T2_map"] += tissue_data["T2"] * tissue_map * noise()
             maps["T2dash_map"] += tissue_data["T2'"] * tissue_map * noise()
             maps["D_map"] += tissue_data["D"] * tissue_map * noise()
             print(" - done")
