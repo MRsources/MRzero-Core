@@ -1,7 +1,6 @@
-use num_complex::Complex32;
+use num_complex::{Complex32, ComplexFloat};
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::f32::consts::TAU;
 use std::iter;
 use std::rc::Rc;
 
@@ -42,7 +41,7 @@ pub struct Distribution {
     pub regrown_mag: f32, // Don't propagate to ancestors if its the own mag
     pub signal: f32,
     pub emitted_signal: f32, // relative to the strongest dist in the repetition
-    pub kt_vec: [f32; 4],
+    pub kt_vec: [f64; 4],
     pub dist_type: DistType,
     pub ancestors: Vec<Edge>,
     /// latent_signal metric: if you want to measure states with a minimum signal of x,
@@ -53,17 +52,17 @@ pub struct Distribution {
 impl Distribution {
     fn measure(&mut self, t2dash: f32, nyquist: [f32; 3]) {
         let sigmoid = |x: f32| 1.0 / (1.0 + (-x).exp());
-        let tmp = |nyq: f32, k: f32| sigmoid((nyq - k.abs() + 0.5) * 100.0);
+        let tmp = |nyq: f32, k: f64| sigmoid((nyq - k.abs() as f32 + 0.5) * 100.0);
         let dephasing = tmp(nyquist[0], self.kt_vec[0])
             * tmp(nyquist[1], self.kt_vec[1])
             * tmp(nyquist[2], self.kt_vec[2]);
 
-        let norm = |x: f32, y: f32, z: f32| (x * x + y * y + z * z).sqrt();
+        let norm = |x: f64, y: f64, z: f64| (x * x + y * y + z * z).sqrt() as f32;
         let k_len = norm(self.kt_vec[0], self.kt_vec[1], self.kt_vec[2]);
 
         // Empirical signal drop-off is roughly estimated by x^(-2.2)
         self.signal += self.mag.norm()
-            * (-(self.kt_vec[3] / t2dash).abs()).exp()
+            * (-(self.kt_vec[3] as f32 / t2dash).abs()).exp()
             * (1.0 + k_len).powf(-2.2)
             * dephasing;
     }
@@ -90,6 +89,20 @@ pub fn comp_graph(
     grad_scale: [f32; 3], // scale gradients to SI if they are normalized
     avg_b1_trig: &[[f32; 3]],
 ) -> Vec<Vec<RcDist>> {
+    // Make precision of state merging dependent on the units used in the seq.
+    // For this, we use a fraction of the smallest used step.
+    let min_kt_step = [
+        seq.iter().flat_map(|r| r.gradm_event.iter().map(|g| g[0].abs() as f64)).filter(|x| *x > 1e-3).min_by(f64::total_cmp),
+        seq.iter().flat_map(|r| r.gradm_event.iter().map(|g| g[1].abs() as f64)).filter(|x| *x > 1e-3).min_by(f64::total_cmp),
+        seq.iter().flat_map(|r| r.gradm_event.iter().map(|g| g[2].abs() as f64)).filter(|x| *x > 1e-3).min_by(f64::total_cmp),
+        seq.iter().flat_map(|r| r.event_time.iter().map(|t| *t as f64)).filter(|x| *x > 1e-6).min_by(f64::total_cmp)
+    ];
+    let inv_kt_grid = [
+        1.0 / (0.1 * min_kt_step[0].unwrap_or(1.0)).clamp(1e-6, 1.0),
+        1.0 / (0.1 * min_kt_step[1].unwrap_or(1.0)).clamp(1e-6, 1.0),
+        1.0 / (0.1 * min_kt_step[2].unwrap_or(1.0)).clamp(1e-6, 1.0),
+        1.0 / (0.1 * min_kt_step[3].unwrap_or(1e-3)).clamp(1e-9, 1e-3),
+    ];
     let mut graph: Vec<Vec<RcDist>> = Vec::new();
 
     let mut dists_p = DistVec::new();
@@ -112,6 +125,7 @@ pub fn comp_graph(
                 max_dist_count,
                 min_dist_mag,
                 avg_b1_trig,
+                inv_kt_grid
             );
             dists_p = _dists_p;
             dists_z = _dists_z;
@@ -136,10 +150,10 @@ pub fn comp_graph(
                 .zip(&rep.adc_mask)
             {
                 let k1 = dist.kt_vec;
-                dist.kt_vec[0] += gradm[0] * grad_scale[0];
-                dist.kt_vec[1] += gradm[1] * grad_scale[1];
-                dist.kt_vec[2] += gradm[2] * grad_scale[2];
-                dist.kt_vec[3] += dt;
+                dist.kt_vec[0] += gradm[0] as f64 * grad_scale[0] as f64;
+                dist.kt_vec[1] += gradm[1] as f64 * grad_scale[1] as f64;
+                dist.kt_vec[2] += gradm[2] as f64 * grad_scale[2] as f64;
+                dist.kt_vec[3] += *dt as f64;
                 let k2 = dist.kt_vec;
 
                 // Integrating (dt omitted) over k²(t) = ((1-x)*k1 + x*k2)^2
@@ -148,7 +162,8 @@ pub fn comp_graph(
                     * dt
                     * ((k1[0] * k1[0] + k1[0] * k2[0] + k2[0] * k2[0])
                         + (k1[1] * k1[1] + k1[1] * k2[1] + k2[1] * k2[1])
-                        + (k1[2] * k1[2] + k1[2] * k2[2] + k2[2] * k2[2]));
+                        + (k1[2] * k1[2] + k1[2] * k2[2] + k2[2] * k2[2]))
+                        as f32;
 
                 dist.mag *= r2 * (-b * d).exp();
                 if *adc {
@@ -165,7 +180,7 @@ pub fn comp_graph(
             let sqr = |x| x * x;
             let k2 = sqr(dist.kt_vec[0]) + sqr(dist.kt_vec[1]) + sqr(dist.kt_vec[2]);
 
-            dist.mag *= r1 * (-d * rep_time * k2).exp();
+            dist.mag *= r1 * (-d * rep_time * k2 as f32).exp();
         }
         // Z0 has no diffusion because it's not dephased
         dist_z0.borrow_mut().mag *= r1;
@@ -183,22 +198,23 @@ fn apply_pulse(
     max_dist_count: usize,
     min_dist_mag: f32,
     avg_b1_trig: &[[f32; 3]],
+    inv_kt_grid: [f64; 4],
 ) -> (DistVec, DistVec, RcDist) {
     let rot_mat = RotMat::new(rep.pulse_angle, rep.pulse_phase, avg_b1_trig);
 
     let mut dist_dict_p: DistMap = HashMap::new();
     let mut dist_dict_z: DistMap = HashMap::new();
 
-    let mut add_dist = |kt_vec: [f32; 4],
+    let mut add_dist = |kt_vec: [f64; 4],
                         mag: Complex32,
                         rot_mat_factor: Complex32,
                         relation: DistRelation,
                         ancestor: &RcDist| {
         let key = [
-            (kt_vec[0] * 1e3).round() as i32,
-            (kt_vec[1] * 1e3).round() as i32,
-            (kt_vec[2] * 1e3).round() as i32,
-            (kt_vec[3] * 1e6).round() as i32,
+            (kt_vec[0] * inv_kt_grid[0]).round() as i32,
+            (kt_vec[1] * inv_kt_grid[1]).round() as i32,
+            (kt_vec[2] * inv_kt_grid[2]).round() as i32,
+            (kt_vec[3] * inv_kt_grid[3]).round() as i32,
         ];
         let dist_type = match relation {
             DistRelation::PP | DistRelation::MP | DistRelation::ZP => DistType::P,

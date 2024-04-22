@@ -53,7 +53,7 @@ dependencies = [
 
 [[package]]
 name = "mrzero_core"
-version = "0.2.11"
+version = "0.2.12"
 dependencies = [
  "num-complex",
  "pyo3",
