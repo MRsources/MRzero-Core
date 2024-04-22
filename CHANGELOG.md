@@ -1,5 +1,7 @@
 - 0.2.12
   - Fixed Brainweb phantom loading and generation
+  - Switched pre-pass kt precision from f32 to f64
+  - Made pre-pass state merging relative to sequence gradient moment and event time sizes
 - 0.2.11
   - (re-)introduced return_mag_z parameter in pdg simulation
 - 0.2.10
