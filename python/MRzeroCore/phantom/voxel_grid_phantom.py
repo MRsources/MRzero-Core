@@ -159,7 +159,7 @@ class VoxelGridPhantom:
             D = torch.tensor(data['D_map'])
             try:
                 size = torch.tensor(data['FOV'])
-            except ...:
+            except KeyError:
                 size = torch.tensor([0.192, 0.192, 0.192])
 
         # Generate a somewhat plausible B0 and B1 map.
