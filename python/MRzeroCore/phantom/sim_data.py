@@ -100,6 +100,9 @@ class SimData:
         self.dephasing_func = dephasing_func
         self.recover_func = recover_func
 
+        import numpy
+        self.motion = lambda t: numpy.array([0, 0, 0])
+
     def cuda(self) -> SimData:
         """Move the simulation data to the default CUDA device.
 
