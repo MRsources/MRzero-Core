@@ -17,6 +17,8 @@ def rigid_motion(voxel_pos, motion_func):
     def voxel_motion(time):
         # rot: events x 3 x 3, offset: events x 3
         rot, offset = motion_func(time)
+        rot = rot.to(device=voxel_pos.device)
+        offset = offset.to(device=voxel_pos.device)
         return torch.einsum("vi, eij -> evj", voxel_pos, rot) + offset[:, None, :]
     
     return voxel_motion
@@ -155,7 +157,7 @@ def execute_graph(graph: Graph,
         # Calculate the additional phase carried of voxels because of motion
         motion_phase = 0
         if voxel_pos_func is not None:
-            time = t0 + torch.cat([torch.zeros(1), trajectory[:, 3]])
+            time = t0 + torch.cat([torch.zeros(1, device=data.device), trajectory[:, 3]])
             # Shape: events x voxels x 3
             voxel_traj = voxel_pos_func((time[:-1] + time[1:]) / 2) - data.voxel_pos[None, :, :]
             # Shape: events x voxels
