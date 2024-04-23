@@ -238,7 +238,9 @@ def execute_graph(graph: Graph,
 
             if dist.dist_type == '+':
                 # Diffusion for whole trajectory + T2 relaxation + final phase carried by motion
-                dist.mag = dist.mag * r2 * diffusion[-1, :] * torch.exp(2j * np.pi * motion_phase[-1, :])
+                dist.mag = dist.mag * r2 * diffusion[-1, :] 
+                if isinstance(motion_phase, torch.Tensor):
+                    dist.mag = dist.mag * torch.exp(2j * np.pi * motion_phase[-1, :])
                 dist.kt_vec = dist_traj[-1]
             else:  # z or z0
                 k = torch.linalg.vector_norm(dist.kt_vec[:3])
