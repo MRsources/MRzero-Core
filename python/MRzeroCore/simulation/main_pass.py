@@ -63,7 +63,7 @@ def execute_graph(graph: Graph,
     # Proton density can be baked into coil sensitivity. shape: voxels x coils
     coil_sensitivity = (
         data.coil_sens.t().to(torch.cfloat)
-        * torch.abs(data.PD).unsqueeze(1) / torch.abs(data.PD).sum() # FG: try old PD normalization for compatibility with previous image scaling
+        * torch.abs(data.PD).unsqueeze(1)
     )
     coil_count = int(coil_sensitivity.shape[1])
     voxel_count = data.PD.numel()
