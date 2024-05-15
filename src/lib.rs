@@ -29,7 +29,7 @@ struct PyDistribution {
     #[pyo3(get)]
     emitted_signal: f32,
     #[pyo3(get)]
-    prepass_kt_vec: [f32; 4],
+    prepass_kt_vec: [f64; 4],
 }
 
 #[pymethods]

@@ -107,7 +107,7 @@ def execute_graph(graph: Graph,
             B1 = data.B1.sum(0)
         else:
             assert shim_array.shape[0] == data.B1.shape[0]
-            shim = shim_array[:, 0] * torch.exp(1j * shim_array[:, 1])
+            shim = shim_array[:, 0] * torch.exp(-1j * shim_array[:, 1])
             B1 = (data.B1 * shim[:, None]).sum(0)
 
         angle = angle * B1.abs()
