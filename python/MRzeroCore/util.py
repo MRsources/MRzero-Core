@@ -314,3 +314,11 @@ def pulseq_plot(seq: pp.Sequence,
 
 # New: return plot axes and adc time points
     return sp11, t_adc
+
+def MR_imshow(data, *args, **kwargs):    # plt.imshow shows the matrix (x,y) as (col,rows)
+    try: # Attempt to transpose data
+        transposed_data = np.transpose(data) # util.MR_imshow transposes to (rows,col)
+    except TypeError as e:
+        print(f"Error transposing data: {e}")
+        transposed_data=data
+    plt.imshow(transposed_data, *args,origin="lower", **kwargs)  # also the origin is set to lower!
