@@ -390,7 +390,7 @@ class Sequence(list):
         >>> contrast_reco = reco(signal[mask], kspace[mask])
         """
         return torch.cat(
-            [rep.adc_usage[rep.adc_usage != 0] == contrast for rep in self]
+            [rep.adc_usage[rep.adc_usage > 0] == contrast for rep in self]
         )
 
     def get_contrasts(self) -> list[int]:
