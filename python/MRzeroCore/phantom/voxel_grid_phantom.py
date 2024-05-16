@@ -5,6 +5,7 @@ import numpy as np
 import torch
 import matplotlib.pyplot as plt
 from .sim_data import SimData
+from ..util import imshow
 
 
 def sigmoid(trajectory: torch.Tensor, nyquist: torch.Tensor) -> torch.Tensor:
@@ -387,35 +388,36 @@ class VoxelGridPhantom:
         plt.figure(figsize=(12, 10))
         plt.subplot(331)
         plt.title("PD")
-        plt.imshow(self.PD[:, :, s].T.cpu(), vmin=0, origin="lower")
+
+        imshow(self.PD, vmin=0)
         plt.colorbar()
         plt.subplot(332)
         plt.title("T1")
-        plt.imshow(self.T1[:, :, s].T.cpu(), vmin=0, origin="lower")
+        imshow(self.T1, vmin=0)
         plt.colorbar()
         plt.subplot(333)
         plt.title("T2")
-        plt.imshow(self.T2[:, :, s].T.cpu(), vmin=0, origin="lower")
+        imshow(self.T2, vmin=0)
         plt.colorbar()
         plt.subplot(334)
         plt.title("T2'")
-        plt.imshow(self.T2dash[:, :, s].T.cpu(), vmin=0, origin="lower")
+        imshow(self.T2dash, vmin=0)
         plt.colorbar()
         plt.subplot(335)
         plt.title("D")
-        plt.imshow(self.D[:, :, s].T.cpu(), vmin=0, origin="lower")
+        imshow(self.D, vmin=0)
         plt.colorbar()
         plt.subplot(337)
         plt.title("B0")
-        plt.imshow(self.B0[:, :, s].T.cpu(), origin="lower")
+        imshow(self.B0, vmin=0)
         plt.colorbar()
         plt.subplot(338)
         plt.title("B1")
-        plt.imshow(self.B1[0, :, :, s].T.cpu(), vmin=0, origin="lower")
+        imshow(self.B1[0, ...], vmin=0)
         plt.colorbar()
         plt.subplot(339)
         plt.title("coil sens")
-        plt.imshow(self.coil_sens[0, :, :, s].T.cpu(), vmin=0, origin="lower")
+        imshow(self.coil_sens[0, ...], vmin=0)
         plt.colorbar()
         plt.show()
 
