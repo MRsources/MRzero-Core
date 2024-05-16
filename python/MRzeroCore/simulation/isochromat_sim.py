@@ -16,6 +16,7 @@ Note that this still uses box shaped voxels, which is generally discouraged.
 """
 
 from __future__ import annotations
+from typing import Literal
 import torch
 from numpy import pi
 
@@ -26,9 +27,14 @@ from ..phantom.sim_data import SimData
 def isochromat_sim(seq: Sequence, data: SimData, spin_count: int,
                    perfect_spoiling=False,
                    print_progress: bool = True,
+                   spin_dist: Literal["r2", "rand"] = "rand",
+                   r2_seed = None
                    ) -> torch.Tensor:
-    """
-    Simulate ``seq`` on ``data`` with ``spin_count`` spins per voxel.
+    """Simulate ``seq`` on ``data`` with ``spin_count`` spins per voxel.
+
+    The intra-voxel spin distribution is randomized, except if
+    `spin_dist = "r2"` and a fixed `r2_seed` are chosen. For a deterministic
+    distribution of spins, call `torch.manual_seed()` before this function.
 
     Parameters
     ----------
@@ -40,7 +46,16 @@ def isochromat_sim(seq: Sequence, data: SimData, spin_count: int,
         Number of spins used for simulation
     perfect_spoiling: bool
         If ``True``, the transversal magnetization is set to zero on excitation
-
+    print_progress: bool
+        If ``True``, the currently simulated repetition is printed
+    spin_dist: "r2" | "rand"
+        Use either a golden-ratio pseudo-random blue-noise like or
+        a white-noise like intra-voxel distribution of spins
+    r2_seed: None | torch.Tensor
+        The seed and position of the first spin for the blue-noise like spin
+        distribution. If ``None``, a random position is chosen. Expects a
+        tensor with 3 floats in the range of ``[0, 1]``
+        
     Returns
     -------
     torch.Tensor
@@ -54,16 +69,25 @@ def isochromat_sim(seq: Sequence, data: SimData, spin_count: int,
         # Fallback voxel size
         voxel_size = torch.tensor([0.1, 0.1, 0.1], device=data.device)
 
-    # 3 dimensional R2 sequence for intravoxel spin distribution
-    g = 1.22074408460575947536  # 3D
-    # g = 1.32471795724474602596  # 2D
-    a = 1.0 / torch.tensor([g**1, g**2, g**3], device=data.device)
-    indices = torch.arange(spin_count, device=data.device)
-    spin_pos = torch.stack([
-        (0.5 + a[0] * indices) % 1,
-        (0.5 + a[1] * indices) % 1,
-        (0.5 + a[2] * indices) % 1
-    ])
+    if spin_dist == "rand":
+        spin_pos = torch.rand(spin_count, 3)
+    elif spin_dist == "r2":
+        if r2_seed is None:
+            r2_seed = torch.rand(3)
+
+        # 3 dimensional R2 sequence for intravoxel spin distribution
+        g = 1.22074408460575947536  # 3D
+        # g = 1.32471795724474602596  # 2D
+        a = 1.0 / torch.tensor([g**1, g**2, g**3], device=data.device)
+        indices = torch.arange(spin_count, device=data.device)
+        spin_pos = torch.stack([
+            (r2_seed[0] + a[0] * indices) % 1,
+            (r2_seed[1] + a[1] * indices) % 1,
+            (r2_seed[2] + a[2] * indices) % 1
+        ])
+    else:
+        raise ValueError("unexpected spin_dist", spin_dist)
+
     # spin_pos = torch.rand_like(spin_pos)  # Use white noise
     spin_pos = 2 * pi * (spin_pos - 0.5) * voxel_size.unsqueeze(1)
 
