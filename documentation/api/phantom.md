@@ -59,6 +59,8 @@ When converting to {class}`SimData`, voxels are sinc-shaped by default in order 
 
 Analytical phantom for experimentation. There is no resolution or grid, voxels can be placed anywhere and have any size or shape. Useful for testing reconstruction, sub-voxel positioning etc.
 
+The `size` of this phantom is computed from the extends of the voxel positions.
+
 :::{note}
 Because of how the voxel k-space responce is implemented currently, all voxels are limited to have the same shape and size. This limitation could be lifted in the future, if required.
 :::
