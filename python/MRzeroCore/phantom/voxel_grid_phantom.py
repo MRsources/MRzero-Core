@@ -116,6 +116,7 @@ class VoxelGridPhantom:
             self.size[2] *
             torch.fft.fftshift(torch.fft.fftfreq(
                 int(shape[2]), device=self.PD.device)),
+            indexing="ij"
         )
 
         voxel_pos = torch.stack([
@@ -144,7 +145,7 @@ class VoxelGridPhantom:
             self.coil_sens[:, mask],
             self.size,
             voxel_pos,
-            torch.tensor(shape, device=self.PD.device) / 2 / self.size,
+            torch.as_tensor(shape, device=self.PD.device) / 2 / self.size,
             dephasing_func,
             recover_func=lambda data: recover(mask, data)
         )
