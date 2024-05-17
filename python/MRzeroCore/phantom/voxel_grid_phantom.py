@@ -190,7 +190,7 @@ class VoxelGridPhantom:
             except KeyError:
                 B0, B1 = generate_B0_B1(PD)
             try:
-                size = torch.tensor(data['FOV'])
+                size = torch.tensor(data['FOV'], dtype=torch.float)
             except KeyError:
                 size = torch.tensor([0.192, 0.192, 0.192])
         

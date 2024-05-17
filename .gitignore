@@ -3,7 +3,6 @@
 /documentation/_build
 out/
 *.seq
-*.npz
 *.env
 
 *.pdf
