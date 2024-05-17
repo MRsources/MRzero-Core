@@ -47,6 +47,7 @@ pub struct Distribution {
     /// latent_signal metric: if you want to measure states with a minimum signal of x,
     /// you should simulate states with a minimum latent_signal of <= x
     pub latent_signal: f32,
+    pub latent_signal_unormalized: f32,
 }
 
 impl Distribution {
@@ -334,6 +335,7 @@ pub fn analyze_graph(graph: &mut Vec<Vec<RcDist>>) {
         for mut dist in rep.iter().map(|d| d.borrow_mut()) {
             // Own signal is latent_signal if larger than what children produce
             dist.latent_signal = f32::max(dist.latent_signal, dist.emitted_signal);
+            dist.latent_signal_unormalized = f32::max(dist.latent_signal_unormalized, dist.signal);
 
             let max_contrib = std::iter::once(dist.regrown_mag)
                 .chain(
@@ -348,7 +350,9 @@ pub fn analyze_graph(graph: &mut Vec<Vec<RcDist>>) {
             for anc in dist.ancestors.iter() {
                 let contrib = (anc.rot_mat_factor * anc.dist.borrow().mag).norm() / max_contrib;
                 let tmp = anc.dist.borrow().latent_signal;
+                let tmp_unormalized = anc.dist.borrow().latent_signal_unormalized;
                 anc.dist.borrow_mut().latent_signal = f32::max(tmp, dist.latent_signal * contrib);
+                anc.dist.borrow_mut().latent_signal_unormalized = f32::max(tmp_unormalized, dist.latent_signal_unormalized * contrib);
             }
         }
     }
