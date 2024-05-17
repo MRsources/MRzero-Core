@@ -319,15 +319,28 @@ def pulseq_plot(seq: pp.Sequence,
 def imshow(data: np.ndarray | torch.Tensor, *args, **kwargs):
     """Alternative to matplotlib's `imshow`.
     
-    This function takes 2D or 3D tensors or arrays on any device and prints
-    the center slice with the indices `img[x, y]` as horizontal, vertical."""
-    if isinstance(data, torch.Tensor):
-        data = data.detach().cpu().numpy()
+    This function applies quadratic coil combine on 4D data and prints 3D
+    data as a grid of slices. Also prints x-axis horizontal and y vertiacl.
     
+    Assumes data to be indexed [c, x, y, z]"""
+    data = torch.as_tensor(data).detach().cpu()
+    assert 2 <= data.ndim <= 4
+
+    # Coil combine 4D data
+    if data.ndim == 4:
+        data = (data.abs()**2).sum(0)**0.5
+    
+    # Shape 3D data into grid
     if data.ndim == 3:
-        center = data.shape[2] // 2
-        data = data[:, :, center]
-    
-    assert data.ndim == 2
+        rows = int(np.floor(data.shape[2]**0.5))
+        cols = int(np.ceil(data.shape[2] / rows))
+        print(rows, cols)
+        
+        tmp = data
+        data = torch.zeros((tmp.shape[0] * cols, tmp.shape[1] * rows), dtype=tmp.dtype)
+        for i in range(tmp.shape[2]):
+            x = (i % cols)*tmp.shape[0]
+            y = ((rows * cols - i - 1) // cols)*tmp.shape[1]
+            data[x:x+tmp.shape[0], y:y+tmp.shape[1]] = tmp[:, :, i]
 
     plt.imshow(data.T, *args, origin="lower", **kwargs)
