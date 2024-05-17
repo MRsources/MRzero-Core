@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import Literal
+from warnings import warn
 from scipy import io
 import numpy as np
 import torch
@@ -35,6 +36,25 @@ def identity(trajectory: torch.Tensor) -> torch.Tensor:
     There is no dephasing.
     """
     return torch.ones_like(trajectory[:, 0])
+
+
+def generate_B0_B1(PD):
+    # Generate a somewhat plausible B0 and B1 map.
+    # Visually fitted to look similar to the numerical_brain_cropped
+    x_pos, y_pos, z_pos = torch.meshgrid(
+        torch.linspace(-1, 1, PD.shape[0]),
+        torch.linspace(-1, 1, PD.shape[1]),
+        torch.linspace(-1, 1, PD.shape[2]),
+        indexing="ij"
+    )
+    B1 = torch.exp(-(0.4*x_pos**2 + 0.2*y_pos**2 + 0.3*z_pos**2))
+    dist2 = (0.4*x_pos**2 + 0.2*(y_pos - 0.7)**2 + 0.3*z_pos**2)
+    B0 = 7 / (0.05 + dist2) - 45 / (0.3 + dist2)
+    # Normalize such that the weighted average is 0 or 1
+    weight = PD / PD.sum()
+    B0 -= (B0 * weight).sum()
+    B1 /= (B1 * weight).sum()
+    return B0, B1
 
 
 class VoxelGridPhantom:
@@ -149,9 +169,14 @@ class VoxelGridPhantom:
             dephasing_func,
             recover_func=lambda data: recover(mask, data)
         )
-
+    
     @classmethod
     def brainweb(cls, file_name: str) -> VoxelGridPhantom:
+        warn("brainweb() will be removed in a future version, use load() instead", DeprecationWarning)
+        return cls.load(file_name)
+
+    @classmethod
+    def load(cls, file_name: str) -> VoxelGridPhantom:
         """Load a phantom from data produced by `generate_maps.py`."""
         with np.load(file_name) as data:
             T1 = torch.tensor(data['T1_map'])
@@ -160,28 +185,21 @@ class VoxelGridPhantom:
             PD = torch.tensor(data['PD_map'])
             D = torch.tensor(data['D_map'])
             try:
+                B0 = torch.tensor(data['B0_map'])
+                B1 = torch.tensor(data['B1_map'])
+            except KeyError:
+                B0, B1 = generate_B0_B1(PD)
+            try:
                 size = torch.tensor(data['FOV'])
             except KeyError:
                 size = torch.tensor([0.192, 0.192, 0.192])
-
-        # Generate a somewhat plausible B0 and B1 map.
-        # Visually fitted to look similar to the numerical_brain_cropped
-        x_pos, y_pos, z_pos = torch.meshgrid(
-            torch.linspace(-1, 1, PD.shape[0]),
-            torch.linspace(-1, 1, PD.shape[1]),
-            torch.linspace(-1, 1, PD.shape[2]),
-            indexing="ij"
-        )
-        B1 = torch.exp(-(0.4*x_pos**2 + 0.2*y_pos**2 + 0.3*z_pos**2))
-        dist2 = (0.4*x_pos**2 + 0.2*(y_pos - 0.7)**2 + 0.3*z_pos**2)
-        B0 = 7 / (0.05 + dist2) - 45 / (0.3 + dist2)
-        # Normalize such that the weighted average is 0 or 1
-        weight = PD / PD.sum()
-        B0 -= (B0 * weight).sum()
-        B1 /= (B1 * weight).sum()
+        
+        if B1.ndim == 3:
+            # Add coil-dimension
+            B1 = B1[None, ...]
 
         return cls(
-            PD, T1, T2, T2dash, D, B0, B1[None, ...],
+            PD, T1, T2, T2dash, D, B0, B1,
             torch.ones(1, *PD.shape), size,
         )
 
@@ -191,6 +209,7 @@ class VoxelGridPhantom:
         file_name: str,
         T2dash: float | torch.Tensor = 0.03,
         D: float | torch.Tensor = 1.0,
+        size = [0.2, 0.2, 8e-3]
     ) -> VoxelGridPhantom:
         """Load a :class:`VoxelGridPhantom` from a .mat file.
 
@@ -227,15 +246,15 @@ class VoxelGridPhantom:
         """
         data = _load_tensor_from_mat(file_name)
 
-        # TODO: Better handling of data not included in .mat
         if data.ndim < 2 or data.shape[-1] != 5:
             raise Exception(
                 f"Expected a tensor with shape [..., 5], "
                 f"but got {list(data.shape)}"
             )
 
-        # TODO: Assumes 2D data, expands it to 3D
-        data = data.unsqueeze(2)
+        if data.ndim == 3:
+            # Expand to 3D: [x, y, i] -> [x, y, z, i]
+            data = data.unsqueeze(2)
 
         if isinstance(T2dash, float):
             T2dash = torch.full_like(data[..., 0], T2dash)
@@ -251,7 +270,7 @@ class VoxelGridPhantom:
             data[..., 3],  # B0
             data[..., 4][None, ...],  # B1
             coil_sens=torch.ones(1, *data.shape[:-1]),
-            size=torch.tensor([0.2, 0.2, 0.008]),
+            size=torch.as_tensor(size),
         )
 
     def slices(self, slices: list[int]) -> VoxelGridPhantom:
