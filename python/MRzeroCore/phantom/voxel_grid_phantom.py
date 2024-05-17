@@ -103,15 +103,15 @@ class VoxelGridPhantom:
         This function does no cloning nor contain any other funcionality. You
         probably want to use :meth:`brainweb` to load a phantom instead.
         """
-        self.PD = PD
-        self.T1 = T1
-        self.T2 = T2
-        self.T2dash = T2dash
-        self.D = D
-        self.B0 = B0
-        self.B1 = B1
-        self.coil_sens = coil_sens
-        self.size = size
+        self.PD = torch.as_tensor(PD, dtype=torch.float32)
+        self.T1 = torch.as_tensor(T1, dtype=torch.float32)
+        self.T2 = torch.as_tensor(T2, dtype=torch.float32)
+        self.T2dash = torch.as_tensor(T2dash, dtype=torch.float32)
+        self.D = torch.as_tensor(D, dtype=torch.float32)
+        self.B0 = torch.as_tensor(B0, dtype=torch.float32)
+        self.B1 = torch.as_tensor(B1, dtype=torch.float32)
+        self.coil_sens = torch.as_tensor(coil_sens, dtype=torch.float32)
+        self.size = torch.as_tensor(size, dtype=torch.float32)
 
     def build(self, PD_threshold: float = 1e-6,
               voxel_shape: Literal["sinc", "box", "point"] = "sinc"
