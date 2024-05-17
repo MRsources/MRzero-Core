@@ -140,7 +140,8 @@ def execute_graph(graph: Graph,
                 raise ValueError(f"Unknown transform {ancestor[0]}")
 
         # shape: events x coils
-        rep_sig = torch.zeros(rep.event_count, coil_count,
+        adc = rep.adc_usage > 0
+        rep_sig = torch.zeros(adc.sum(), coil_count,
                               dtype=torch.cfloat, device=data.device)
 
         # shape: events x 4
@@ -222,22 +223,27 @@ def execute_graph(graph: Graph,
             # just by switching 2pi * (pos @ grad) to 2pi * pos @ grad
 
             if dist.dist_type == '+' and dist.emitted_signal >= min_emitted_signal:
-                T2 = torch.exp(-trajectory[:, 3:] / torch.abs(data.T2))
-                T2dash = torch.exp(-torch.abs(dist_traj[:, 3:]
-                                              ) / torch.abs(data.T2dash))
+                adc_dist_traj = dist_traj[adc, :]
+                if isinstance(motion_phase, torch.Tensor):
+                    adc_motion_phase = motion_phase[adc, :]
+                else:
+                    adc_motion_phase = motion_phase
+
+                T2 = torch.exp(-trajectory[adc, 3:] / torch.abs(data.T2))
+                T2dash = torch.exp(-torch.abs(adc_dist_traj[:, 3:]) / torch.abs(data.T2dash))
                 rot = torch.exp(2j * np.pi * (
-                    (dist_traj[:, 3:] * data.B0) +
-                    (dist_traj[:, :3] @ data.voxel_pos.T) +
-                    motion_phase
+                    (adc_dist_traj[:, 3:] * data.B0) +
+                    (adc_dist_traj[:, :3] @ data.voxel_pos.T) +
+                    adc_motion_phase
                 ))
                 dephasing = data.dephasing_func(
-                    dist_traj[:, :3], data.nyquist)[:, None]
+                    adc_dist_traj[:, :3], data.nyquist)[:, None]
 
                 # shape: events x voxels
                 transverse_mag = (
                     # Add event dimension
                     1.41421356237 * dist.mag.unsqueeze(0)
-                    * rot * T2 * T2dash * diffusion * dephasing
+                    * rot * T2 * T2dash * diffusion[adc, :] * dephasing
                 )
 
                 # (events x voxels) @ (voxels x coils) = (events x coils)
@@ -257,7 +263,7 @@ def execute_graph(graph: Graph,
             if dist.dist_type == 'z0':
                 dist.mag = dist.mag + 1 - r1
 
-        rep_sig *= adc_rot
+        rep_sig *= adc_rot[adc]
 
         # Remove ancestors to save memory as we don't need them anymore.
         # When running with autograd this doesn't change memory consumption
@@ -271,10 +277,7 @@ def execute_graph(graph: Graph,
     if print_progress:
         print(" - done")
 
-    # Only return measured samples
-    measured = torch.cat([
-        sig[rep.adc_usage > 0, :] for sig, rep in zip(signal, seq)
-    ])
+    measured = torch.cat(signal)
 
     if return_mag_p is not None:
         if return_mag_z is not None:

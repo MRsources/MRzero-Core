@@ -334,7 +334,6 @@ def imshow(data: np.ndarray | torch.Tensor, *args, **kwargs):
     if data.ndim == 3:
         rows = int(np.floor(data.shape[2]**0.5))
         cols = int(np.ceil(data.shape[2] / rows))
-        print(rows, cols)
         
         tmp = data
         data = torch.zeros((tmp.shape[0] * cols, tmp.shape[1] * rows), dtype=tmp.dtype)
