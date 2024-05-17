@@ -369,7 +369,7 @@ impl RotMat {
         let phase = if angle >= 0.0 { phase } else { -phase };
         let angle = angle.abs() * 180.0 / std::f32::consts::PI;
 
-        let index = angle.floor() as usize;
+        let index = angle.floor() as usize % 360;
         let t = angle.fract();
 
         let v1 = &avg_b1_trig[index];

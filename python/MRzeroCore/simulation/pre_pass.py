@@ -1,4 +1,5 @@
 from __future__ import annotations
+from warnings import warn
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
@@ -76,6 +77,9 @@ def compute_graph_ext(
             torch.cos(angle),
             torch.sin(angle/2)**2
         ], dim=1).type(torch.float32)
+    
+    if any(rep.pulse.angle > 2*np.pi for rep in seq):
+        warn("Some flip angles are > 360°, inhomogeneities produced by extra rotations are ignored by the pre-pass B1 estimation")
 
     return Graph(_prepass.compute_graph(
         seq,
