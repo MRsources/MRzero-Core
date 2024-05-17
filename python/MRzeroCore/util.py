@@ -192,8 +192,7 @@ def pulseq_plot(seq: pp.Sequence,
         if is_valid:
             if getattr(block, 'adc', None) is not None:
                 adc = block.adc
-                t = adc.delay + [(x * adc.dwell)
-                                 for x in range(0, int(adc.num_samples))]
+                t = [(adc.delay + x * adc.dwell) for x in range(0, int(adc.num_samples))]
                 sp11.plot((t0 + t), np.zeros(len(t)), 'rx')
 # >>>> Changed: store adc samples <<<<
                 t_adc = np.append(t_adc, t0 + t)
