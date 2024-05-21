@@ -159,7 +159,9 @@ pub fn comp_graph(
 
                 // Integrating (dt omitted) over k²(t) = ((1-x)*k1 + x*k2)^2
                 // gives 1/3 * (k1^2 + k1*k2 + k2^2)
-                let b = 1.0 / 3.0
+                // k's are in rotations / meter but we need rad / m -> * 2pi
+                use std::f32::consts::TAU;
+                let b = 1.0 / 3.0 * TAU * TAU
                     * dt
                     * ((k1[0] * k1[0] + k1[0] * k2[0] + k2[0] * k2[0])
                         + (k1[1] * k1[1] + k1[1] * k2[1] + k2[1] * k2[1])

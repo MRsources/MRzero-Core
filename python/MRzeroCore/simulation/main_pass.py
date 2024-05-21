@@ -206,7 +206,9 @@ def execute_graph(graph: Graph,
             k1[0, :] = dist.kt_vec[:3]
             k1[1:, :] = k2[:-1, :]
             # Integrate over each event to get b factor (lin. interp. grad)
-            b = 1/3 * dt * (k1**2 + k1*k2 + k2**2).sum(1)
+            # Gradients are in rotations / meter, but we need rad / meter,
+            # as integrating over exp(-ikr) assumes that kr is a phase in rad
+            b = 1/3 * (2 * torch.pi)**2 * dt * (k1**2 + k1*k2 + k2**2).sum(1)
             # shape: events x voxels
             diffusion = torch.exp(-1e-9 * data.D * torch.cumsum(b, 0)[:, None])
 
