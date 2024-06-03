@@ -213,7 +213,7 @@ class CustomVoxelPhantom:
         D = torch.fft.fftshift(torch.fft.ifft2(D_kspace))
 
         maps = [PD, T1, T2, T2dash, D]
-        titles = ["$PD$", "$T_1$", "$T_2$", "$T_2#$", "$D$"]
+        titles = ["PD", "T1", "T2", "T2'", "D"]
 
         print("CustomVoxelPhantom")
         print(f"Voxel shape: {self.voxel_shape}")
