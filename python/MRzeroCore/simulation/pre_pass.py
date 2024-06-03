@@ -111,7 +111,8 @@ class Graph(list):
             y-position of a state in the scatter plot
         color : str
             Use one of ``['abs(mag)', 'phase(mag)', 'latent signal', 'signal',
-            'emitted signal']`` as color of a state in the scatter plot
+            'latent signal unormalized', 'emitted signal']``
+            as the color of a state in the scatter plot
         log_color : bool
             If true, use the logarithm of the chosen property for coloring
         """
@@ -127,8 +128,12 @@ class Graph(list):
                 value = state.latent_signal
             elif color == "signal":
                 value = state.signal
+            elif color == "latent signal unormalized":
+                value = state.latent_signal_unormalized
             elif color == "emitted signal":
                 value = state.emitted_signal
+            else:
+                raise AttributeError(f"Unknown property color={color}")
             if log_color:
                 value = np.log10(np.abs(value) + 1e-7)
             return value
