@@ -192,8 +192,7 @@ def pulseq_plot(seq: pp.Sequence,
         if is_valid:
             if getattr(block, 'adc', None) is not None:
                 adc = block.adc
-                t = adc.delay + [(x * adc.dwell)
-                                 for x in range(0, int(adc.num_samples))]
+                t = [(adc.delay + x * adc.dwell) for x in range(0, int(adc.num_samples))]
                 sp11.plot((t0 + t), np.zeros(len(t)), 'rx')
 # >>>> Changed: store adc samples <<<<
                 t_adc = np.append(t_adc, t0 + t)
@@ -314,3 +313,32 @@ def pulseq_plot(seq: pp.Sequence,
 
 # New: return plot axes and adc time points
     return sp11, t_adc
+
+
+def imshow(data: np.ndarray | torch.Tensor, *args, **kwargs):
+    """Alternative to matplotlib's `imshow`.
+    
+    This function applies quadratic coil combine on 4D data and prints 3D
+    data as a grid of slices. Also prints x-axis horizontal and y vertiacl.
+    
+    Assumes data to be indexed [c, x, y, z]"""
+    data = torch.as_tensor(data).detach().cpu()
+    assert 2 <= data.ndim <= 4
+
+    # Coil combine 4D data
+    if data.ndim == 4:
+        data = (data.abs()**2).sum(0)**0.5
+    
+    # Shape 3D data into grid
+    if data.ndim == 3:
+        rows = int(np.floor(data.shape[2]**0.5))
+        cols = int(np.ceil(data.shape[2] / rows))
+        
+        tmp = data
+        data = torch.zeros((tmp.shape[0] * cols, tmp.shape[1] * rows), dtype=tmp.dtype)
+        for i in range(tmp.shape[2]):
+            x = (i % cols)*tmp.shape[0]
+            y = ((rows * cols - i - 1) // cols)*tmp.shape[1]
+            data[x:x+tmp.shape[0], y:y+tmp.shape[1]] = tmp[:, :, i]
+
+    plt.imshow(data.T, *args, origin="lower", **kwargs)

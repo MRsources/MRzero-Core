@@ -85,13 +85,13 @@ def generate_brainweb_phantoms(
     Raw tissue segmentation data is provided by the BrainWeb Database:
     http://www.bic.mni.mcgill.ca/brainweb/
 
-    All tissue data etc. are stored in `brainweb_data.json`. To ensure
-    consistent configurations and reproducible results, available configs are
-    stored in this file as well. They specify which field strength to use,
-    which tissues to include, as well as the downsampling and noise levels.
+    All tissue data etc. are stored in [brainweb_data.json](https://github.com/MRsources/MRzero-Core/blob/main/python/MRzeroCore/phantom/brainweb/brainweb_data.json).
+    To ensure consistent configurations and reproducible results, available
+    configs are stored in this file as well. They specify which field strength
+    to use, which tissues to include, and the downsampling and noise levels.
 
     The emitted files are compressed numpy files, which can be loaded with
-    `np.load(file_name)`. They contain the following arrays:
+    ``np.load(file_name)``. They contain the following arrays:
 
      - `PD_map`: Proton Density [a.u.]
      - `T1_map`: T1 relaxation time [s]

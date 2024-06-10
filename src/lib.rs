@@ -25,6 +25,8 @@ struct PyDistribution {
     #[pyo3(get)]
     latent_signal: f32,
     #[pyo3(get)]
+    latent_signal_unormalized: f32,
+    #[pyo3(get)]
     signal: f32,
     #[pyo3(get)]
     emitted_signal: f32,
@@ -43,6 +45,7 @@ impl PyDistribution {
             kt_vec: Some(py.None()),
             prepass_mag: Some(PyComplex::from_doubles(py, 0.0, 0.0).into()),
             latent_signal: 0.0,
+            latent_signal_unormalized: 0.0,
             signal: 0.0,
             emitted_signal: 0.0,
             prepass_kt_vec: [0.0, 0.0, 0.0, 0.0],
@@ -243,6 +246,7 @@ fn compute_graph<'p>(
                 Some(PyComplex::from_doubles(py, mag.re as f64, mag.im as f64).into())
             };
             py_dist.latent_signal = dist.latent_signal;
+            py_dist.latent_signal_unormalized = dist.latent_signal_unormalized;
             py_dist.signal = dist.signal;
             py_dist.emitted_signal = dist.emitted_signal;
             py_dist.prepass_kt_vec = dist.kt_vec;

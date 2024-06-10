@@ -52,7 +52,7 @@ class CustomVoxelPhantom:
     Attributes
     ----------
     voxel_pos : torch.Tensor
-        (voxel_count, 3) tensor containing the position of all voxels
+        (voxel_count, 3) tensor of voxel positions in SI units [m]
     PD : torch.Tensor
         1D tensor containing the Proton Density of all voxels
     T1 : torch.Tensor
@@ -128,6 +128,7 @@ class CustomVoxelPhantom:
         """Build a :class:`SimData` instance for simulation."""
         # TODO: until the dephasing func fix is here, this only works on the
         # device self.voxel_size happens to be on
+        size = self.voxel_pos.max(0).values - self.voxel_pos.min(0).values
 
         return SimData(
             self.PD,
@@ -138,7 +139,7 @@ class CustomVoxelPhantom:
             self.B0,
             self.B1[None, :],
             torch.ones(1, self.PD.numel()),
-            torch.tensor([0.2, 0.2, 0.2]),  # FOV for diffusion
+            size,
             self.voxel_pos,
             torch.tensor([float('inf'), float('inf'), float('inf')]),
             build_dephasing_func(self.voxel_shape, self.voxel_size),
@@ -212,7 +213,7 @@ class CustomVoxelPhantom:
         D = torch.fft.fftshift(torch.fft.ifft2(D_kspace))
 
         maps = [PD, T1, T2, T2dash, D]
-        titles = ["$PD$", "$T_1$", "$T_2$", "$T_2#$", "$D$"]
+        titles = ["PD", "T1", "T2", "T2'", "D"]
 
         print("CustomVoxelPhantom")
         print(f"Voxel shape: {self.voxel_shape}")

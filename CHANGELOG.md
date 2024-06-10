@@ -1,3 +1,13 @@
+- 0.3.0
+  - Bugfixes (seq.get_contrast(), pTx shim phase, pytorch deprecation warnings, > 360° pulses, pulseq plot, missing 2pi in diffusion, phantom plot titles)
+  - WIP rigid phantom motion simulation - not yet documented and subject to change
+  - Added option to return transversal magnetization from simulation
+  - New imshow() function in util.py for consistent plotting
+  - Some fixes to playground sequences - bigger overhaul coming soon
+  - Allow loading B0 / B1 in new VoxelGridPhantom.load() function
+  - Introduced quantified brain
+  - Performance improvement - only calculate signal for measured ADC samples
+  - Added latent_signal_unormalized to prepass graph for vizualisation
 - 0.2.12
   - Fixed Brainweb phantom loading and generation
   - Switched pre-pass kt precision from f32 to f64

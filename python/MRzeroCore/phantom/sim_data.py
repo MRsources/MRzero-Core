@@ -65,6 +65,8 @@ class SimData:
         nyquist: torch.Tensor,
         dephasing_func: Callable[[torch.Tensor, torch.Tensor], torch.Tensor],
         recover_func: Callable[[SimData], Any] | None = None,
+        phantom_motion=None,
+        voxel_motion=None
     ) -> None:
         """Create a :class:`SimData` instance based on the given tensors.
 
@@ -100,6 +102,9 @@ class SimData:
         self.dephasing_func = dephasing_func
         self.recover_func = recover_func
 
+        self.phantom_motion = phantom_motion
+        self.voxel_motion = voxel_motion
+
     def cuda(self) -> SimData:
         """Move the simulation data to the default CUDA device.
 
@@ -119,7 +124,9 @@ class SimData:
             self.voxel_pos.cuda(),
             self.nyquist.cuda(),
             self.dephasing_func,
-            self.recover_func
+            self.recover_func,
+            self.phantom_motion,
+            self.voxel_motion
         )
 
     def cpu(self) -> SimData:
@@ -141,7 +148,9 @@ class SimData:
             self.voxel_pos.cpu(),
             self.nyquist.cpu(),
             self.dephasing_func,
-            self.recover_func
+            self.recover_func,
+            self.phantom_motion,
+            self.voxel_motion
         )
 
     @property
