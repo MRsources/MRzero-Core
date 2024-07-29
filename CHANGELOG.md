@@ -1,3 +1,6 @@
+- 0.3.1
+  - WIP .dsv support with pydisseqt 0.1.5
+  - changed type annotation in util.imshow for python 3.9 compatibility
 - 0.3.0
   - Bugfixes (seq.get_contrast(), pTx shim phase, pytorch deprecation warnings, > 360° pulses, pulseq plot, missing 2pi in diffusion, phantom plot titles)
   - WIP rigid phantom motion simulation - not yet documented and subject to change
