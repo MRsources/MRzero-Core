@@ -1,6 +1,6 @@
 import os
 import time
-from typing import Literal
+from typing import Literal, Union
 import torch
 import numpy as np
 
@@ -315,7 +315,7 @@ def pulseq_plot(seq: pp.Sequence,
     return sp11, t_adc
 
 
-def imshow(data: np.ndarray | torch.Tensor, *args, **kwargs):
+def imshow(data: Union[np.ndarray, torch.Tensor], *args, **kwargs):
     """Alternative to matplotlib's `imshow`.
     
     This function applies quadratic coil combine on 4D data and prints 3D
