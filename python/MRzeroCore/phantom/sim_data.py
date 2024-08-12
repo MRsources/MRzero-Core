@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Callable, Any
+from typing import Callable, Any, Optional, Dict
 import torch
 from numpy import pi
 
@@ -66,7 +66,8 @@ class SimData:
         dephasing_func: Callable[[torch.Tensor, torch.Tensor], torch.Tensor],
         recover_func: Callable[[SimData], Any] | None = None,
         phantom_motion=None,
-        voxel_motion=None
+        voxel_motion=None,
+        Masks: Optional[Dict[str,torch.Tensor]] = None,
     ) -> None:
         """Create a :class:`SimData` instance based on the given tensors.
 
@@ -94,6 +95,7 @@ class SimData:
         self.D = D.clamp(min=1e-6)
         self.B0 = B0.clone()
         self.B1 = B1.clone()
+        self.Masks = Masks
         self.coil_sens = coil_sens.clone()
         self.size = size.clone()
         self.voxel_pos = voxel_pos.clone()
@@ -126,7 +128,8 @@ class SimData:
             self.dephasing_func,
             self.recover_func,
             self.phantom_motion,
-            self.voxel_motion
+            self.voxel_motion,
+            Masks=self.Masks  # no need to put on cuda since it's not use for simulation rather for image metric calculation
         )
 
     def cpu(self) -> SimData:
@@ -150,7 +153,8 @@ class SimData:
             self.dephasing_func,
             self.recover_func,
             self.phantom_motion,
-            self.voxel_motion
+            self.voxel_motion,
+            Masks=self.Masks
         )
 
     @property
