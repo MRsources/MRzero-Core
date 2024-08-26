@@ -141,11 +141,6 @@ def generate_brainweb_phantoms(
                 for alias in brainweb_data["download-aliases"][tissue]
             ])
             tissue_map = downsample(tissue_map, config_data["downsample"])
-            tiusse_mask = tissue_map > 0.2
-            #convert to 1 and 0
-            tissue_mask = np.where(tiusse_mask, 1, 0)
-            
-            maps["mask_" + tissue] = tissue_mask
             maps["tissue_" + tissue] = tissue_map
 
             field_strength = config_data["field-strength"]

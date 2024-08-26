@@ -67,7 +67,7 @@ class SimData:
         recover_func: Callable[[SimData], Any] | None = None,
         phantom_motion=None,
         voxel_motion=None,
-        Masks: Optional[Dict[str,torch.Tensor]] = None,
+        tissue_masks: Optional[Dict[str,torch.Tensor]] = None,
     ) -> None:
         """Create a :class:`SimData` instance based on the given tensors.
 
@@ -95,7 +95,7 @@ class SimData:
         self.D = D.clamp(min=1e-6)
         self.B0 = B0.clone()
         self.B1 = B1.clone()
-        self.Masks = Masks
+        self.tissue_masks = tissue_masks
         self.coil_sens = coil_sens.clone()
         self.size = size.clone()
         self.voxel_pos = voxel_pos.clone()
@@ -129,7 +129,11 @@ class SimData:
             self.recover_func,
             self.phantom_motion,
             self.voxel_motion,
-            Masks=self.Masks  # no need to put on cuda since it's not use for simulation rather for image metric calculation
+            tissue_masks=(
+                {k: v.cuda() for k, v in self.tissue_masks.items()}
+                if self.tissue_masks is not None
+                else None
+            ),
         )
 
     def cpu(self) -> SimData:
@@ -154,7 +158,11 @@ class SimData:
             self.recover_func,
             self.phantom_motion,
             self.voxel_motion,
-            Masks=self.Masks
+            tissue_masks=(
+                {k: v.cpu() for k, v in self.tissue_masks.items()}
+                if self.tissue_masks is not None
+                else None
+            ),
         )
 
     @property

@@ -84,6 +84,8 @@ class VoxelGridPhantom:
         (coil_count, sx, sy, sz) tensor of coil sensitivities
     size : torch.Tensor
         Size of the data, in meters.
+    tissue_masks : Dict[str, torch.Tensor]
+        Segmentation masks for different tissues. The keys are the tissue names
     """
 
     def __init__(
@@ -97,7 +99,7 @@ class VoxelGridPhantom:
         B1: torch.Tensor,
         coil_sens: torch.Tensor,
         size: torch.Tensor,
-        Masks: Optional[Dict[str,torch.Tensor]] = None,
+        tissue_masks: Optional[Dict[str,torch.Tensor]] = None,
     ) -> None:
         """Set the phantom attributes to the provided parameters.
 
@@ -111,7 +113,7 @@ class VoxelGridPhantom:
         self.D = torch.as_tensor(D, dtype=torch.float32)
         self.B0 = torch.as_tensor(B0, dtype=torch.float32)
         self.B1 = torch.as_tensor(B1, dtype=torch.float32)
-        self.Masks = Masks
+        self.tissue_masks = tissue_masks
         self.coil_sens = torch.as_tensor(coil_sens, dtype=torch.float32)
         self.size = torch.as_tensor(size, dtype=torch.float32)
 
@@ -170,8 +172,7 @@ class VoxelGridPhantom:
             torch.as_tensor(shape, device=self.PD.device) / 2 / self.size,
             dephasing_func,
             recover_func=lambda data: recover(mask, data),
-            Masks = self.Masks
-            
+            tissue_masks=self.tissue_masks
         )
     
     @classmethod
@@ -198,14 +199,11 @@ class VoxelGridPhantom:
             except KeyError:
                 size = torch.tensor([0.192, 0.192, 0.192])
 
-            try:
-                Masks = {}
-                tissues = [key[5:] for key in data.keys() if key.startswith('mask_')]
-                for tissue in tissues:
-                    mask = torch.tensor(data[f'mask_{tissue}'], dtype=torch.uint8)
-                    Masks[tissue] = mask
-            except KeyError:
-                print("No masks found")
+            tissue_masks = {
+                key: torch.tensor(mask)
+                for key, mask in data.items()
+                if key.startswith("tissue_")
+            }
         if B1.ndim == 3:
             # Add coil-dimension
             B1 = B1[None, ...]
@@ -213,7 +211,7 @@ class VoxelGridPhantom:
         return cls(
             PD, T1, T2, T2dash, D, B0, B1,
             torch.ones(1, *PD.shape), size,
-            Masks=Masks
+            tissue_masks=tissue_masks
         )
 
     @classmethod
@@ -316,7 +314,9 @@ class VoxelGridPhantom:
             select(self.B1).unsqueeze(0),
             select(self.coil_sens).unsqueeze(0),
             self.size.clone(),
-            Masks= {key: mask[..., slices] for key, mask in self.Masks.items()}
+            tissue_masks={
+                key: mask[..., slices] for key, mask in self.tissue_masks.items()
+                },
         )
 
     def scale_fft(self, x: int, y: int, z: int) -> VoxelGridPhantom:
@@ -356,7 +356,7 @@ class VoxelGridPhantom:
             scale(self.B1.squeeze()).unsqueeze(0),
             scale(self.coil_sens.squeeze()).unsqueeze(0),
             self.size.clone(),
-            Masks= {key: scale(mask) for key, mask in self.Masks.items()}
+            tissue_masks= {key: scale(mask) for key, mask in self.tissue_masks.items()}
         )
 
     def interpolate(self, x: int, y: int, z: int) -> VoxelGridPhantom:
@@ -393,7 +393,7 @@ class VoxelGridPhantom:
             for i in range(coils):
                 output[i, ...] = resample(tensor[i, ...])
             return output
-        
+
         def resample_masks(tensors: Dict) -> Dict:
             output = {}
             for key, mask in tensors.items():
@@ -401,12 +401,8 @@ class VoxelGridPhantom:
                 interpolated_mask = torch.nn.functional.interpolate(
                     mask[None, None, ...].float(), size=(x, y, z), mode='area'
                 )[0, 0, ...]
-
-                # Threshold the result to ensure binary output
-                binary_mask = (interpolated_mask > 0.5).to(mask.dtype)
-
                 # Store the result
-                output[key] = binary_mask
+                output[key] = interpolated_mask
 
             return output
 
@@ -420,10 +416,10 @@ class VoxelGridPhantom:
             resample_multicoil(self.B1),
             resample_multicoil(self.coil_sens),
             self.size.clone(),
-            Masks= resample_masks(self.Masks)
+            tissue_masks=resample_masks(self.tissue_masks)
         )
 
-    def plot(self) -> None:
+    def plot(self, plot_masks=False) -> None:
         """Print and plot all data stored in this phantom."""
         print("VoxelGridPhantom")
         print(f"size = {self.size}")
@@ -437,46 +433,68 @@ class VoxelGridPhantom:
         if self.PD.shape[2] > 1:
             print(f"Plotting slice {s} / {self.PD.shape[2]}")
 
-        plt.figure(figsize=(12, 10))
-        plt.subplot(431)
-        plt.title("PD")
+        # Determine the number of subplots needed
+        num_plots = 9  # Base number of plots without masks
+        if plot_masks:
+            num_masks = len(self.tissue_masks)
+            num_plots += num_masks
 
+        # Calculate the grid size based on the number of plots
+        cols = 3
+        rows = int(np.ceil(num_plots / cols))
+
+        plt.figure(figsize=(12, rows * 3))
+
+        # Plot the basic maps
+        plt.subplot(rows, cols, 1)
+        plt.title("PD")
         imshow(self.PD, vmin=0)
         plt.colorbar()
-        plt.subplot(432)
+
+        plt.subplot(rows, cols, 2)
         plt.title("T1")
         imshow(self.T1, vmin=0)
         plt.colorbar()
-        plt.subplot(433)
+
+        plt.subplot(rows, cols, 3)
         plt.title("T2")
         imshow(self.T2, vmin=0)
         plt.colorbar()
-        plt.subplot(434)
+
+        plt.subplot(rows, cols, 4)
         plt.title("T2'")
         imshow(self.T2dash, vmin=0)
         plt.colorbar()
-        plt.subplot(435)
+
+        plt.subplot(rows, cols, 5)
         plt.title("D")
         imshow(self.D, vmin=0)
         plt.colorbar()
-        plt.subplot(437)
+
+        plt.subplot(rows, cols, 7)
         plt.title("B0")
         imshow(self.B0)
         plt.colorbar()
-        plt.subplot(438)
+
+        plt.subplot(rows, cols, 8)
         plt.title("B1")
         imshow(self.B1[0, ...])
         plt.colorbar()
-        plt.subplot(439)
+
+        plt.subplot(rows, cols, 9)
         plt.title("coil sens")
         imshow(self.coil_sens[0, ...], vmin=0)
         plt.colorbar()
-        for i , (key, mask) in enumerate(self.Masks.items()):
-            plt.subplot(4, 3, 10 + i)
-            plt.title(key)
-            imshow(mask)
-            plt.colorbar()
-            
+
+        # Conditionally plot masks if plot_masks is True
+        if plot_masks:
+            for i, (key, mask) in enumerate(self.tissue_masks.items()):
+                plt.subplot(rows, cols, 10 + i)
+                plt.title(key)
+                imshow(mask)
+                plt.colorbar()
+
+        plt.tight_layout()
         plt.show()
 
     def plot3D(self, data2print: int = 0) -> None:
