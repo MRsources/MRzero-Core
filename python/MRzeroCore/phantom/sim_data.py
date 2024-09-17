@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Callable, Any
+from typing import Callable, Any, Optional, Dict
 import torch
 from numpy import pi
 
@@ -66,7 +66,8 @@ class SimData:
         dephasing_func: Callable[[torch.Tensor, torch.Tensor], torch.Tensor],
         recover_func: Callable[[SimData], Any] | None = None,
         phantom_motion=None,
-        voxel_motion=None
+        voxel_motion=None,
+        tissue_masks: Optional[Dict[str,torch.Tensor]] = None,
     ) -> None:
         """Create a :class:`SimData` instance based on the given tensors.
 
@@ -94,6 +95,7 @@ class SimData:
         self.D = D.clamp(min=1e-6)
         self.B0 = B0.clone()
         self.B1 = B1.clone()
+        self.tissue_masks = tissue_masks
         self.coil_sens = coil_sens.clone()
         self.size = size.clone()
         self.voxel_pos = voxel_pos.clone()
@@ -126,7 +128,12 @@ class SimData:
             self.dephasing_func,
             self.recover_func,
             self.phantom_motion,
-            self.voxel_motion
+            self.voxel_motion,
+            tissue_masks=(
+                {k: v.cuda() for k, v in self.tissue_masks.items()}
+                if self.tissue_masks is not None
+                else None
+            ),
         )
 
     def cpu(self) -> SimData:
@@ -150,7 +157,12 @@ class SimData:
             self.dephasing_func,
             self.recover_func,
             self.phantom_motion,
-            self.voxel_motion
+            self.voxel_motion,
+            tissue_masks=(
+                {k: v.cpu() for k, v in self.tissue_masks.items()}
+                if self.tissue_masks is not None
+                else None
+            ),
         )
 
     @property
