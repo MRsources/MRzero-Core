@@ -1,3 +1,7 @@
+- 0.3.2
+  - Added tissue maps to phantom and plotting (#68)
+  - Fixed `.plot()`ting of 3D VoxelGridPhantom, added slice parameter
+  - Added `simulate_2D` to util for easy simulation of pypulseq sequences
 - 0.3.1
   - WIP .dsv support with pydisseqt 0.1.5
   - changed type annotation in util.imshow for python 3.9 compatibility

@@ -419,12 +419,29 @@ class VoxelGridPhantom:
             tissue_masks=resample_masks(self.tissue_masks)
         )
 
-    def plot(self, plot_masks=False) -> None:
-        """Print and plot all data stored in this phantom."""
+    def plot(self, plot_masks=False, plot_slice="center") -> None:
+        """
+        Print and plot all data stored in this phantom.
+
+        Parameters
+        ----------
+        plot_masks : bool
+            Plot tissue masks stored in this phantom (assumes they exist)
+        slice : str | int
+            If int, the specified slice is plotted. "center" plots the center
+            slice and "all" plots all slices as a grid.
+        """
         print("VoxelGridPhantom")
         print(f"size = {self.size}")
         # Center slice
-        s = self.PD.shape[2] // 2
+        if plot_slice == "center":
+            s = self.PD.shape[2] // 2
+        elif plot_slice == "all":
+            s = slice(None)
+        elif plot_slice is int:
+            s = plot_slice
+        else:
+            raise ValueError("expected plot_slice to be 'all', 'center' or an integer")
         # Warn if we only print a part of all data
         if self.coil_sens.shape[0] > 1:
             print(f"Plotting 1st of {self.coil_sens.shape[0]} coil sens maps")
@@ -448,42 +465,42 @@ class VoxelGridPhantom:
         # Plot the basic maps
         plt.subplot(rows, cols, 1)
         plt.title("PD")
-        imshow(self.PD, vmin=0)
+        imshow(self.PD[:, :, s], vmin=0)
         plt.colorbar()
 
         plt.subplot(rows, cols, 2)
         plt.title("T1")
-        imshow(self.T1, vmin=0)
+        imshow(self.T1[:, :, s], vmin=0)
         plt.colorbar()
 
         plt.subplot(rows, cols, 3)
         plt.title("T2")
-        imshow(self.T2, vmin=0)
+        imshow(self.T2[:, :, s], vmin=0)
         plt.colorbar()
 
         plt.subplot(rows, cols, 4)
         plt.title("T2'")
-        imshow(self.T2dash, vmin=0)
+        imshow(self.T2dash[:, :, s], vmin=0)
         plt.colorbar()
 
         plt.subplot(rows, cols, 5)
         plt.title("D")
-        imshow(self.D, vmin=0)
+        imshow(self.D[:, :, s], vmin=0)
         plt.colorbar()
 
         plt.subplot(rows, cols, 7)
         plt.title("B0")
-        imshow(self.B0)
+        imshow(self.B0[:, :, s])
         plt.colorbar()
 
         plt.subplot(rows, cols, 8)
         plt.title("B1")
-        imshow(self.B1[0, ...])
+        imshow(self.B1[0, :, :, s])
         plt.colorbar()
 
         plt.subplot(rows, cols, 9)
         plt.title("coil sens")
-        imshow(self.coil_sens[0, ...], vmin=0)
+        imshow(self.coil_sens[0, :, :, s], vmin=0)
         plt.colorbar()
 
         # Conditionally plot masks if plot_masks is True

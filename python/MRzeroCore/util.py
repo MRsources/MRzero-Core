@@ -342,3 +342,74 @@ def imshow(data: Union[np.ndarray, torch.Tensor], *args, **kwargs):
             data[x:x+tmp.shape[0], y:y+tmp.shape[1]] = tmp[:, :, i]
 
     plt.imshow(data.T, *args, origin="lower", **kwargs)
+
+
+def simulate_2d(seq, sim_size=None, noise_level=0, dB0=0, B0_scale=1, B0_polynomial=None):
+    # Copied and modified from https://github.com/pulseq/MR-Physics-with-Pulseq
+    import urllib
+    import MRzeroCore as mr0
+    # Download .mat file for phantom if necessary
+    sim_url = 'https://github.com/mzaiss/MRTwin_pulseq/raw/mr0-core/data/numerical_brain_cropped.mat'
+    sim_filename = os.path.basename(sim_url)
+    if not os.path.exists(sim_filename):
+        print(f'Downloading {sim_url}...')
+        urllib.request.urlretrieve(sim_url, sim_filename)
+    
+    # If seq is not a str, assume it is a sequence object and write to a temporary sequence file
+    if not isinstance(seq, str):
+        seq.write('tmp.seq')
+        seq_filename = 'tmp.seq'
+        adc_samples = int(seq.adc_library.data[1][0])
+    else:
+        seq_filename = seq
+        tmp_seq = pp.Sequence()
+        tmp_seq.read(seq_filename)
+        adc_samples = int(tmp_seq.adc_library.data[1][0])
+    
+    # Create phantom from .mat file
+    obj_p = mr0.VoxelGridPhantom.load_mat(sim_filename)
+    if sim_size is not None:
+        obj_p = obj_p.interpolate(sim_size[0], sim_size[1], 1)
+
+    # Manipulate loaded data
+    obj_p.B0 *= B0_scale
+    obj_p.B0 += dB0
+    
+    if B0_polynomial is not None:
+        x,y = torch.meshgrid(torch.linspace(-1,1,obj_p.PD.shape[0]),torch.linspace(-1,1,obj_p.PD.shape[1]))
+        
+        obj_p.B0 = B0_polynomial[0]
+        if len(B0_polynomial) > 1:
+            obj_p.B0 += x * B0_polynomial[1]
+        if len(B0_polynomial) > 2:
+            obj_p.B0 += y * B0_polynomial[2]
+        if len(B0_polynomial) > 3:
+            obj_p.B0 += x*x * B0_polynomial[3]
+        if len(B0_polynomial) > 4:
+            obj_p.B0 += y*y * B0_polynomial[4]
+        if len(B0_polynomial) > 5:
+            obj_p.B0 += x*y * B0_polynomial[5]
+        
+        obj_p.B0 = obj_p.B0[:,:,None]
+    
+    obj_p.D *= 0
+    
+    # Convert Phantom into simulation data
+    obj_p = obj_p.build()
+
+    # MR zero simulation
+    seq0 = mr0.Sequence.import_file(seq_filename)
+    
+    # Remove temporary sequence file
+    if not isinstance(seq, str):
+        os.unlink('tmp.seq')
+    
+    # Simulate the sequence
+    graph = mr0.compute_graph(seq0, obj_p, 200, 1e-5)
+    signal = mr0.execute_graph(graph, seq0, obj_p)
+
+    # Add noise to the simulated data
+    if noise_level > 0:
+        signal += noise_level * torch.randn(*signal.shape, dtype=signal.dtype)
+    
+    return signal
