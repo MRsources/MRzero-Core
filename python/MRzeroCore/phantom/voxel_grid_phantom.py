@@ -345,6 +345,12 @@ class VoxelGridPhantom:
                 cz - z // 2:cz + (z+1) // 2
             ] * norm
             return torch.fft.ifftn(torch.fft.ifftshift(FT)).abs()
+        
+        def scale_masks(masks: Optional[Dict]) -> Optional[Dict]:
+            if masks is None:
+                return None
+
+            return {key: scale(mask) for key, mask in self.tissue_masks.items()}
 
         return VoxelGridPhantom(
             scale(self.PD),
@@ -356,7 +362,7 @@ class VoxelGridPhantom:
             scale(self.B1.squeeze()).unsqueeze(0),
             scale(self.coil_sens.squeeze()).unsqueeze(0),
             self.size.clone(),
-            tissue_masks= {key: scale(mask) for key, mask in self.tissue_masks.items()}
+            tissue_masks=scale_masks(self.tissue_masks)
         )
 
     def interpolate(self, x: int, y: int, z: int) -> VoxelGridPhantom:
@@ -394,7 +400,9 @@ class VoxelGridPhantom:
                 output[i, ...] = resample(tensor[i, ...])
             return output
 
-        def resample_masks(tensors: Dict) -> Dict:
+        def resample_masks(tensors: Dict) -> Optional[Dict]:
+            if tensors is None:
+                return None
             output = {}
             for key, mask in tensors.items():
                 # Interpolate the mask

@@ -1,3 +1,5 @@
+- 0.3.3
+  - Bugfix: `VoxelGridPhantom.interpolate()` and `.scale()` now work again
 - 0.3.2
   - Added tissue maps to phantom and plotting (#68)
   - Fixed `.plot()`ting of 3D VoxelGridPhantom, added slice parameter
