@@ -105,7 +105,12 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
-    # if: "startsWith(github.ref, 'refs/tags/')"
+    environment:
+      name: pypi
+      url: https://pypi.org/p/mrzerocore
+    permissions:
+      id-token: write
+
     needs: [linux, windows, macos, sdist]
     steps:
       - uses: actions/download-artifact@v3
