@@ -1,3 +1,5 @@
+- 0.3.4
+  - Bugfix: `insert_signal_plot()` now respects adc delay
 - 0.3.3
   - Bugfix: `VoxelGridPhantom.interpolate()` and `.scale()` now work again
 - 0.3.2

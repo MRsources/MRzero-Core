@@ -89,7 +89,7 @@ def insert_signal_plot(seq: pp.Sequence, signal: np.ndarray):
         if getattr(block, "adc", None):
             adc = block.adc
             count = int(adc.num_samples)
-            time += [t0 + t * adc.dwell for t in range(count)] + [float("nan")]
+            time += [t0 + adc.delay + t * adc.dwell for t in range(count)] + [float("nan")]
             samples += remaining_signal[:count] + [float("nan")]
             remaining_signal = remaining_signal[count:]
         t0 += pp.calc_duration(block)
