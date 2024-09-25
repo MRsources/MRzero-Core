@@ -13,6 +13,7 @@ external.seq
 
 # Brainweb files
 *.i8.gz
+*.npz
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

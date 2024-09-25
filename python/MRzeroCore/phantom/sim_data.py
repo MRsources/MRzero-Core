@@ -96,6 +96,8 @@ class SimData:
         self.B0 = B0.clone()
         self.B1 = B1.clone()
         self.tissue_masks = tissue_masks
+        if self.tissue_masks is None:
+            self.tissue_masks = {}
         self.coil_sens = coil_sens.clone()
         self.size = size.clone()
         self.voxel_pos = voxel_pos.clone()
@@ -129,11 +131,9 @@ class SimData:
             self.recover_func,
             self.phantom_motion,
             self.voxel_motion,
-            tissue_masks=(
-                {k: v.cuda() for k, v in self.tissue_masks.items()}
-                if self.tissue_masks is not None
-                else None
-            ),
+            tissue_masks={
+                k: v.cuda() for k, v in self.tissue_masks.items()
+            },
         )
 
     def cpu(self) -> SimData:
@@ -158,11 +158,9 @@ class SimData:
             self.recover_func,
             self.phantom_motion,
             self.voxel_motion,
-            tissue_masks=(
-                {k: v.cpu() for k, v in self.tissue_masks.items()}
-                if self.tissue_masks is not None
-                else None
-            ),
+            tissue_masks={
+                k: v.cpu() for k, v in self.tissue_masks.items()
+            },
         )
 
     @property

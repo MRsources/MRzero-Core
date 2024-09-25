@@ -84,7 +84,7 @@ class VoxelGridPhantom:
         (coil_count, sx, sy, sz) tensor of coil sensitivities
     size : torch.Tensor
         Size of the data, in meters.
-    tissue_masks : Dict[str, torch.Tensor]
+    tissue_masks : Dict[str, torch.Tensor] | None
         Segmentation masks for different tissues. The keys are the tissue names
     """
 
@@ -114,6 +114,8 @@ class VoxelGridPhantom:
         self.B0 = torch.as_tensor(B0, dtype=torch.float32)
         self.B1 = torch.as_tensor(B1, dtype=torch.float32)
         self.tissue_masks = tissue_masks
+        if self.tissue_masks is None:
+            self.tissue_masks = {}
         self.coil_sens = torch.as_tensor(coil_sens, dtype=torch.float32)
         self.size = torch.as_tensor(size, dtype=torch.float32)
 
@@ -316,7 +318,7 @@ class VoxelGridPhantom:
             self.size.clone(),
             tissue_masks={
                 key: mask[..., slices] for key, mask in self.tissue_masks.items()
-                },
+            },
         )
 
     def scale_fft(self, x: int, y: int, z: int) -> VoxelGridPhantom:
@@ -345,12 +347,6 @@ class VoxelGridPhantom:
                 cz - z // 2:cz + (z+1) // 2
             ] * norm
             return torch.fft.ifftn(torch.fft.ifftshift(FT)).abs()
-        
-        def scale_masks(masks: Optional[Dict]) -> Optional[Dict]:
-            if masks is None:
-                return None
-
-            return {key: scale(mask) for key, mask in self.tissue_masks.items()}
 
         return VoxelGridPhantom(
             scale(self.PD),
@@ -362,7 +358,9 @@ class VoxelGridPhantom:
             scale(self.B1.squeeze()).unsqueeze(0),
             scale(self.coil_sens.squeeze()).unsqueeze(0),
             self.size.clone(),
-            tissue_masks=scale_masks(self.tissue_masks)
+            tissue_masks={
+                key: scale(mask) for key, mask in self.tissue_masks.items()
+            }
         )
 
     def interpolate(self, x: int, y: int, z: int) -> VoxelGridPhantom:
@@ -401,8 +399,6 @@ class VoxelGridPhantom:
             return output
 
         def resample_masks(tensors: Dict) -> Optional[Dict]:
-            if tensors is None:
-                return None
             output = {}
             for key, mask in tensors.items():
                 # Interpolate the mask

@@ -1,3 +1,6 @@
+- 0.3.5
+  - centered signal on adc samples in `insert_signal_plot()`
+  - ensured `tissue_masks` is never zero to fix remaining bugs
 - 0.3.4
   - Bugfix: `insert_signal_plot()` now respects adc delay
 - 0.3.3
