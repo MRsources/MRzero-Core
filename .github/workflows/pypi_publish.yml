@@ -102,8 +102,7 @@ jobs:
           name: wheels
           path: dist
 
-  release:
-    name: Release
+  pypi-publish:
     runs-on: ubuntu-latest
     environment:
       name: pypi
@@ -116,10 +115,8 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: wheels
-      - name: Publish to PyPI
-        uses: PyO3/maturin-action@v1
-        env:
-          MATURIN_PYPI_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+      - name: Publish package
+        uses: pypa/gh-action-pypi-publish@27b31702a0e7fc50959f5ad993c78deac1bdfc29
         with:
-          command: upload
-          args: --skip-existing *
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
