@@ -39,7 +39,7 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels_linux
+          name: ${{ format('wheels_linux_{0}', matrix.target) }}
           path: dist
 
   windows:
@@ -62,7 +62,7 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels_windows
+          name: ${{ format('wheels_windows_{0}', matrix.target) }}
           path: dist
 
   macos:
@@ -84,7 +84,7 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels_macos
+          name: ${{ format('wheels_macos_{0}', matrix.target) }}
           path: dist
 
   sdist:
