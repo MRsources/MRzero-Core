@@ -114,19 +114,6 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: wheels_linux
-          path: dist
-      - uses: actions/download-artifact@v4
-        with:
-          name: wheels_windows
-          path: dist
-      - uses: actions/download-artifact@v4
-        with:
-          name: wheels_macos
-          path: dist
-      - uses: actions/download-artifact@v4
-        with:
-          name: wheels_src
           path: dist
       - name: Publish package
         uses: pypa/gh-action-pypi-publish@27b31702a0e7fc50959f5ad993c78deac1bdfc29
