@@ -89,7 +89,7 @@ def isochromat_sim(seq: Sequence, data: SimData, spin_count: int,
         raise ValueError("unexpected spin_dist", spin_dist)
 
     # spin_pos = torch.rand_like(spin_pos)  # Use white noise
-    spin_pos = 2 * pi * (spin_pos - 0.5) * voxel_size.unsqueeze(1)
+    spin_pos = 2 * pi * (spin_pos - 0.5) * voxel_size.unsqueeze(0)
 
     # Omega is a cauchy-distributed tensor of spin offset freqencies (for T2')
     off_res = torch.linspace(-0.5, 0.5, spin_count, device=data.device)
@@ -243,7 +243,7 @@ def intravoxel_precess(spins: torch.Tensor, gradm: torch.Tensor,
     ``grad_precess`` and ``intravoxel_precess`` are both needed to correctly
     simulate the effect gradients have on the magnetisation.
     """
-    angle = spin_pos.T @ gradm  # shape: spins
+    angle = spin_pos @ gradm  # shape: spins
     rot_mat = torch.zeros((angle.numel(), 3, 3), device=spins.device)
     rot_mat[:, 0, 0] = torch.cos(angle)
     rot_mat[:, 0, 1] = -torch.sin(angle)
