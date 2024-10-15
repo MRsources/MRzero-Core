@@ -31,7 +31,9 @@ For the best user experience, it is recommended to install MRzeroCore locally an
 
 ## Literature
 
-_Endres, J., Dang, H., Glang, F., Loktyushin, A., Weinmüller, S., Zaiss, M._ **Phase distribution graphs for differentiable and efficient simulations of arbitrary MRI sequences.** Joint Annual Meeting ISMRM-ESMRMB & ISMRT 31st Annual Meeting (ISMRM 2022). https://archive.ismrm.org/2022/0750.html
+_Endres, J., Weinmüller, S., Dang, HN., Zaiss, M._ **Phase distribution graphs for fast, differentiable, and spatially encoded Bloch simulations of arbitrary MRI sequences.** Magn Reson Med. 2024; 92(3): 1189-1204. https://doi.org/10.1002/mrm.30055
+
+_Weinmüller, S., Endres, J., Dang, HN., Stollberger, R., Zaiss, M._ **MR-zero meets FLASH – Controlling the transient signal decay in gradient- and rf-spoiled gradient echo sequences** Magn Reson Med. 2024; https://doi.org/10.1002/mrm.30318
 
 _Loktyushin, A., Herz, K., Dang, H._ **MRzero - Automated discovery of MRI sequences using supervised learning.** Magn Reson Med. 2021; 86: 709–724. https://doi.org/10.1002/mrm.28727
 
