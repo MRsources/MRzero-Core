@@ -1,3 +1,6 @@
+- 0.3.6
+  - Support for complex B1 maps (#80)
+  - Isochromat bugfix (#74)
 - 0.3.5
   - centered signal on adc samples in `insert_signal_plot()`
   - ensured `tissue_masks` is never zero to fix remaining bugs
