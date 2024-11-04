@@ -112,11 +112,11 @@ class VoxelGridPhantom:
         self.T2dash = torch.as_tensor(T2dash, dtype=torch.float32)
         self.D = torch.as_tensor(D, dtype=torch.float32)
         self.B0 = torch.as_tensor(B0, dtype=torch.float32)
-        self.B1 = torch.as_tensor(B1, dtype=torch.float32)
+        self.B1 = torch.as_tensor(B1, dtype=torch.complex64)
         self.tissue_masks = tissue_masks
         if self.tissue_masks is None:
             self.tissue_masks = {}
-        self.coil_sens = torch.as_tensor(coil_sens, dtype=torch.float32)
+        self.coil_sens = torch.as_tensor(coil_sens, dtype=torch.complex64)
         self.size = torch.as_tensor(size, dtype=torch.float32)
 
     def build(self, PD_threshold: float = 1e-6,
@@ -388,14 +388,17 @@ class VoxelGridPhantom:
         def resample(tensor: torch.Tensor) -> torch.Tensor:
             # Introduce additional dimensions: mini-batch and channels
             return torch.nn.functional.interpolate(
-                tensor[None, None, ...], size=(x, y, z), mode='area'
+                tensor[None, None, ...], size=(x, y, z), mode='trilinear'
             )[0, 0, ...]
 
         def resample_multicoil(tensor: torch.Tensor) -> torch.Tensor:
             coils = tensor.shape[0]
             output = torch.zeros(coils, x, y, z)
             for i in range(coils):
-                output[i, ...] = resample(tensor[i, ...])
+                re = resample(torch.real(tensor[i, ...]))
+                im = resample(torch.imag(tensor[i, ...]))
+                output[i, ...] = re + 1j * im
+
             return output
 
         def resample_masks(tensors: Dict) -> Optional[Dict]:
@@ -499,12 +502,12 @@ class VoxelGridPhantom:
 
         plt.subplot(rows, cols, 8)
         plt.title("B1")
-        imshow(self.B1[0, :, :, s])
+        imshow(torch.abs(self.B1[0, :, :, s]))
         plt.colorbar()
 
         plt.subplot(rows, cols, 9)
         plt.title("coil sens")
-        imshow(self.coil_sens[0, :, :, s], vmin=0)
+        imshow(torch.abs(self.coil_sens[0, :, :, s]), vmin=0)
         plt.colorbar()
 
         # Conditionally plot masks if plot_masks is True
