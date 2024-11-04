@@ -32,6 +32,7 @@ def execute_graph(graph: Graph,
                   print_progress: bool = True,
                   return_mag_p: int | bool | None = None,
                   return_mag_z: int | bool | None = None,
+                  mag_limit=20,
                   ) -> torch.Tensor | list:
     """Calculate the signal of the sequence by executing the phase graph.
 
@@ -86,9 +87,9 @@ def execute_graph(graph: Graph,
     voxel_count = data.PD.numel()
 
     # The first repetition contains only one element: A fully relaxed z0
-    graph[0][0].mag = torch.ones(
+    graph[0][0].mag = [torch.ones(
         voxel_count, dtype=torch.cfloat, device=data.device
-    )
+    )]
     # Calculate kt_vec ourselves for autograd
     graph[0][0].kt_vec = torch.zeros(4, device=data.device)
 
@@ -123,19 +124,19 @@ def execute_graph(graph: Graph,
         # Refocussed magnetisation
         m_to_p = (1 - p_to_p) * torch.exp(2j*phase)
 
-        def calc_mag(ancestor: tuple) -> torch.Tensor:
+        def calc_mag(ancestor: tuple) -> list[torch.Tensor]:
             if ancestor[0] == 'zz':
-                return ancestor[1].mag * z_to_z
+                return [m * z_to_z for m in ancestor[1].mag]
             elif ancestor[0] == '++':
-                return ancestor[1].mag * p_to_p
+                return [m * p_to_p for m in ancestor[1].mag]
             elif ancestor[0] == 'z+':
-                return ancestor[1].mag * z_to_p
+                return [m * z_to_p for m in ancestor[1].mag]
             elif ancestor[0] == '+z':
-                return ancestor[1].mag * p_to_z
+                return [m * p_to_z for m in ancestor[1].mag]
             elif ancestor[0] == '-z':
-                return ancestor[1].mag.conj() * m_to_z
+                return [m.conj() * m_to_z for m in ancestor[1].mag]
             elif ancestor[0] == '-+':
-                return ancestor[1].mag.conj() * m_to_p
+                return [m.conj() * m_to_p for m in ancestor[1].mag]
             else:
                 raise ValueError(f"Unknown transform {ancestor[0]}")
 
@@ -182,7 +183,12 @@ def execute_graph(graph: Graph,
             if dist.dist_type != 'z0' and len(ancestors) == 0:
                 continue  # skip dists for which no ancestors were simulated
 
-            dist.mag = sum([calc_mag(ancestor) for ancestor in ancestors])
+            dist.mag = [m for ancestor in ancestors for m in calc_mag(ancestor)]
+            dist.mag.sort(key=lambda x: x.abs().mean().item())
+            if len(dist.mag) > mag_limit:
+                dist.mag = dist.mag[:mag_limit - 1] + [sum(dist.mag[mag_limit-1:])]
+
+
             if dist.dist_type == '+' and return_mag_p in [i, True]:
                 mag_p_rep.append(dist.mag)
             if dist.dist_type in ['z0', 'z'] and return_mag_z in [i, True]:
@@ -244,7 +250,7 @@ def execute_graph(graph: Graph,
                 # shape: events x voxels
                 transverse_mag = (
                     # Add event dimension
-                    1.41421356237 * dist.mag.unsqueeze(0)
+                    1.41421356237 * sum(dist.mag).unsqueeze(0)
                     * rot * T2 * T2dash * diffusion[adc, :] * dephasing
                 )
 
@@ -254,16 +260,16 @@ def execute_graph(graph: Graph,
 
             if dist.dist_type == '+':
                 # Diffusion for whole trajectory + T2 relaxation + final phase carried by motion
-                dist.mag = dist.mag * r2 * diffusion[-1, :] 
+                dist.mag = [m * r2 * diffusion[-1, :] for m in dist.mag]
                 if isinstance(motion_phase, torch.Tensor):
-                    dist.mag = dist.mag * torch.exp(2j * np.pi * motion_phase[-1, :])
+                    dist.mag = [m * torch.exp(2j * np.pi * motion_phase[-1, :]) for m in dist.mag]
                 dist.kt_vec = dist_traj[-1]
             else:  # z or z0
                 k = torch.linalg.vector_norm(dist.kt_vec[:3])
                 diffusion = torch.exp(-1e-9 * data.D * total_time * k**2)
-                dist.mag = dist.mag * r1 * diffusion
+                dist.mag = [m * r1 * diffusion for m in dist.mag]
             if dist.dist_type == 'z0':
-                dist.mag = dist.mag + 1 - r1
+                dist.mag = [m + 1 - r1 for m in dist.mag]
 
         rep_sig *= adc_rot[adc]
 

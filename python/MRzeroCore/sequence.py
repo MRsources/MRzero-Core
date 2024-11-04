@@ -418,9 +418,10 @@ class Sequence(list):
     @classmethod
     def import_file(cls, file_name: str,
                     exact_trajectories: bool = True,
+                    resolution: int | None = None,
                     print_stats: bool = False
                     ) -> Sequence:
-        """Import a pulseq .seq file.
+        """Import a pulseq .seq or a .dsv file.
 
         Parameters
         ----------
@@ -431,6 +432,9 @@ class Sequence(list):
             exactly. If false, they are summed into a single event. Depending
             on the sequence, simulation might be faster if set to false, but
             the simulated diffusion changes with simplified trajectoreis.
+        resolution : bool | None
+            Only for .dsv files: controls the number of ADC samples per ADC
+            block. If none, a dwell time of 10 us is assumed.
         print_stats : bool
             If set to true, additional information is printed during import
 
@@ -440,7 +444,11 @@ class Sequence(list):
             The imported file as mr0 Sequence
         """
         start = time()
-        parser = pydisseqt.load_pulseq(file_name)
+        if file_name.endswith(".seq"):
+            parser = pydisseqt.load_pulseq(file_name)
+        else:
+            parser = pydisseqt.load_dsv(file_name, resolution)
+
         if print_stats:
             print(f"Importing the .seq file took {time() - start} s")
         start = time()
