@@ -1,3 +1,6 @@
+- 0.3.7
+  - Support for loading .seq files with pTx rf_shim extension for pulseq
+  - Support for loading .dsv files
 - 0.3.6
   - Support for complex B1 maps (#80)
   - Isochromat bugfix (#74)

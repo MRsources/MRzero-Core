@@ -3,7 +3,7 @@ from time import time
 import torch
 import numpy as np
 from enum import Enum
-from typing import Iterable
+from typing import Iterable, Optional
 import matplotlib.pyplot as plt
 
 # TODO: if everything is working, deprecate old pulseq loader
@@ -418,14 +418,17 @@ class Sequence(list):
     @classmethod
     def import_file(cls, file_name: str,
                     exact_trajectories: bool = True,
-                    print_stats: bool = False
+                    print_stats: bool = False,
+                    ref_voltage: float = 300.0,
+                    resolution: Optional[int] = None,
                     ) -> Sequence:
         """Import a pulseq .seq file.
 
         Parameters
         ----------
         file_name : str
-            The path to the file that is imported
+            The path to the pulseq .seq file that is imported or the .dsv file
+            name stem (the part before _ADC.dsv, _GRX.dsv, etc...)
         exact_trajectories : bool
             If true, the gradients before and after the ADC blocks are imported
             exactly. If false, they are summed into a single event. Depending
@@ -433,6 +436,13 @@ class Sequence(list):
             the simulated diffusion changes with simplified trajectoreis.
         print_stats : bool
             If set to true, additional information is printed during import
+        ref_voltage : float
+            If a .dsv file is imported, this is used to convert pulses from
+            volts to angles. A 1 ms block pulse of ref_voltage is a 180 ° flip
+        resolution : int | None
+            .dsv files do not contain data for the number of ADC samples.
+            This is used to specify the number of samples per ADC block.
+            If false, uses the .dsv time step as ADC dwell time
 
         Returns
         -------
@@ -440,7 +450,10 @@ class Sequence(list):
             The imported file as mr0 Sequence
         """
         start = time()
-        parser = pydisseqt.load_pulseq(file_name)
+        try:
+            parser = pydisseqt.load_pulseq(file_name)
+        except:
+            parser = pydisseqt.load_dsv(file_name, ref_voltage, resolution)
         if print_stats:
             print(f"Importing the .seq file took {time() - start} s")
         start = time()
@@ -471,6 +484,7 @@ class Sequence(list):
 
             # Fetch additional data needed for building the mr0 sequence
             pulse = parser.integrate_one(pulses[i][0], pulses[i][1]).pulse
+            shim = parser.sample_one(rep_start).pulse.shim
 
             adcs = parser.events("adc", rep_start, rep_end)
 
@@ -537,6 +551,8 @@ class Sequence(list):
             rep.pulse.angle = pulse.angle
             rep.pulse.phase = pulse.phase
             rep.pulse.usage = pulse_usage(pulse.angle)
+            if shim is not None:
+                rep.pulse.shim_array = torch.as_tensor(shim)
 
             rep.event_time[:] = torch.as_tensor(np.diff(abs_times))
 
