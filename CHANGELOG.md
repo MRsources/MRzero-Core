@@ -1,3 +1,8 @@
+- 0.3.8
+  - Bugfix missing tensor dtype (#82)
+  - Support for 0 shim array shape_id
+  - Default shim in importer for pulses that do not specify any
+  - Deprecated old importer
 - 0.3.7
   - Support for loading .seq files with pTx rf_shim extension for pulseq
   - Support for loading .dsv files
