@@ -419,6 +419,7 @@ class Sequence(list):
     def import_file(cls, file_name: str,
                     exact_trajectories: bool = True,
                     print_stats: bool = False,
+                    default_shim: torch.Tensor = torch.asarray([[1, 0]], dtype=torch.float32),
                     ref_voltage: float = 300.0,
                     resolution: Optional[int] = None,
                     ) -> Sequence:
@@ -436,6 +437,8 @@ class Sequence(list):
             the simulated diffusion changes with simplified trajectoreis.
         print_stats : bool
             If set to true, additional information is printed during import
+        default_shim : Tensor
+            The shim_array used for pulses that do not specify it themselves.
         ref_voltage : float
             If a .dsv file is imported, this is used to convert pulses from
             volts to angles. A 1 ms block pulse of ref_voltage is a 180 ° flip
@@ -551,7 +554,9 @@ class Sequence(list):
             rep.pulse.angle = pulse.angle
             rep.pulse.phase = pulse.phase
             rep.pulse.usage = pulse_usage(pulse.angle)
-            if shim is not None:
+            if shim is None:
+                rep.pulse.shim_array = default_shim.clone()
+            else:
                 rep.pulse.shim_array = torch.as_tensor(shim)
 
             rep.event_time[:] = torch.as_tensor(np.diff(abs_times))
@@ -591,7 +596,7 @@ class Sequence(list):
         Sequence
             Imported sequence, converted to MRzero
         """
-        print(
+        raise DeprecationWarning(
             "WARNING: Use of deprecated Sequence.from_seq_file,"
             "use Sequence.import_file instead"
         )
