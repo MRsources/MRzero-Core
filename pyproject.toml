@@ -24,7 +24,7 @@ dependencies = [
     "requests>=2.20",
     "scikit-image",
     "torchkbnufft",
-    "pydisseqt>=0.1.12"
+    "pydisseqt>=0.1.13"
 ]
 
 [project.urls]
