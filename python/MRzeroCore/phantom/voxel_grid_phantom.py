@@ -393,7 +393,7 @@ class VoxelGridPhantom:
 
         def resample_multicoil(tensor: torch.Tensor) -> torch.Tensor:
             coils = tensor.shape[0]
-            output = torch.zeros(coils, x, y, z)
+            output = torch.zeros(coils, x, y, z, dtype=tensor.dtype)
             for i in range(coils):
                 re = resample(torch.real(tensor[i, ...]))
                 im = resample(torch.imag(tensor[i, ...]))
