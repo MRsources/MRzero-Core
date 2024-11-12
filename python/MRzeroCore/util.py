@@ -347,7 +347,7 @@ def imshow(data: Union[np.ndarray, torch.Tensor], *args, **kwargs):
 PHANTOM_URL = "https://github.com/MRsources/MRzero-Core/raw/main/documentation/playground_mr0/numerical_brain_cropped.mat"
 
 
-def load_default_phantom(size_x: Optional[int] = None, size_y: Optional[int] = None, plot=False):
+def load_default_phantom(size_x: Optional[int] = None, size_y: Optional[int] = None):
     """Download an default phantom from https://github.com/MRsources/MRzero-Core
 
 
@@ -360,8 +360,8 @@ def load_default_phantom(size_x: Optional[int] = None, size_y: Optional[int] = N
     
     Returns
     -------
-    mr0.SimData:
-        The phantom as data ready to be used by the simulation.
+    mr0.VoxelGridPhantom:
+        Loaded phantom. Call .build() and pass the result to the simulation.
     """
     from urllib.request import urlretrieve
     from MRzeroCore import VoxelGridPhantom
@@ -387,10 +387,8 @@ def load_default_phantom(size_x: Optional[int] = None, size_y: Optional[int] = N
             "(int) or both omitted (None), but got types "
             f"{type(size_x)} and {type(size_y)}"
         )
-    
-    if plot:
-        phantom.plot()
-    return phantom.build()
+
+    return phantom
 
 
 def simulate_2d(seq, sim_size=None, noise_level=0, dB0=0, B0_scale=1, B0_polynomial=None):

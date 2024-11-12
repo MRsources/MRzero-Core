@@ -1,3 +1,5 @@
+- 0.3.9
+  - New simple load_default_phantom function in util
 - 0.3.8
   - Bugfix missing tensor dtype (#82)
   - Support for 0 shim array shape_id
