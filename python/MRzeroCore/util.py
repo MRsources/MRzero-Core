@@ -391,6 +391,28 @@ def load_default_phantom(size_x: Optional[int] = None, size_y: Optional[int] = N
     return phantom
 
 
+def simulate(seq, phantom):
+    """Simulate the sequence with the phantom using PDG and default settings.
+    
+    Arguments
+    ---------
+    seq: mr0.Sequence
+        The MRI sequence in MR-zero's format
+    phantom: VoxelGridPhantom | CustomVoxelPhantom
+        The simulation data in its original form (without calling .build() on it)
+
+    Returns
+    -------
+    torch.Tensor
+        The ADC signal
+    """
+    import MRzeroCore as mr0
+    data = phantom.build()
+    graph = mr0.compute_graph(seq, data, 1000, 1e-5)
+    signal = mr0.execute_graph(graph, seq, data, 1e-3, 1e-3, print_progress=False)
+    return signal
+
+
 def simulate_2d(seq, sim_size=None, noise_level=0, dB0=0, B0_scale=1, B0_polynomial=None):
     # Copied and modified from https://github.com/pulseq/MR-Physics-with-Pulseq
     import urllib
