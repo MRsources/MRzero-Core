@@ -1,6 +1,6 @@
 import os
 import time
-from typing import Literal, Union
+from typing import Literal, Union, Optional
 import torch
 import numpy as np
 
@@ -342,6 +342,75 @@ def imshow(data: Union[np.ndarray, torch.Tensor], *args, **kwargs):
             data[x:x+tmp.shape[0], y:y+tmp.shape[1]] = tmp[:, :, i]
 
     plt.imshow(data.T, *args, origin="lower", **kwargs)
+
+
+PHANTOM_URL = "https://github.com/MRsources/MRzero-Core/raw/main/documentation/playground_mr0/numerical_brain_cropped.mat"
+
+
+def load_default_phantom(size_x: Optional[int] = None, size_y: Optional[int] = None):
+    """Download an default phantom from https://github.com/MRsources/MRzero-Core
+
+
+    Parameters
+    ----------
+    size_x, size_y : int | None
+        If a size is passed, the phantom is scaled to it.
+    plot : bool
+        If True, the phantom is plotted with matplotlib before returning it.
+    
+    Returns
+    -------
+    mr0.VoxelGridPhantom:
+        Loaded phantom. Call .build() and pass the result to the simulation.
+    """
+    from urllib.request import urlretrieve
+    from MRzeroCore import VoxelGridPhantom
+    import os
+    phantom_name = PHANTOM_URL.split("/")[-1]
+
+    if not os.path.exists(phantom_name):
+        urlretrieve(PHANTOM_URL, phantom_name)
+        print("Downloaded simulation data")
+
+    if phantom_name.endswith(".mat"):
+        phantom = VoxelGridPhantom.load_mat(phantom_name)
+    elif phantom_name.endswith(".npz"):
+        phantom = VoxelGridPhantom.brainweb(phantom_name)
+    else:
+        raise ValueError(f"Can't load {phantom_name}: unknown file extension")
+
+    if isinstance(size_x, int) and isinstance(size_y, int):
+        phantom = phantom.interpolate(size_x, size_y, 1)
+    elif not (size_x is None and size_y is None):
+        raise TypeError(
+            "Arguments 'size_x' and 'size_y' are expected to be both given "
+            "(int) or both omitted (None), but got types "
+            f"{type(size_x)} and {type(size_y)}"
+        )
+
+    return phantom
+
+
+def simulate(seq, phantom):
+    """Simulate the sequence with the phantom using PDG and default settings.
+    
+    Arguments
+    ---------
+    seq: mr0.Sequence
+        The MRI sequence in MR-zero's format
+    phantom: VoxelGridPhantom | CustomVoxelPhantom
+        The simulation data in its original form (without calling .build() on it)
+
+    Returns
+    -------
+    torch.Tensor
+        The ADC signal
+    """
+    import MRzeroCore as mr0
+    data = phantom.build()
+    graph = mr0.compute_graph(seq, data, 1000, 1e-5)
+    signal = mr0.execute_graph(graph, seq, data, 1e-3, 1e-3, print_progress=False)
+    return signal
 
 
 def simulate_2d(seq, sim_size=None, noise_level=0, dB0=0, B0_scale=1, B0_polynomial=None):

@@ -1,3 +1,8 @@
+- 0.3.10
+  - phantom_motion and voxel_motion now also exists in VoxelGridPhantom
+  - new simple simulate function in util, that directly accepts a VoxelGridPhantom
+- 0.3.9
+  - New simple load_default_phantom function in util
 - 0.3.8
   - Bugfix missing tensor dtype (#82)
   - Support for 0 shim array shape_id

@@ -99,6 +99,8 @@ class VoxelGridPhantom:
         B1: torch.Tensor,
         coil_sens: torch.Tensor,
         size: torch.Tensor,
+        phantom_motion=None,
+        voxel_motion=None,
         tissue_masks: Optional[Dict[str,torch.Tensor]] = None,
     ) -> None:
         """Set the phantom attributes to the provided parameters.
@@ -118,6 +120,9 @@ class VoxelGridPhantom:
             self.tissue_masks = {}
         self.coil_sens = torch.as_tensor(coil_sens, dtype=torch.complex64)
         self.size = torch.as_tensor(size, dtype=torch.float32)
+
+        self.phantom_motion = phantom_motion
+        self.voxel_motion = voxel_motion
 
     def build(self, PD_threshold: float = 1e-6,
               voxel_shape: Literal["sinc", "box", "point"] = "sinc"
@@ -174,6 +179,8 @@ class VoxelGridPhantom:
             torch.as_tensor(shape, device=self.PD.device) / 2 / self.size,
             dephasing_func,
             recover_func=lambda data: recover(mask, data),
+            phantom_motion=self.phantom_motion,
+            voxel_motion=self.voxel_motion,
             tissue_masks=self.tissue_masks
         )
     
