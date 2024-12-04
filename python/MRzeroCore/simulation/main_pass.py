@@ -50,6 +50,9 @@ def execute_graph(graph: Graph,
         Should be <= than min_emitted_signal.
     print_progress : bool
         If true, the current repetition is printed while simulating.
+    return_mag_p : int or bool, optional
+        If set, returns the transversal magnetisation of either the given
+        repetition (int) or all repetitions (``True``).
     return_mag_z : int or bool, optional
         If set, returns the longitudinal magnetisation of either the given
         repetition (int) or all repetitions (``True``).
@@ -59,6 +62,8 @@ def execute_graph(graph: Graph,
     -------
     signal : torch.Tensor
         The simulated signal of the sequence.
+    mag_p : torch.Tensor | list[torch.Tensor]
+        The transversal magnetisation of the specified or all repetition(s).
     mag_z : torch.Tensor | list[torch.Tensor]
         The longitudinal magnetisation of the specified or all repetition(s).
 
@@ -183,8 +188,6 @@ def execute_graph(graph: Graph,
                 continue  # skip dists for which no ancestors were simulated
 
             dist.mag = sum([calc_mag(ancestor) for ancestor in ancestors])
-            if dist.dist_type == '+' and return_mag_p in [i, True]:
-                mag_p_rep.append(dist.mag)
             if dist.dist_type in ['z0', 'z'] and return_mag_z in [i, True]:
                 mag_z_rep.append(dist.mag)
 
@@ -247,6 +250,9 @@ def execute_graph(graph: Graph,
                     1.41421356237 * dist.mag.unsqueeze(0)
                     * rot * T2 * T2dash * diffusion[adc, :] * dephasing
                 )
+                
+                if return_mag_p in [i, True]:
+                    mag_p_rep.append(adc_rot[adc] * transverse_mag * torch.abs(data.PD))
 
                 # (events x voxels) @ (voxels x coils) = (events x coils)
                 dist_signal = transverse_mag @ coil_sensitivity
