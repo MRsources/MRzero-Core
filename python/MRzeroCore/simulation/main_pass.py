@@ -50,6 +50,9 @@ def execute_graph(graph: Graph,
         Should be <= than min_emitted_signal.
     print_progress : bool
         If true, the current repetition is printed while simulating.
+    return_mag_p : int or bool, optional
+        If set, returns the transversal magnetisation of either the given
+        repetition (int) or all repetitions (``True``).
     return_mag_z : int or bool, optional
         If set, returns the longitudinal magnetisation of either the given
         repetition (int) or all repetitions (``True``).
@@ -59,6 +62,8 @@ def execute_graph(graph: Graph,
     -------
     signal : torch.Tensor
         The simulated signal of the sequence.
+    mag_p : torch.Tensor | list[torch.Tensor]
+        The transversal magnetisation of the specified or all repetition(s).
     mag_z : torch.Tensor | list[torch.Tensor]
         The longitudinal magnetisation of the specified or all repetition(s).
 
