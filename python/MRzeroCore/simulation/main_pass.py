@@ -183,8 +183,6 @@ def execute_graph(graph: Graph,
                 continue  # skip dists for which no ancestors were simulated
 
             dist.mag = sum([calc_mag(ancestor) for ancestor in ancestors])
-            if dist.dist_type == '+' and return_mag_p in [i, True]:
-                mag_p_rep.append(dist.mag)
             if dist.dist_type in ['z0', 'z'] and return_mag_z in [i, True]:
                 mag_z_rep.append(dist.mag)
 
@@ -247,6 +245,9 @@ def execute_graph(graph: Graph,
                     1.41421356237 * dist.mag.unsqueeze(0)
                     * rot * T2 * T2dash * diffusion[adc, :] * dephasing
                 )
+                
+                if return_mag_p in [i, True]:
+                    mag_p_rep.append(adc_rot[adc] * transverse_mag * torch.abs(data.PD))
 
                 # (events x voxels) @ (voxels x coils) = (events x coils)
                 dist_signal = transverse_mag @ coil_sensitivity
