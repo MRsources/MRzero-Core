@@ -347,7 +347,7 @@ def imshow(data: Union[np.ndarray, torch.Tensor], *args, **kwargs):
 PHANTOM_URL = "https://github.com/MRsources/MRzero-Core/raw/main/documentation/playground_mr0/numerical_brain_cropped.mat"
 
 
-def load_default_phantom(size_x: Optional[int] = None, size_y: Optional[int] = None):
+def load_phantom(size_x: Optional[int] = None, size_y: Optional[int] = None,phantom_url=PHANTOM_URL,dB0=(0,1),dB1=(0,1), B0_polynomial=None):
     """Download an default phantom from https://github.com/MRsources/MRzero-Core
 
 
@@ -366,10 +366,10 @@ def load_default_phantom(size_x: Optional[int] = None, size_y: Optional[int] = N
     from urllib.request import urlretrieve
     from MRzeroCore import VoxelGridPhantom
     import os
-    phantom_name = PHANTOM_URL.split("/")[-1]
+    phantom_name = phantom_url.split("/")[-1]
 
     if not os.path.exists(phantom_name):
-        urlretrieve(PHANTOM_URL, phantom_name)
+        urlretrieve(phantom_url, phantom_name)
         print("Downloaded simulation data")
 
     if phantom_name.endswith(".mat"):
@@ -388,10 +388,33 @@ def load_default_phantom(size_x: Optional[int] = None, size_y: Optional[int] = N
             f"{type(size_x)} and {type(size_y)}"
         )
 
+    # Manipulate loaded data
+    phantom.B0 += dB0[0]
+    phantom.B0 *= dB0[1]
+    phantom.B1 += dB1[0]
+    phantom.B1 *= dB1[1]
+
+    if B0_polynomial is not None:
+        x,y = torch.meshgrid(torch.linspace(-1,1,phantom.PD.shape[0]),torch.linspace(-1,1,phantom.PD.shape[1]))
+
+        nB0= B0_polynomial[0]
+        if len(B0_polynomial) > 1:
+            nB0 += x * B0_polynomial[1]
+        if len(B0_polynomial) > 2:
+            nB0 += y * B0_polynomial[2]
+        if len(B0_polynomial) > 3:
+            nB0 += x*x * B0_polynomial[3]
+        if len(B0_polynomial) > 4:
+            nB0 += y*y * B0_polynomial[4]
+        if len(B0_polynomial) > 5:
+            nB0 += x*y * B0_polynomial[5]
+
+        phantom.B0 += nB0[:,:,None]
+
     return phantom
 
 
-def simulate(seq, phantom):
+def simulate(seq, phantom,accuracy=1e-3):
     """Simulate the sequence with the phantom using PDG and default settings.
     
     Arguments
@@ -408,21 +431,20 @@ def simulate(seq, phantom):
     """
     import MRzeroCore as mr0
     data = phantom.build()
-    graph = mr0.compute_graph(seq, data, 1000, 1e-5)
-    signal = mr0.execute_graph(graph, seq, data, 1e-3, 1e-3, print_progress=False)
+    graph = mr0.compute_graph(seq, data, 2000, 1e-5)
+    if torch.cuda.is_available():
+        signal = mr0.execute_graph(graph, seq.cuda(), data.cuda(), accuracy, accuracy, print_progress=False)
+        signal = signal.cpu()
+    else:
+        signal = mr0.execute_graph(graph, seq, data, accuracy, accuracy, print_progress=False)
     return signal
 
 
-def simulate_2d(seq, sim_size=None, noise_level=0, dB0=0, B0_scale=1, B0_polynomial=None):
+def simulate_2d(seq, sim_size=None, noise_level=0,accuracy=1e-3):
     # Copied and modified from https://github.com/pulseq/MR-Physics-with-Pulseq
     import urllib
     import MRzeroCore as mr0
-    # Download .mat file for phantom if necessary
-    sim_url = 'https://github.com/mzaiss/MRTwin_pulseq/raw/mr0-core/data/numerical_brain_cropped.mat'
-    sim_filename = os.path.basename(sim_url)
-    if not os.path.exists(sim_filename):
-        print(f'Downloading {sim_url}...')
-        urllib.request.urlretrieve(sim_url, sim_filename)
+    
     
     # If seq is not a str, assume it is a sequence object and write to a temporary sequence file
     if not isinstance(seq, str):
@@ -435,34 +457,12 @@ def simulate_2d(seq, sim_size=None, noise_level=0, dB0=0, B0_scale=1, B0_polynom
         tmp_seq.read(seq_filename)
         adc_samples = int(tmp_seq.adc_library.data[1][0])
     
-    # Create phantom from .mat file
-    obj_p = mr0.VoxelGridPhantom.load_mat(sim_filename)
+    # load standard phantom    
     if sim_size is not None:
-        obj_p = obj_p.interpolate(sim_size[0], sim_size[1], 1)
+        obj_p = load_phantom(size_x = sim_size[0], size_y = sim_size[1])
+    else:
+        obj_p = load_phantom()
 
-    # Manipulate loaded data
-    obj_p.B0 *= B0_scale
-    obj_p.B0 += dB0
-    
-    if B0_polynomial is not None:
-        x,y = torch.meshgrid(torch.linspace(-1,1,obj_p.PD.shape[0]),torch.linspace(-1,1,obj_p.PD.shape[1]))
-        
-        obj_p.B0 = B0_polynomial[0]
-        if len(B0_polynomial) > 1:
-            obj_p.B0 += x * B0_polynomial[1]
-        if len(B0_polynomial) > 2:
-            obj_p.B0 += y * B0_polynomial[2]
-        if len(B0_polynomial) > 3:
-            obj_p.B0 += x*x * B0_polynomial[3]
-        if len(B0_polynomial) > 4:
-            obj_p.B0 += y*y * B0_polynomial[4]
-        if len(B0_polynomial) > 5:
-            obj_p.B0 += x*y * B0_polynomial[5]
-        
-        obj_p.B0 = obj_p.B0[:,:,None]
-    
-    obj_p.D *= 0
-    
     # Convert Phantom into simulation data
     obj_p = obj_p.build()
 
@@ -474,8 +474,13 @@ def simulate_2d(seq, sim_size=None, noise_level=0, dB0=0, B0_scale=1, B0_polynom
         os.unlink('tmp.seq')
     
     # Simulate the sequence
-    graph = mr0.compute_graph(seq0, obj_p, 200, 1e-5)
-    signal = mr0.execute_graph(graph, seq0, obj_p)
+    graph = mr0.compute_graph(seq0, obj_p, 2000, 1e-5)
+    
+    if torch.cuda.is_available():
+        signal = mr0.execute_graph(graph, seq.cuda(), data.cuda(), accuracy, accuracy, print_progress=False)
+        signal = signal.cpu()
+    else:
+        signal = mr0.execute_graph(graph, seq, data, accuracy, accuracy, print_progress=False)
 
     # Add noise to the simulated data
     if noise_level > 0:
