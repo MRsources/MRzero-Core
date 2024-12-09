@@ -344,32 +344,42 @@ def imshow(data: Union[np.ndarray, torch.Tensor], *args, **kwargs):
     plt.imshow(data.T, *args, origin="lower", **kwargs)
 
 
-PHANTOM_URL = "https://github.com/MRsources/MRzero-Core/raw/main/documentation/playground_mr0/numerical_brain_cropped.mat"
+DEFAULT_PHANTOM_URL = "https://github.com/MRsources/MRzero-Core/raw/main/documentation/playground_mr0/numerical_brain_cropped.mat"
 
 
-def load_default_phantom(size_x: Optional[int] = None, size_y: Optional[int] = None):
-    """Download an default phantom from https://github.com/MRsources/MRzero-Core
-
+def load_phantom(size: Optional[tuple[int, int]] = None,
+                 url=DEFAULT_PHANTOM_URL,
+                 dB0_fB0=(0, 1), dB1_fB1=(0, 1),
+                 B0_polynomial: Optional[list[float]] = None):
+    """Download a phantom from the given URL, which by default is a quantified
+    phantom from https://github.com/MRsources/MRzero-Core.
 
     Parameters
     ----------
-    size_x, size_y : int | None
-        If a size is passed, the phantom is scaled to it.
-    plot : bool
-        If True, the phantom is plotted with matplotlib before returning it.
+    size : (int, int) | None
+        If a size is passed, the phantom is scaled to it
+    url : str
+        The URL to download the phantom from
+    dB0_fB0 : (float, float)
+        (offset, scaling) for the loaded B0 data: dB0_fB0[1] * (B0 + dB0_fB0[0])
+    dB1_fB1 : (float, float)
+        (offset, scaling) for the loaded B1 data: dB1_fB1[1] * (B1 + dB1_fB1[0])
+    B0_polynomial : list[float] | None
+        Construct a B0 map and add it to the loaded data. The polynomial is
+        defined by [x, y, x^2, y^2, x*y], where x, y are in the range [-1, 1[
     
     Returns
     -------
     mr0.VoxelGridPhantom:
-        Loaded phantom. Call .build() and pass the result to the simulation.
+        Loaded phantom. Call .build() and pass the result to the simulation
     """
     from urllib.request import urlretrieve
     from MRzeroCore import VoxelGridPhantom
     import os
-    phantom_name = PHANTOM_URL.split("/")[-1]
+    phantom_name = url.split("/")[-1]
 
     if not os.path.exists(phantom_name):
-        urlretrieve(PHANTOM_URL, phantom_name)
+        urlretrieve(url, phantom_name)
         print("Downloaded simulation data")
 
     if phantom_name.endswith(".mat"):
@@ -379,27 +389,56 @@ def load_default_phantom(size_x: Optional[int] = None, size_y: Optional[int] = N
     else:
         raise ValueError(f"Can't load {phantom_name}: unknown file extension")
 
-    if isinstance(size_x, int) and isinstance(size_y, int):
-        phantom = phantom.interpolate(size_x, size_y, 1)
-    elif not (size_x is None and size_y is None):
-        raise TypeError(
-            "Arguments 'size_x' and 'size_y' are expected to be both given "
-            "(int) or both omitted (None), but got types "
-            f"{type(size_x)} and {type(size_y)}"
+    # Apply scaling - if requested
+    if size is not None:
+        phantom = phantom.interpolate(*size, 1)
+    
+    # Apply scaling
+    phantom.B0 += dB0_fB0[0]
+    phantom.B0 *= dB0_fB0[1]
+    phantom.B1 += dB1_fB1[0]
+    phantom.B1 *= dB1_fB1[1]
+
+    if B0_polynomial is not None:
+        x, y = torch.meshgrid(
+            torch.linspace(-1, 1, phantom.PD.shape[0] + 1)[:-1],
+            torch.linspace(-1, 1, phantom.PD.shape[1] + 1)[:-1]
         )
+
+        nB0= B0_polynomial[0]
+        if len(B0_polynomial) > 1:
+            nB0 += x * B0_polynomial[1]
+        if len(B0_polynomial) > 2:
+            nB0 += y * B0_polynomial[2]
+        if len(B0_polynomial) > 3:
+            nB0 += x*x * B0_polynomial[3]
+        if len(B0_polynomial) > 4:
+            nB0 += y*y * B0_polynomial[4]
+        if len(B0_polynomial) > 5:
+            nB0 += x*y * B0_polynomial[5]
+
+        phantom.B0 += nB0[:,:,None]
 
     return phantom
 
 
-def simulate(seq, phantom):
+def simulate(seq, phantom=None, sim_size=None, accuracy=1e-3, noise_level=None):
     """Simulate the sequence with the phantom using PDG and default settings.
     
     Arguments
     ---------
-    seq: mr0.Sequence
-        The MRI sequence in MR-zero's format
-    phantom: VoxelGridPhantom | CustomVoxelPhantom
-        The simulation data in its original form (without calling .build() on it)
+    seq: mr0.Sequence | pypulseq.Sequence | str
+        Sequence to simulate.
+        Either an mr0 or a pypulseq sequence object or the path to an .seq file
+    phantom: VoxelGridPhantom | CustomVoxelPhantom | str | None
+        Phantom used for simulation. Either an mr0 phantom, the path to a
+        .npz or .mat phantom or None to load a default phantom from GitHub
+    sim_size: (int, int) | None
+        If given, the center slice of the phantom is taken and scaled to size
+    accuracy: float
+        Used for simulation precision (min_emitted_signal and min_latent_signal)
+    noise_level: float | None
+        Normal distributed noise with the specifed std is added to the signal.
 
     Returns
     -------
@@ -407,13 +446,57 @@ def simulate(seq, phantom):
         The ADC signal
     """
     import MRzeroCore as mr0
+
+    # Phantom loading: use passed phantom, load from file or default from URL
+    if phantom is None:
+        phantom = load_phantom(sim_size)
+    else:
+        if isinstance(phantom, str):
+            if phantom.endswith(".mat"):
+                phantom = mr0.VoxelGridPhantom.load_mat(phantom)
+            else:
+                phantom = mr0.VoxelGridPhantom.load(phantom)
+
+        if sim_size is not None:
+            slices = phantom.PD.shape[2]
+            phantom = phantom.slices([slices // 2])
+            phantom = phantom.interpolate(sim_size[0], sim_size[1], 1)
+    
+    # Sequence loading: mr0, load from file, or write and load seq object
+    if isinstance(seq, mr0.Sequence):
+        pass
+    elif isinstance(seq, str):
+        seq = mr0.Sequence.import_file(seq)
+    else:
+        seq.write("tmp.seq")
+        seq = mr0.Sequence.import_file(seq)
+
+    # Run the simulation
     data = phantom.build()
-    graph = mr0.compute_graph(seq, data, 1000, 1e-5)
-    signal = mr0.execute_graph(graph, seq, data, 1e-3, 1e-3, print_progress=False)
+    graph = mr0.compute_graph(seq, data, 2000, 1e-5)
+
+    if torch.cuda.is_available():
+        signal = mr0.execute_graph(
+            graph, seq.cuda(), data.cuda(), accuracy, accuracy,
+            print_progress=False
+        ).cpu()
+    else:
+        signal = mr0.execute_graph(
+            graph, seq, data, accuracy, accuracy,
+            print_progress=False
+        )
+
+    # Add noise if requested
+    if noise_level:
+        signal += noise_level * torch.randn(*signal.shape, dtype=signal.dtype)
+
     return signal
 
 
 def simulate_2d(seq, sim_size=None, noise_level=0, dB0=0, B0_scale=1, B0_polynomial=None):
+    print("DEPRECATED: util.simulate_2d will be removed in the future.")
+    print("Use util.simulate() instead (together with util.load_phantom() if necessary")
+
     # Copied and modified from https://github.com/pulseq/MR-Physics-with-Pulseq
     import urllib
     import MRzeroCore as mr0

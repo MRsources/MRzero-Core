@@ -1,3 +1,5 @@
+- 0.3.11
+  - new util functions for phantom loading and simulating
 - 0.3.10
   - phantom_motion and voxel_motion now also exists in VoxelGridPhantom
   - new simple simulate function in util, that directly accepts a VoxelGridPhantom
