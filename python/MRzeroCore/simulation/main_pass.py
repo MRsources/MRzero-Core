@@ -30,6 +30,7 @@ def execute_graph(graph: Graph,
                   min_emitted_signal: float = 1e-2,
                   min_latent_signal: float = 1e-2,
                   print_progress: bool = True,
+                  return_mag_adc: int | bool | None = None,
                   return_mag_p: int | bool | None = None,
                   return_mag_z: int | bool | None = None,
                   ) -> torch.Tensor | list:
@@ -50,6 +51,9 @@ def execute_graph(graph: Graph,
         Should be <= than min_emitted_signal.
     print_progress : bool
         If true, the current repetition is printed while simulating.
+    return_mag_adc : int or bool, optional
+        If set, returns the _measured_ transversal magnetisation of either the
+        given repetition (int) or all repetitions (``True``).
     return_mag_p : int or bool, optional
         If set, returns the transversal magnetisation of either the given
         repetition (int) or all repetitions (``True``).
@@ -62,6 +66,8 @@ def execute_graph(graph: Graph,
     -------
     signal : torch.Tensor
         The simulated signal of the sequence.
+    mag_adc : torch.Tensor | list[torch.Tensor]
+        The measured magnetisation of the specified or all repetition(s).
     mag_p : torch.Tensor | list[torch.Tensor]
         The transversal magnetisation of the specified or all repetition(s).
     mag_z : torch.Tensor | list[torch.Tensor]
@@ -97,6 +103,7 @@ def execute_graph(graph: Graph,
     # Calculate kt_vec ourselves for autograd
     graph[0][0].kt_vec = torch.zeros(4, device=data.device)
 
+    mag_adc = []
     mag_p = []
     mag_z = []
     for i, (dists, rep) in enumerate(zip(graph[1:], seq)):
@@ -172,6 +179,8 @@ def execute_graph(graph: Graph,
             motion_phase = torch.einsum("evi, ei -> ev", voxel_traj, rep.gradm * grad_scale[None, :]).cumsum(0)
         t0 += total_time
 
+        mag_adc_rep = []
+        mag_adc.append(mag_adc_rep)
         mag_p_rep = []
         mag_p.append(mag_p_rep)
         mag_z_rep = []
@@ -188,6 +197,8 @@ def execute_graph(graph: Graph,
                 continue  # skip dists for which no ancestors were simulated
 
             dist.mag = sum([calc_mag(ancestor) for ancestor in ancestors])
+            if dist.dist_type == '+' and return_mag_p in [i, True]:
+                mag_p_rep.append(dist.mag)
             if dist.dist_type in ['z0', 'z'] and return_mag_z in [i, True]:
                 mag_z_rep.append(dist.mag)
 
@@ -251,8 +262,8 @@ def execute_graph(graph: Graph,
                     * rot * T2 * T2dash * diffusion[adc, :] * dephasing
                 )
                 
-                if return_mag_p in [i, True]:
-                    mag_p_rep.append(adc_rot[adc] * transverse_mag * torch.abs(data.PD))
+                if return_mag_adc in [i, True]:
+                    mag_adc_rep.append(adc_rot[adc] * transverse_mag * torch.abs(data.PD))
 
                 # (events x voxels) @ (voxels x coils) = (events x coils)
                 dist_signal = transverse_mag @ coil_sensitivity
@@ -286,13 +297,16 @@ def execute_graph(graph: Graph,
         print(" - done")
 
     measured = torch.cat(signal)
+    ret_vals = [measured]
 
+    if return_mag_adc is not None:
+        ret_vals.append(mag_adc)
     if return_mag_p is not None:
-        if return_mag_z is not None:
-            return measured, mag_p, mag_z
-        else:
-            return measured, mag_p
-    elif return_mag_z is not None:
-        return measured, mag_z
-    else:
+        ret_vals.append(mag_p)
+    if return_mag_z is not None:
+        ret_vals.append(mag_z)
+    
+    if len(ret_vals) == 1:
         return measured
+    else:
+        return ret_vals
