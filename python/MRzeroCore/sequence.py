@@ -423,7 +423,7 @@ class Sequence(list):
                     ref_voltage: float = 300.0,
                     resolution: Optional[int] = None,
                     ) -> Sequence:
-        """Import a pulseq .seq file.
+        """Import a pulseq .seq file or a bundle of .dsv files.
 
         Parameters
         ----------
@@ -453,9 +453,9 @@ class Sequence(list):
             The imported file as mr0 Sequence
         """
         start = time()
-        try:
+        if file_name.endswith(".seq"):
             parser = pydisseqt.load_pulseq(file_name)
-        except:
+        else:
             parser = pydisseqt.load_dsv(file_name, ref_voltage, resolution)
         if print_stats:
             print(f"Importing the .seq file took {time() - start} s")
