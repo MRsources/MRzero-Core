@@ -1,3 +1,5 @@
+- 0.3.12
+  - Changed how to return magnetization from the simulation, see pull request #97
 - 0.3.11
   - new util functions for phantom loading and simulating
 - 0.3.10
