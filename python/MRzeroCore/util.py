@@ -469,7 +469,7 @@ def simulate(seq, phantom=None, sim_size=None, accuracy=1e-3, noise_level=None):
         seq = mr0.Sequence.import_file(seq)
     else:
         seq.write("tmp.seq")
-        seq = mr0.Sequence.import_file(seq)
+        seq = mr0.Sequence.import_file("tmp.seq")
 
     # Run the simulation
     data = phantom.build()

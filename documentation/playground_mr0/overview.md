@@ -26,6 +26,7 @@ These .seq files could also be measured on any MRI scanner using a Pulseq interp
 | [DREAM STE for B0, B1, TxRx mapping](DREAM_STE_seq) | <a target="_blank" href="https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_DREAM_STE_seq.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a> |
 | [DREAM STID for B0, B1, TxRx mapping](DREAM_STID_seq) | <a target="_blank" href="https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_DREAM_STID_seq.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a> |
 | [Pulseq with RF shimming](pulseq_ptx) | <a target="_blank" href="https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/pulseq_rf_shim.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a> |
+| [balanced SSFP sequence](bSSFP_seq) | <a target="_blank" href="https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_bSSFP_2D_seq.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a> |
 
 ## Plot and simulate predifined .seq files
 
