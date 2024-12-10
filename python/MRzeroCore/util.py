@@ -401,11 +401,11 @@ def load_phantom(size: Optional[tuple[int, int]] = None,
 
     if B0_polynomial is not None:
         x, y = torch.meshgrid(
-            torch.linspace(-1, 1, phantom.PD.shape[0] + 1)[:-1],
-            torch.linspace(-1, 1, phantom.PD.shape[1] + 1)[:-1]
+            torch.linspace(-1, 1, phantom.B0.shape[0] + 1)[:-1],
+            torch.linspace(-1, 1, phantom.B0.shape[1] + 1)[:-1]
         )
 
-        nB0= B0_polynomial[0]
+        nB0 = torch.full_like(phantom.B0, B0_polynomial[0])
         if len(B0_polynomial) > 1:
             nB0 += x * B0_polynomial[1]
         if len(B0_polynomial) > 2:
@@ -442,8 +442,8 @@ def simulate(seq, phantom=None, sim_size=None, accuracy=1e-3, noise_level=None):
 
     Returns
     -------
-    torch.Tensor
-        The ADC signal
+    (torch.Tensor, torch.Tensor)
+        A tuple containing (ADC signal, kspace)
     """
     import MRzeroCore as mr0
 
@@ -490,7 +490,7 @@ def simulate(seq, phantom=None, sim_size=None, accuracy=1e-3, noise_level=None):
     if noise_level:
         signal += noise_level * torch.randn(*signal.shape, dtype=signal.dtype)
 
-    return signal
+    return signal, seq.get_kspace()
 
 
 def simulate_2d(seq, sim_size=None, noise_level=0, dB0=0, B0_scale=1, B0_polynomial=None):
