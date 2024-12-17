@@ -90,6 +90,7 @@ def compute_graph_ext(
         max_state_count, min_state_mag,
         nyquist, size, seq.normalized_grads,
         avg_b1_trig
+        
     ))
 
 

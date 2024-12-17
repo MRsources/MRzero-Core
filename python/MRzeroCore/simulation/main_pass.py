@@ -27,41 +27,43 @@ def rigid_motion(voxel_pos, motion_func):
 def execute_graph(graph: Graph,
                   seq: Sequence,
                   data: SimData,
-                  min_emitted_signal: float = 1e-2,
-                  min_latent_signal: float = 1e-2,
-                  print_progress: bool = True,
-                  return_mag_p: int | bool | None = None,
-                  return_mag_z: int | bool | None = None,
+                  min_emitted_signal=1e-2,
+                  min_latent_signal=1e-2,
+                  print_progress=True,
+                  return_mag_adc=False,
+                  clear_state_mag=False,
                   start_mag: torch.Tensor | None = None,
                   ) -> torch.Tensor | list:
     """Calculate the signal of the sequence by executing the phase graph.
 
     Parameters
     ----------
-    graph : Graph
+    graph: Graph
         Phase Distribution Graph that will be executed.
-    seq : Sequence
+    seq: Sequence
         Sequence that will be simulated and was used to create :attr:`graph`.
-    data : SimData
+    data: SimData
         Physical properties of phantom and scanner.
-    min_emitted_signal : float
+    min_emitted_signal: float
         Minimum "emitted_signal" metric of a state for it to be measured.
-    min_latent_signal : float
+    min_latent_signal: float
         Minimum "latent_signal" metric of a state for it to be simulated.
         Should be <= than min_emitted_signal.
-    print_progress : bool
+    print_progress: bool
         If true, the current repetition is printed while simulating.
-    return_mag_z : int or bool, optional
-        If set, returns the longitudinal magnetisation of either the given
-        repetition (int) or all repetitions (``True``).
-
+    return_mag_adc: int or bool
+        If set, returns the _measured_ transversal magnetisation of either the
+        given repetition (int) or all repetitions (``True``).
+    clear_state_mag: bool
+        If true, `state.mag = None` as soon as it is not needed anymore.
+        Might reduce memory consumption in forward-only simulations.
 
     Returns
     -------
     signal : torch.Tensor
         The simulated signal of the sequence.
-    mag_z : torch.Tensor | list[torch.Tensor]
-        The longitudinal magnetisation of the specified or all repetition(s).
+    mag_adc : torch.Tensor | list[torch.Tensor]
+        The measured magnetisation of the specified or all repetition(s).
 
     """
     # This is a function that maps time to voxel positions.
@@ -87,19 +89,17 @@ def execute_graph(graph: Graph,
     voxel_count = data.PD.numel()
 
     # The first repetition contains only one element: A fully relaxed z0
-
     if start_mag is None:
         graph[0][0].mag = torch.ones(
             voxel_count, dtype=torch.cfloat, device=data.device
         )
     else:
         graph[0][0].mag = start_mag  # steady state injection here
-
+    
     # Calculate kt_vec ourselves for autograd
     graph[0][0].kt_vec = torch.zeros(4, device=data.device)
 
-    mag_p = []
-    mag_z = []
+    mag_adc = []
     for i, (dists, rep) in enumerate(zip(graph[1:], seq)):
         if print_progress:
             print(f"\rCalculating repetition {i+1} / {len(seq)}", end='')
@@ -173,10 +173,8 @@ def execute_graph(graph: Graph,
             motion_phase = torch.einsum("evi, ei -> ev", voxel_traj, rep.gradm * grad_scale[None, :]).cumsum(0)
         t0 += total_time
 
-        mag_p_rep = []
-        mag_p.append(mag_p_rep)
-        mag_z_rep = []
-        mag_z.append(mag_z_rep)
+        mag_adc_rep = []
+        mag_adc.append(mag_adc_rep)
         for dist in dists:
             # Create a list only containing ancestors that were simulated
             ancestors = list(filter(
@@ -189,10 +187,6 @@ def execute_graph(graph: Graph,
                 continue  # skip dists for which no ancestors were simulated
 
             dist.mag = sum([calc_mag(ancestor) for ancestor in ancestors])
-            if dist.dist_type == '+' and return_mag_p in [i, True]:
-                mag_p_rep.append(dist.mag)
-            if dist.dist_type in ['z0', 'z'] and return_mag_z in [i, True]:
-                mag_z_rep.append(dist.mag)
 
             # The pre_pass already calculates kt_vec, but that does not
             # work with autograd -> we need to calculate it with torch
@@ -253,6 +247,8 @@ def execute_graph(graph: Graph,
                     1.41421356237 * dist.mag.unsqueeze(0)
                     * rot * T2 * T2dash * diffusion[adc, :] * dephasing
                 )
+                if return_mag_adc:
+                    mag_adc_rep.append(adc_rot[adc] * transverse_mag * torch.abs(data.PD))
 
                 # (events x voxels) @ (voxels x coils) = (events x coils)
                 dist_signal = transverse_mag @ coil_sensitivity
@@ -271,28 +267,17 @@ def execute_graph(graph: Graph,
             if dist.dist_type == 'z0':
                 dist.mag = dist.mag + 1 - r1
 
-        rep_sig *= adc_rot[adc]
+        signal.append(rep_sig * adc_rot[adc])
 
-        # Remove ancestors to save memory as we don't need them anymore.
-        # When running with autograd this doesn't change memory consumption
-        # bc. the values are still stored in the computation graph.
-        for dist in dists:
-            for ancestor in dist.ancestors:
-                ancestor[1].mag = None
-
-        signal.append(rep_sig)
+        if clear_state_mag:
+            for dist in dists:
+                for ancestor in dist.ancestors:
+                    ancestor[1].mag = None
 
     if print_progress:
         print(" - done")
 
-    measured = torch.cat(signal)
-
-    if return_mag_p is not None:
-        if return_mag_z is not None:
-            return measured, mag_p, mag_z
-        else:
-            return measured, mag_p
-    elif return_mag_z is not None:
-        return measured, mag_z
+    if return_mag_adc:
+        return torch.cat(signal), mag_adc
     else:
-        return measured
+        return torch.cat(signal)
