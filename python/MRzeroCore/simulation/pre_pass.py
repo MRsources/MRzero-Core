@@ -12,7 +12,8 @@ def compute_graph(
     seq: Sequence,
     data: SimData,
     max_state_count: int = 200,
-    min_state_mag: float = 1e-4
+    min_state_mag: float = 1e-4,
+    start_mag: torch.Tensor = torch.tensor([1.0]),
 ) -> Graph:
     """Like :func:`pre_pass.compute_graph_ext`, but computes some args from :attr:`data`."""
     return compute_graph_ext(
@@ -25,7 +26,8 @@ def compute_graph(
         min_state_mag,
         data.nyquist.tolist(),
         data.size.tolist(),
-        data.avg_B1_trig
+        data.avg_B1_trig,
+        float(torch.mean(start_mag))
     )
 
 
@@ -40,6 +42,7 @@ def compute_graph_ext(
     nyquist: tuple[float, float, float] = (float('inf'), float('inf'), float('inf')),
     size: tuple[float, float, float] = (1.0, 1.0, 1.0),
     avg_b1_trig: torch.Tensor | None = None,
+    start_mag: torch.Tensor = torch.tensor([1.0]),
 ) -> Graph:
     """Compute the PDG from the sequence and phantom data provided.
 
