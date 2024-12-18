@@ -32,6 +32,7 @@ def execute_graph(graph: Graph,
                   print_progress=True,
                   return_mag_adc=False,
                   clear_state_mag=False,
+                  start_mag: torch.Tensor | None = None,
                   ) -> torch.Tensor | list:
     """Calculate the signal of the sequence by executing the phase graph.
 
@@ -88,9 +89,13 @@ def execute_graph(graph: Graph,
     voxel_count = data.PD.numel()
 
     # The first repetition contains only one element: A fully relaxed z0
-    graph[0][0].mag = torch.ones(
-        voxel_count, dtype=torch.cfloat, device=data.device
-    )
+    if start_mag is None:
+        graph[0][0].mag = torch.ones(
+            voxel_count, dtype=torch.cfloat, device=data.device
+        )
+    else:
+        graph[0][0].mag = start_mag  # steady state injection here
+    
     # Calculate kt_vec ourselves for autograd
     graph[0][0].kt_vec = torch.zeros(4, device=data.device)
 
