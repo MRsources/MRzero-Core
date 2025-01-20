@@ -1,5 +1,6 @@
 - 0.3.13
   - bugfix: util.load_phantom - B0_polynomial computation used wrong number of dims
+  - default `clear_state_mag` to `True` to avoid memory problems
 - 0.3.12
   - Changed how to return magnetization from the simulation, see pull request #97
 - 0.3.11

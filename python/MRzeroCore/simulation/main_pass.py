@@ -31,7 +31,7 @@ def execute_graph(graph: Graph,
                   min_latent_signal=1e-2,
                   print_progress=True,
                   return_mag_adc=False,
-                  clear_state_mag=False,
+                  clear_state_mag=True,
                   ) -> torch.Tensor | list:
     """Calculate the signal of the sequence by executing the phase graph.
 
