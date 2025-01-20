@@ -405,7 +405,10 @@ def load_phantom(size: Optional[tuple[int, int]] = None,
             torch.linspace(-1, 1, phantom.B0.shape[1] + 1)[:-1]
         )
 
-        nB0 = torch.full_like(phantom.B0, B0_polynomial[0])
+        if phantom.PD.shape[2] != 1:
+            raise ValueError("load_phantom() with B0_polynomial currently only works with 2D phantoms")
+        nB0 = torch.full_like(phantom.B0, B0_polynomial[0])[:, :, 0]
+
         if len(B0_polynomial) > 1:
             nB0 += x * B0_polynomial[1]
         if len(B0_polynomial) > 2:
