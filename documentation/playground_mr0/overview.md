@@ -39,12 +39,15 @@ These .seq files could also be measured on any MRI scanner using a Pulseq interp
 
 ## MR-zero optimization
 
-Gradient descent optimizations using automatic differentiation by backpropagation
+Gradient descent optimizations using automatic differentiation by backpropagation.
+Some notebooks use [pulseq-zero](https://github.com/pulseq-frame/pulseq-zero) for optimizable sequence definitions with PyPulseq.
 
 | Sequence |   |
 | -------- | - |
 | [IR FLASH 2D sequence for T1 mapping using a fit](IR_FLASH_fit) | <a target="_blank" href="https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_opt_FLASH_2D_IR_Fit_T1.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a> |
 | [IR FLASH 2D sequence for T1 mapping using a NN](IR_FLASH_NN) | <a target="_blank" href="https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_opt_FLASH_2D_IR_voxelNN_T1.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a> |
+| [FLASH flip angle opt. for PSF (with pulseq-zero)](FLASH_FAopt_PSF) | <a target="_blank" href="https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/Pulseq_zero_FLASH_FAopt_PSFtask.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a> |
+| [TSE flip angle opt. for SAR (with pulseq-zero)](TSE_FAopt_SAR) | <a target="_blank" href="https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/Pulseq_zero_TSE_FAopt_SARtask.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a> |
 
 
 ## MR-double-zero optimization
