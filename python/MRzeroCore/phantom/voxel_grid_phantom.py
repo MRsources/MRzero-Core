@@ -313,9 +313,9 @@ class VoxelGridPhantom:
                 *list(self.PD.shape[:2]), len(slices)
             )
         def select_multicoil(tensor: torch.Tensor):
-            coil = self.B1.shape[0]
+            coils = tensor.shape[0]
             return tensor[..., slices].view(
-                coil, *list(self.PD.shape[:2]), len(slices)
+                coils, *list(self.PD.shape[:2]), len(slices)
             )
 
         return VoxelGridPhantom(
