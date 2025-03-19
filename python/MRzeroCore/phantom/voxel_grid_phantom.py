@@ -312,6 +312,11 @@ class VoxelGridPhantom:
             return tensor[..., slices].view(
                 *list(self.PD.shape[:2]), len(slices)
             )
+        def select_multicoil(tensor: torch.Tensor):
+            coil = self.B1.shape[0]
+            return tensor[..., slices].view(
+                coil, *list(self.PD.shape[:2]), len(slices)
+            )
 
         return VoxelGridPhantom(
             select(self.PD),
@@ -320,8 +325,8 @@ class VoxelGridPhantom:
             select(self.T2dash),
             select(self.D),
             select(self.B0),
-            select(self.B1).unsqueeze(0),
-            select(self.coil_sens).unsqueeze(0),
+            select_multicoil(self.B1),
+            select_multicoil(self.coil_sens),
             self.size.clone(),
             tissue_masks={
                 key: mask[..., slices] for key, mask in self.tissue_masks.items()
