@@ -40,7 +40,7 @@ _Loktyushin, A., Herz, K., Dang, H._ **MRzero - Automated discovery of MRI seque
 _Dang, H., Endres, J., Weinmüller, S., et al._ **MR-zero meets RARE MRI: Joint optimization of refocusing flip angles and neural networks to minimize T2-induced blurring in spin echo sequences.** Magn Reson Med. 2023; 90(4): 1345-1362. https://doi.org/10.1002/mrm.29710
 
 
-**Abstarcts**
+**Abstracts**
 
 _Glang, Felix, Alexander Loktyushin, Kai Herz, Hoai Nam Dang, Anagha Deshmane, Simon Weinmüller, Arnd Doerfler, .., Moritz Zaiss._ **Advances in MRzero: supervised learning of parallel imaging sequences including joint non-Cartesian trajectory and flip angle optimization**. In Proc. Intl. Soc. Mag. Reson. Med. 29, 29:4200, 2021. https://archive.ismrm.org/2021/4200.html.
 
