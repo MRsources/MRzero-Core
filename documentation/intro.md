@@ -38,3 +38,10 @@ _Weinmüller, S., Endres, J., Dang, HN., Stollberger, R., Zaiss, M._ **MR-zero m
 _Loktyushin, A., Herz, K., Dang, H._ **MRzero - Automated discovery of MRI sequences using supervised learning.** Magn Reson Med. 2021; 86: 709–724. https://doi.org/10.1002/mrm.28727
 
 _Dang, H., Endres, J., Weinmüller, S., et al._ **MR-zero meets RARE MRI: Joint optimization of refocusing flip angles and neural networks to minimize T2-induced blurring in spin echo sequences.** Magn Reson Med. 2023; 90(4): 1345-1362. https://doi.org/10.1002/mrm.29710
+
+
+**Abstarcts**
+
+_Glang, Felix, Alexander Loktyushin, Kai Herz, Hoai Nam Dang, Anagha Deshmane, Simon Weinmüller, Arnd Doerfler, .., Moritz Zaiss._ **Advances in MRzero: supervised learning of parallel imaging sequences including joint non-Cartesian trajectory and flip angle optimization**. In Proc. Intl. Soc. Mag. Reson. Med. 29, 29:4200, 2021. https://archive.ismrm.org/2021/4200.html.
+
+Weinmüller, Simon, Tim Baum, Hoai Nam Dang, Jonathan Endres, und Moritz Zaiss._ **DREAM-zero – Optimized variable flip angles for decreased image blurring in magnetization-prepared DREAM sequences**. 2023, Magnetic Resonance Materials in Physics, Biology and Medicine, Book of Abstracts ESMRMB 2023 Online 39th Annual Scientific Meeting 4–7 October 2023 36 (1): 240–41. https://doi.org/10.1007/s10334-023-01108-9.
