@@ -452,7 +452,7 @@ class VoxelGridPhantom:
             s = self.PD.shape[2] // 2
         elif plot_slice == "all":
             s = slice(None)
-        elif plot_slice is int:
+        elif isinstance(plot_slice, int):
             s = plot_slice
         else:
             raise ValueError("expected plot_slice to be 'all', 'center' or an integer")
