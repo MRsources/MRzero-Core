@@ -55,6 +55,10 @@ class Pulse:
         Flip angle in radians
     phase : torch.Tensor
         Pulse phase in radians
+    res_freq: torch.Tensor
+        Resonance fequency = gamma * B0
+    freq_offset: torch.Tensor
+        Frequency offset in Hz
     shim_array : torch.Tensor
         Contains B1 mag and phase, used for pTx. 2D tensor([[1, 0]]) for 1Tx.
     selective : bool
@@ -66,6 +70,10 @@ class Pulse:
         usage: PulseUsage,
         angle: torch.Tensor,
         phase: torch.Tensor,
+        
+        res_freq: torch.Tensor,
+        freq_offset: torch.Tensor,
+        
         shim_array: torch.Tensor,
         selective: bool,
     ):
@@ -73,6 +81,10 @@ class Pulse:
         self.usage = usage
         self.angle = angle
         self.phase = phase
+        
+        self.res_freq = res_freq
+        self.freq_offset = freq_offset
+        
         self.shim_array = shim_array
         self.selective = selective
 
@@ -82,6 +94,10 @@ class Pulse:
             self.usage,
             torch.as_tensor(self.angle, dtype=torch.float32).cpu(),
             torch.as_tensor(self.phase, dtype=torch.float32).cpu(),
+            
+            torch.as_tensor(self.res_freq, dtype=torch.float32).cpu(),
+            torch.as_tensor(self.freq_offset, dtype=torch.float32).cpu(),
+            
             torch.as_tensor(self.shim_array, dtype=torch.float32).cpu(),
             self.selective
         )
@@ -92,6 +108,10 @@ class Pulse:
             self.usage,
             torch.as_tensor(self.angle, dtype=torch.float32).cuda(device),
             torch.as_tensor(self.phase, dtype=torch.float32).cuda(device),
+            
+            torch.as_tensor(self.res_freq, dtype=torch.float32).cuda(device),
+            torch.as_tensor(self.freq_offset, dtype=torch.float32).cuda(device),
+            
             torch.as_tensor(self.shim_array, dtype=torch.float32).cuda(device),
             self.selective
         )
@@ -108,6 +128,8 @@ class Pulse:
             PulseUsage.UNDEF,
             torch.zeros(1, dtype=torch.float32),
             torch.zeros(1, dtype=torch.float32),
+            torch.zeros(1, dtype=torch.float32),
+            torch.zeros(1, dtype=torch.float32),
             torch.asarray([[1, 0]], dtype=torch.float32),
             True
         )
@@ -118,6 +140,10 @@ class Pulse:
             self.usage,
             self.angle.clone(),
             self.phase.clone(),
+            
+            self.res_freq.clone(),
+            self.freq_offset.clone(),
+            
             self.shim_array.clone(),
             self.selective
         )
@@ -419,7 +445,8 @@ class Sequence(list):
     def import_file(cls, file_name: str,
                     exact_trajectories: bool = True,
                     print_stats: bool = False,
-                    default_shim: torch.Tensor = torch.asarray([[1, 0]], dtype=torch.float32),
+                    default_shim: torch.Tensor = torch.asarray(
+                        [[1, 0]], dtype=torch.float32),
                     ref_voltage: float = 300.0,
                     resolution: Optional[int] = None,
                     ) -> Sequence:
@@ -553,6 +580,9 @@ class Sequence(list):
             rep = seq.new_rep(event_count)
             rep.pulse.angle = pulse.angle
             rep.pulse.phase = pulse.phase
+
+            rep.pulse.freq_offset = pulse.freq_offset # frequency offset for Off-Resonance
+            
             rep.pulse.usage = pulse_usage(pulse.angle)
             if shim is None:
                 rep.pulse.shim_array = default_shim.clone()
