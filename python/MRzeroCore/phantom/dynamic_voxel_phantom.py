@@ -3,6 +3,7 @@ from typing import Callable, Any, Literal, Optional, Dict
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 from .sim_data import SimData, calc_avg_B1_trig
 from ..util import imshow
 from .voxel_grid_phantom import (
@@ -468,54 +469,70 @@ class DynamicVoxelPhantom(VoxelGridPhantom):
         plt.figure(figsize=(12, rows * 3))
 
         # Plot the basic maps
-        plt.subplot(rows, cols, 1)
+        ax = plt.subplot(rows, cols, 1)
         plt.title("PD")
         imshow(self.PD[:, :, s], vmin=0)
-        plt.colorbar()
         plt.axis('off')
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        plt.colorbar(cax=cax)
 
-        plt.subplot(rows, cols, 2)
+        ax = plt.subplot(rows, cols, 2)
         plt.title("T1")
         imshow(self.T1[0,:, :, s]*time_factor, vmin=0)
-        plt.colorbar()
         plt.axis('off')
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        plt.colorbar(cax=cax)
 
-        plt.subplot(rows, cols, 3)
+        ax = plt.subplot(rows, cols, 3)
         plt.title("T2")
         imshow(self.T2[0,:, :, s]*time_factor, vmin=0)
-        plt.colorbar()
         plt.axis('off')
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        plt.colorbar(cax=cax)
 
-        plt.subplot(rows, cols, 4)
+        ax = plt.subplot(rows, cols, 4)
         plt.title("T2'")
         imshow(self.T2dash[:, :, s]*time_factor, vmin=0)
-        plt.colorbar()
         plt.axis('off')
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        plt.colorbar(cax=cax)
 
-        plt.subplot(rows, cols, 5)
+        ax = plt.subplot(rows, cols, 5)
         plt.title("D")
         imshow(self.D[:, :, s], vmin=0)
-        plt.colorbar()
         plt.axis('off')
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        plt.colorbar(cax=cax)
 
-        plt.subplot(rows, cols, 7)
+        ax = plt.subplot(rows, cols, 7)
         plt.title("B0")
         imshow(self.B0[:, :, s])
-        plt.colorbar()
         plt.axis('off')
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        plt.colorbar(cax=cax)
 
-        plt.subplot(rows, cols, 8)
+        ax = plt.subplot(rows, cols, 8)
         plt.title("B1")
         imshow(torch.abs(self.B1[0, :, :, s]))
-        plt.colorbar()
         plt.axis('off')
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        plt.colorbar(cax=cax)
 
-        plt.subplot(rows, cols, 9)
+        ax = plt.subplot(rows, cols, 9)
         plt.title("coil sens")
         imshow(torch.abs(self.coil_sens[0, :, :, s]), vmin=0)
-        plt.colorbar()
         plt.axis('off')
-
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        plt.colorbar(cax=cax)
+        
         # Conditionally plot masks if plot_masks is True
         if plot_masks:
             for i, (key, mask) in enumerate(self.tissue_masks.items()):
