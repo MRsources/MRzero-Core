@@ -419,7 +419,7 @@ class DynamicVoxelPhantom(VoxelGridPhantom):
             },
             time_points=self.time_points,
         )
-    def plot(self, plot_masks=False, plot_slice="center", time_unit="s") -> None:
+    def plot(self, plot_masks=False, plot_slice="center", time_unit="s", display_units=False) -> None:
         """
         Print and plot all data stored in this phantom.
 
@@ -427,11 +427,13 @@ class DynamicVoxelPhantom(VoxelGridPhantom):
         ----------
         plot_masks : bool
             Plot tissue masks stored in this phantom (assumes they exist)
-        slice : str | int
+        plot_slice : str | int
             If int, the specified slice is plotted. "center" plots the center
             slice and "all" plots all slices as a grid.
         time_unit : str
             Unit used to display T1, T2 and T2dash. Either "s" or "ms". Default to "s"
+        display_units : bool
+            If True, display parameter units. Default to False
         """
         assert time_unit in ["ms", "s"], "time_unit should be either 's' or 'ms'"
         time_factor = 1e3 if time_unit=="ms" else 1
@@ -470,7 +472,7 @@ class DynamicVoxelPhantom(VoxelGridPhantom):
 
         # Plot the basic maps
         ax = plt.subplot(rows, cols, 1)
-        plt.title("PD")
+        plt.title("PD (a.u.)") if display_units else plt.title("PD")
         imshow(self.PD[:, :, s], vmin=0)
         plt.axis('off')
         divider = make_axes_locatable(ax)
@@ -478,7 +480,7 @@ class DynamicVoxelPhantom(VoxelGridPhantom):
         plt.colorbar(cax=cax)
 
         ax = plt.subplot(rows, cols, 2)
-        plt.title("T1")
+        plt.title("T1 (%s)" % time_unit) if display_units else plt.title("T1")
         imshow(self.T1[0,:, :, s]*time_factor, vmin=0)
         plt.axis('off')
         divider = make_axes_locatable(ax)
@@ -486,7 +488,7 @@ class DynamicVoxelPhantom(VoxelGridPhantom):
         plt.colorbar(cax=cax)
 
         ax = plt.subplot(rows, cols, 3)
-        plt.title("T2")
+        plt.title("T2 (%s)" % time_unit) if display_units else plt.title("T2")
         imshow(self.T2[0,:, :, s]*time_factor, vmin=0)
         plt.axis('off')
         divider = make_axes_locatable(ax)
@@ -494,7 +496,7 @@ class DynamicVoxelPhantom(VoxelGridPhantom):
         plt.colorbar(cax=cax)
 
         ax = plt.subplot(rows, cols, 4)
-        plt.title("T2'")
+        plt.title("T2' (%s)" % time_unit) if display_units else plt.title("T2'")
         imshow(self.T2dash[:, :, s]*time_factor, vmin=0)
         plt.axis('off')
         divider = make_axes_locatable(ax)
@@ -502,7 +504,7 @@ class DynamicVoxelPhantom(VoxelGridPhantom):
         plt.colorbar(cax=cax)
 
         ax = plt.subplot(rows, cols, 5)
-        plt.title("D")
+        plt.title("D (x$10^{-3}$ mm$^2$/s)") if display_units else plt.title("D")
         imshow(self.D[:, :, s], vmin=0)
         plt.axis('off')
         divider = make_axes_locatable(ax)
@@ -510,7 +512,7 @@ class DynamicVoxelPhantom(VoxelGridPhantom):
         plt.colorbar(cax=cax)
 
         ax = plt.subplot(rows, cols, 7)
-        plt.title("B0")
+        plt.title("B0 (Hz)") if display_units else plt.title("B0")
         imshow(self.B0[:, :, s])
         plt.axis('off')
         divider = make_axes_locatable(ax)
@@ -518,7 +520,7 @@ class DynamicVoxelPhantom(VoxelGridPhantom):
         plt.colorbar(cax=cax)
 
         ax = plt.subplot(rows, cols, 8)
-        plt.title("B1")
+        plt.title("B1 (a.u.)") if display_units else plt.title("B1")
         imshow(torch.abs(self.B1[0, :, :, s]))
         plt.axis('off')
         divider = make_axes_locatable(ax)
@@ -526,7 +528,7 @@ class DynamicVoxelPhantom(VoxelGridPhantom):
         plt.colorbar(cax=cax)
 
         ax = plt.subplot(rows, cols, 9)
-        plt.title("coil sens")
+        plt.title("coil sens (a.u.)") if display_units else plt.title("coil sens")
         imshow(torch.abs(self.coil_sens[0, :, :, s]), vmin=0)
         plt.axis('off')
         divider = make_axes_locatable(ax)
