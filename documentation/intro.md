@@ -33,7 +33,7 @@ For the best user experience, it is recommended to install MRzeroCore locally an
 
 ### Papers
 
-_Endres J, Weinmüller S, Dang HN, Zaissy M._
+_Endres J, Weinmüller S, Dang HN, Zaiss M._
 **Phase distribution graphs for fast, differentiable, and spatially encoded Bloch simulations of arbitrary MRI sequences.**
 Magn Reson Med. 2024; 92(3): 1189-1204. https://doi.org/10.1002/mrm.30055
 
