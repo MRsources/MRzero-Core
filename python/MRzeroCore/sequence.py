@@ -141,7 +141,7 @@ class Pulse:
             self.angle.clone(),
             self.phase.clone(),
             
-            self.res_freq.clone(),
+            self.res_freq.clone(), # allgemin für SEQ! 
             self.freq_offset.clone(),
             
             self.shim_array.clone(),
@@ -580,7 +580,9 @@ class Sequence(list):
             rep = seq.new_rep(event_count)
             rep.pulse.angle = pulse.angle
             rep.pulse.phase = pulse.phase
-
+            
+            # off resonance treatment - pulse so far does not contain res_freq and freq_offset attributes
+            #rep.pulse.res_freq =
             rep.pulse.freq_offset = pulse.freq_offset # frequency offset for Off-Resonance
             
             rep.pulse.usage = pulse_usage(pulse.angle)
