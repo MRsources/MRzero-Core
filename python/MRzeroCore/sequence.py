@@ -55,8 +55,8 @@ class Pulse:
         Flip angle in radians
     phase : torch.Tensor
         Pulse phase in radians
-    res_freq: torch.Tensor
-        Resonance fequency = gamma * B0
+    pulse_freq: torch.Tensor
+        pulse frequency omega_1 = angle/duration
     freq_offset: torch.Tensor
         Frequency offset in Hz
     shim_array : torch.Tensor
@@ -71,7 +71,7 @@ class Pulse:
         angle: torch.Tensor,
         phase: torch.Tensor,
         
-        res_freq: torch.Tensor,
+        pulse_freq: torch.Tensor,
         freq_offset: torch.Tensor,
         
         shim_array: torch.Tensor,
@@ -82,7 +82,7 @@ class Pulse:
         self.angle = angle
         self.phase = phase
         
-        self.res_freq = res_freq
+        self.pulse_freq = pulse_freq
         self.freq_offset = freq_offset
         
         self.shim_array = shim_array
@@ -95,7 +95,7 @@ class Pulse:
             torch.as_tensor(self.angle, dtype=torch.float32).cpu(),
             torch.as_tensor(self.phase, dtype=torch.float32).cpu(),
             
-            torch.as_tensor(self.res_freq, dtype=torch.float32).cpu(),
+            torch.as_tensor(self.pulse_freq, dtype=torch.float32).cpu(),
             torch.as_tensor(self.freq_offset, dtype=torch.float32).cpu(),
             
             torch.as_tensor(self.shim_array, dtype=torch.float32).cpu(),
@@ -109,7 +109,7 @@ class Pulse:
             torch.as_tensor(self.angle, dtype=torch.float32).cuda(device),
             torch.as_tensor(self.phase, dtype=torch.float32).cuda(device),
             
-            torch.as_tensor(self.res_freq, dtype=torch.float32).cuda(device),
+            torch.as_tensor(self.pulse_freq, dtype=torch.float32).cuda(device),
             torch.as_tensor(self.freq_offset, dtype=torch.float32).cuda(device),
             
             torch.as_tensor(self.shim_array, dtype=torch.float32).cuda(device),
@@ -141,7 +141,7 @@ class Pulse:
             self.angle.clone(),
             self.phase.clone(),
             
-            self.res_freq.clone(), # allgemin für SEQ! 
+            self.pulse_freq.clone(), # allgemin für SEQ! 
             self.freq_offset.clone(),
             
             self.shim_array.clone(),
@@ -581,9 +581,9 @@ class Sequence(list):
             rep.pulse.angle = pulse.angle
             rep.pulse.phase = pulse.phase
             
-            # off resonance treatment - pulse so far does not contain res_freq and freq_offset attributes
-            #rep.pulse.res_freq =
-            rep.pulse.freq_offset = pulse.freq_offset # frequency offset for Off-Resonance
+            # TO DO: dfoff resonance treatment - pulse so far does not contain pulse_freq and freq_offset attributes
+            #rep.pulse.pulse_freq = pulse.pulse_freq
+            #rep.pulse.freq_offset = pulse.freq_offset # frequency offset for Off-Resonance
             
             rep.pulse.usage = pulse_usage(pulse.angle)
             if shim is None:
