@@ -11,7 +11,7 @@ type DistVec = Vec<RcDist>;
 type DistMap = HashMap<[i32; 4], RcDist>;
 
 #[derive(Clone)]
-pub enum TInput {
+pub enum ParamInput {
     Single(f32),
     List(Vec<f32>),
 }
@@ -33,11 +33,18 @@ impl fmt::Display for SizeMismatchError {
 
 impl Error for SizeMismatchError {}
 
-impl TInput {
+impl ParamInput {
+    pub fn scaled(self, factor: f32) -> Self {
+        match self {
+            ParamInput::Single(val) => ParamInput::Single(val * factor),
+            ParamInput::List(vals) => ParamInput::List(vals.into_iter().map(|v| v * factor).collect()),
+        }
+    }
+
     pub fn into_vec(self, n: usize) -> Result<Vec<f32>, SizeMismatchError> {
         match self {
-            TInput::Single(value) => Ok(vec![value; n]), // Create a vector of size `n` with `value`
-            TInput::List(values) => {
+            ParamInput::Single(value) => Ok(vec![value; n]), // Create a vector of size `n` with `value`
+            ParamInput::List(values) => {
                 let current_size = values.len();
                 if current_size != n {
                     // Return an error if the sizes do not match
@@ -96,7 +103,7 @@ pub struct Distribution {
 }
 
 impl Distribution {
-    fn measure(&mut self, t2dash: f32, nyquist: [f32; 3]) {
+    fn measure(&mut self, t2dash: &f32, nyquist: [f32; 3]) {
         let sigmoid = |x: f32| 1.0 / (1.0 + (-x).exp());
         let tmp = |nyq: f32, k: f64| sigmoid((nyq - k.abs() as f32 + 0.5) * 100.0);
         let dephasing = tmp(nyquist[0], self.kt_vec[0])
@@ -125,10 +132,10 @@ pub struct Repetition {
 #[allow(clippy::too_many_arguments)]
 pub fn comp_graph(
     seq: &[Repetition],
-    t1: TInput,
-    t2: TInput,
-    t2dash: f32,
-    d: f32, // expected to be defined in m²/s
+    t1: ParamInput,
+    t2: ParamInput,
+    t2dash: ParamInput,
+    d: ParamInput, // expected to be defined in m²/s
     max_dist_count: usize,
     min_dist_mag: f32,
     nyquist: [f32; 3],
@@ -152,6 +159,8 @@ pub fn comp_graph(
     // convert t1 and t2 to a list of values
     let list_t1: Vec<f32> = t1.into_vec(seq.len()).unwrap();
     let list_t2: Vec<f32> = t2.into_vec(seq.len()).unwrap();
+    let list_t2dash: Vec<f32> = t2dash.into_vec(seq.len()).unwrap();
+    let list_d: Vec<f32> = d.into_vec(seq.len()).unwrap();
     let mut graph: Vec<Vec<RcDist>> = Vec::new();
 
     let mut dists_p = DistVec::new();
@@ -164,7 +173,12 @@ pub fn comp_graph(
 
     graph.push(vec![dist_z0.clone()]);
 
-    for ((rep, current_t1), current_t2) in seq.iter().zip(list_t1.iter()).zip(list_t2.iter()) {
+    for (((rep, current_t1), current_t2), (current_t2dash, current_d)) in
+        seq.iter()
+            .zip(list_t1.iter())
+            .zip(list_t2.iter())
+            .zip(list_t2dash.iter().zip(list_d.iter()))
+    {
         {
             let (_dists_p, _dists_z, _dist_z0) = apply_pulse(
                 &dists_p,
@@ -216,9 +230,9 @@ pub fn comp_graph(
                         + (k1[2] * k1[2] + k1[2] * k2[2] + k2[2] * k2[2]))
                         as f32;
 
-                dist.mag *= r2 * (-b * d).exp();
+                dist.mag *= r2 * (-b * current_d).exp();
                 if *adc {
-                    dist.measure(t2dash, nyquist);
+                    dist.measure(current_t2dash, nyquist);
                 }
             }
         }
@@ -231,7 +245,7 @@ pub fn comp_graph(
             let sqr = |x| x * x;
             let k2 = sqr(dist.kt_vec[0]) + sqr(dist.kt_vec[1]) + sqr(dist.kt_vec[2]);
 
-            dist.mag *= r1 * (-d * rep_time * k2 as f32).exp();
+            dist.mag *= r1 * (-current_d * rep_time * k2 as f32).exp();
         }
         // Z0 has no diffusion because it's not dephased
         dist_z0.borrow_mut().mag *= r1;

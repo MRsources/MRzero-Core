@@ -111,11 +111,26 @@ def execute_graph(graph: Graph,
     if data.T2.ndim==2:
         assert data.T2.shape[0] == len(seq)
         list_T2 = data.T2.clone()
-    elif data.T1.ndim==1:
+    elif data.T2.ndim==1:
         list_T2 = data.T2.clone().expand(len(seq),-1)
+    if data.T2dash.ndim==2:
+        assert data.T2dash.shape[0] == len(seq)
+        list_T2dash = data.T2dash.clone()
+    elif data.T2dash.ndim==1:
+        list_T2dash = data.T2dash.clone().expand(len(seq),-1)
+    if data.D.ndim==2:
+        assert data.D.shape[0] == len(seq)
+        list_D = data.D.clone()
+    elif data.D.ndim==1:
+        list_D = data.D.clone().expand(len(seq),-1)
+    if data.B0.ndim==2:
+        assert data.B0.shape[0] == len(seq)
+        list_B0 = data.B0.clone()
+    elif data.B0.ndim==1:
+        list_B0 = data.B0.clone().expand(len(seq),-1)
     
     mag_adc = []
-    for i, (dists, rep, current_T1, current_T2) in enumerate(zip(graph[1:], seq, list_T1, list_T2)):
+    for i, (dists, rep, current_T1, current_T2, current_T2dash, current_D, current_B0) in enumerate(zip(graph[1:], seq, list_T1, list_T2, list_T2dash, list_D, list_B0)):
         if print_progress:
             print(f"\rCalculating repetition {i+1} / {len(seq)}", end='')
 
@@ -225,7 +240,7 @@ def execute_graph(graph: Graph,
             # as integrating over exp(-ikr) assumes that kr is a phase in rad
             b = 1/3 * (2 * torch.pi)**2 * dt * (k1**2 + k1*k2 + k2**2).sum(1)
             # shape: events x voxels
-            diffusion = torch.exp(-1e-9 * data.D * torch.cumsum(b, 0)[:, None])
+            diffusion = torch.exp(-1e-9 * current_D * torch.cumsum(b, 0)[:, None])
 
             # NOTE: We are calculating the signal for samples that are not
             # measured (adc_usage == 0), which is, depending on the sequence,
@@ -247,9 +262,9 @@ def execute_graph(graph: Graph,
                     adc_motion_phase = motion_phase
 
                 T2 = torch.exp(-trajectory[adc, 3:] / torch.abs(current_T2))
-                T2dash = torch.exp(-torch.abs(adc_dist_traj[:, 3:]) / torch.abs(data.T2dash))
+                T2dash = torch.exp(-torch.abs(adc_dist_traj[:, 3:]) / torch.abs(current_T2dash))
                 rot = torch.exp(2j * np.pi * (
-                    (adc_dist_traj[:, 3:] * data.B0) +
+                    (adc_dist_traj[:, 3:] * current_B0) +
                     (adc_dist_traj[:, :3] @ data.voxel_pos.T) +
                     adc_motion_phase
                 ))
@@ -277,7 +292,7 @@ def execute_graph(graph: Graph,
                 dist.kt_vec = dist_traj[-1]
             else:  # z or z0
                 k = torch.linalg.vector_norm(dist.kt_vec[:3])
-                diffusion = torch.exp(-1e-9 * data.D * total_time * k**2)
+                diffusion = torch.exp(-1e-9 * current_D * total_time * k**2)
                 dist.mag = dist.mag * r1 * diffusion
             if dist.dist_type == 'z0':
                 dist.mag = dist.mag + 1 - r1

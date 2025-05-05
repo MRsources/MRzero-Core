@@ -35,11 +35,11 @@ class DynamicSimData(SimData):
     T2 : torch.Tensor
         Per voxel T2 relaxation time (seconds) for each repetition time.
     T2dash : torch.Tensor
-        Per voxel T2' dephasing time (seconds)
+        Per voxel T2' dephasing time (seconds) for each repetition time.
     D: torch.Tensor
-        Isometric diffusion coefficients [10^-3 mm^2/s]
+        Isometric diffusion coefficients [10^-3 mm^2/s] for each repetition time.
     B0 : torch.Tensor
-        Per voxel B0 inhomogentity (Hertz)
+        Per voxel B0 inhomogentity (Hertz) for each repetition time.
     B1 : torch.Tensor
         (coil_count, voxel_count) Per coil and per voxel B1 inhomogenity
     coil_sens : torch.Tensor
@@ -90,7 +90,7 @@ class DynamicSimData(SimData):
         normalize : bool
             If true, applies B0 -= B0.mean(), B1 /= B1.mean(), PD /= PD.sum()
         """
-        if not (PD.shape == T1.shape[1:] == T2.shape[1:] == T2dash.shape == B0.shape):
+        if not (PD.shape == T1.shape[1:] == T2.shape[1:] == T2dash.shape[1:] == B0.shape[1:]):
             raise Exception("Mismatch of voxel-data shapes")
         if not PD.ndim == 1:
             raise Exception("Data must be 1D (flattened)")
@@ -193,11 +193,13 @@ class DynamicVoxelPhantom(VoxelGridPhantom):
         (time_steps, sx, sy, sz) tensor containing the T2 relaxation values per voxel over time.
         Each time step represents a snapshot of the 3D T2 map [s].
     T2dash : torch.Tensor
-        (sx, sy, sz) tensor containing the T2' dephasing [s].
+        (time_steps, sx, sy, sz) tensor containing the T2' dephasing per voxel over time.
+        Each time step represents a snapshot of the 3D T2' map [s].
     D : torch.Tensor
-        (sx, sy, sz) tensor containing the Diffusion coefficient [10^-3 mm² / s].
+        (time_steps, sx, sy, sz) tensor containing the Diffusion coefficient per voxel over time.
+        Each time step represents a snapshot of the 3D Diffusion map [10^-3 mm² / s].
     B0 : torch.Tensor
-        (sx, sy, sz) tensor containing the B0 inhomogeneities [Hz].
+        (time_steps, sx, sy, sz) tensor containing the B0 inhomogeneities [Hz].
     B1 : torch.Tensor
         (coil_count, sx, sy, sz) tensor of RF coil profiles.
     coil_sens : torch.Tensor
@@ -238,8 +240,14 @@ class DynamicVoxelPhantom(VoxelGridPhantom):
         if self.T2.ndim==3:
             self.T2 = self.T2.expand(len(time_points), *self.T2.shape)
         self.T2dash = torch.as_tensor(T2dash, dtype=torch.float32)
+        if self.T2dash.ndim==3:
+            self.T2dash = self.T2dash.expand(len(time_points), *self.T2dash.shape)
         self.D = torch.as_tensor(D, dtype=torch.float32)
+        if self.D.ndim==3:
+            self.D = self.D.expand(len(time_points), *self.D.shape)
         self.B0 = torch.as_tensor(B0, dtype=torch.float32)
+        if self.B0.ndim==3:
+            self.B0 = self.B0.expand(len(time_points), *self.B0.shape)
         self.B1 = torch.as_tensor(B1, dtype=torch.complex64)
         self.tissue_masks = tissue_masks
         if self.tissue_masks is None:
@@ -314,7 +322,7 @@ class DynamicVoxelPhantom(VoxelGridPhantom):
         voxel_shape: str
             shape of the voxel used for simulation. Default to sinc shape.
         """
-        T1_rep, T2_rep = self.compute_T1_T2_at_repetition(repetition_times)
+        T1_rep, T2_rep, T2dash_rep, D_rep, B0_rep = self.compute_param_at_repetition(repetition_times)
         mask = self.PD > PD_threshold
 
         shape = torch.tensor(mask.shape)
@@ -350,9 +358,9 @@ class DynamicVoxelPhantom(VoxelGridPhantom):
             self.PD[mask],
             T1_rep[:,mask],
             T2_rep[:,mask],
-            self.T2dash[mask],
-            self.D[mask],
-            self.B0[mask],
+            T2dash_rep[:,mask],
+            D_rep[:,mask],
+            B0_rep[:,mask],
             self.B1[:, mask],
             self.coil_sens[:, mask],
             self.size,
@@ -365,8 +373,8 @@ class DynamicVoxelPhantom(VoxelGridPhantom):
             tissue_masks=self.tissue_masks
         )
     
-    def compute_T1_T2_at_repetition(self, repetition_times: torch.Tensor):
-        """Computes the T1 and T2 values based on the provided repetition times.
+    def compute_param_at_repetition(self, repetition_times: torch.Tensor):
+        """Computes the T1, T2, T2', D and B0 based on the provided repetition times.
 
         Arguments
         ---------
@@ -382,7 +390,12 @@ class DynamicVoxelPhantom(VoxelGridPhantom):
         
         # Choose the closest index by comparing left and right differences.
         closest_indices = torch.where(left_diff <= right_diff, indices - 1, indices)
-        return self.T1[closest_indices], self.T2[closest_indices]
+        T1_rep = self.T1[closest_indices]
+        T2_rep = self.T2[closest_indices]
+        T2dash_rep = self.T2dash[closest_indices]
+        D_rep = self.D[closest_indices]
+        B0_rep = self.B0[closest_indices]
+        return T1_rep, T2_rep, T2dash_rep, D_rep, B0_rep
     
     def slices(self, slices: list[int]) -> DynamicVoxelPhantom:
         """Generate a copy that only contains the selected slice(s).
@@ -408,9 +421,9 @@ class DynamicVoxelPhantom(VoxelGridPhantom):
             select(self.PD),
             torch.stack([select(T1_rep) for T1_rep in self.T1]),
             torch.stack([select(T2_rep) for T2_rep in self.T2]),
-            select(self.T2dash),
-            select(self.D),
-            select(self.B0),
+            torch.stack([select(T2dash_rep) for T2dash_rep in self.T2dash]),
+            torch.stack([select(D_rep) for D_rep in self.D]),
+            torch.stack([select(B0_rep) for B0_rep in self.B0]),
             torch.stack([select(b1) for b1 in self.B1]),
             torch.stack([select(c) for c in self.coil_sens]),
             self.size.clone(),
@@ -419,7 +432,7 @@ class DynamicVoxelPhantom(VoxelGridPhantom):
             },
             time_points=self.time_points,
         )
-    def plot(self, plot_masks=False, plot_slice="center", time_unit="s", display_units=False) -> None:
+    def plot(self, plot_masks=False, plot_slice="center", time_unit="s", display_units=False, t=0) -> None:
         """
         Print and plot all data stored in this phantom.
 
@@ -434,6 +447,8 @@ class DynamicVoxelPhantom(VoxelGridPhantom):
             Unit used to display T1, T2 and T2dash. Either "s" or "ms". Default to "s"
         display_units : bool
             If True, display parameter units. Default to False
+        t : int
+            Time frame to display. Default to 0.
         """
         assert time_unit in ["ms", "s"], "time_unit should be either 's' or 'ms'"
         time_factor = 1e3 if time_unit=="ms" else 1
@@ -481,7 +496,7 @@ class DynamicVoxelPhantom(VoxelGridPhantom):
 
         ax = plt.subplot(rows, cols, 2)
         plt.title("T1 (%s)" % time_unit) if display_units else plt.title("T1")
-        imshow(self.T1[0,:, :, s]*time_factor, vmin=0)
+        imshow(self.T1[t,:, :, s]*time_factor, vmin=0)
         plt.axis('off')
         divider = make_axes_locatable(ax)
         cax = divider.append_axes("right", size="5%", pad=0.05)
@@ -489,7 +504,7 @@ class DynamicVoxelPhantom(VoxelGridPhantom):
 
         ax = plt.subplot(rows, cols, 3)
         plt.title("T2 (%s)" % time_unit) if display_units else plt.title("T2")
-        imshow(self.T2[0,:, :, s]*time_factor, vmin=0)
+        imshow(self.T2[t,:, :, s]*time_factor, vmin=0)
         plt.axis('off')
         divider = make_axes_locatable(ax)
         cax = divider.append_axes("right", size="5%", pad=0.05)
@@ -497,7 +512,7 @@ class DynamicVoxelPhantom(VoxelGridPhantom):
 
         ax = plt.subplot(rows, cols, 4)
         plt.title("T2' (%s)" % time_unit) if display_units else plt.title("T2'")
-        imshow(self.T2dash[:, :, s]*time_factor, vmin=0)
+        imshow(self.T2dash[t,:, :, s]*time_factor, vmin=0)
         plt.axis('off')
         divider = make_axes_locatable(ax)
         cax = divider.append_axes("right", size="5%", pad=0.05)
@@ -505,7 +520,7 @@ class DynamicVoxelPhantom(VoxelGridPhantom):
 
         ax = plt.subplot(rows, cols, 5)
         plt.title("D (x$10^{-3}$ mm$^2$/s)") if display_units else plt.title("D")
-        imshow(self.D[:, :, s], vmin=0)
+        imshow(self.D[t,:, :, s], vmin=0)
         plt.axis('off')
         divider = make_axes_locatable(ax)
         cax = divider.append_axes("right", size="5%", pad=0.05)
@@ -513,7 +528,7 @@ class DynamicVoxelPhantom(VoxelGridPhantom):
 
         ax = plt.subplot(rows, cols, 7)
         plt.title("B0 (Hz)") if display_units else plt.title("B0")
-        imshow(self.B0[:, :, s])
+        imshow(self.B0[t,:, :, s])
         plt.axis('off')
         divider = make_axes_locatable(ax)
         cax = divider.append_axes("right", size="5%", pad=0.05)
@@ -601,9 +616,9 @@ class DynamicVoxelPhantom(VoxelGridPhantom):
             resample(self.PD),
             torch.stack([resample(T1_rep) for T1_rep in self.T1]),
             torch.stack([resample(T2_rep) for T2_rep in self.T2]),
-            resample(self.T2dash),
-            resample(self.D),
-            resample(self.B0),
+            torch.stack([resample(T2dash_rep) for T2dash_rep in self.T2dash]),
+            torch.stack([resample(D_rep) for D_rep in self.D]),
+            torch.stack([resample(B0_rep) for B0_rep in self.B0]),
             resample_multicoil(self.B1),
             resample_multicoil(self.coil_sens),
             self.size.clone(),

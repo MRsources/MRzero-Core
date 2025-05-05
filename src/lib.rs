@@ -6,13 +6,13 @@ mod pre_pass;
 use pre_pass::{comp_graph, Repetition};
 use std::{collections::HashMap, slice::from_raw_parts, time::Instant};
 
-/// Implement FromPyObject for TInput (T1 and T2)
-impl<'a> FromPyObject<'a> for pre_pass::TInput {
+/// Implement FromPyObject for ParamInput (T1 and T2)
+impl<'a> FromPyObject<'a> for pre_pass::ParamInput {
     fn extract(obj: &'a PyAny) -> PyResult<Self> {
         if let Ok(value) = obj.extract::<f32>() {
-            Ok(pre_pass::TInput::Single(value))
+            Ok(pre_pass::ParamInput::Single(value))
         } else if let Ok(values) = obj.extract::<Vec<f32>>() {
-            Ok(pre_pass::TInput::List(values))
+            Ok(pre_pass::ParamInput::List(values))
         } else {
             Err(PyErr::new::<pyo3::exceptions::PyTypeError, _>(
                 "Expected a float or a list of floats",
@@ -127,10 +127,10 @@ impl PyDistribution {
 fn compute_graph<'p>(
     py: Python<'p>,
     seq: &PyList,
-    t1: pre_pass::TInput,
-    t2: pre_pass::TInput,
-    t2dash: f32,
-    d: f32,
+    t1: pre_pass::ParamInput,
+    t2: pre_pass::ParamInput,
+    t2dash: pre_pass::ParamInput,
+    d: pre_pass::ParamInput,
     max_dist_count: usize,
     min_dist_mag: f32,
     nyquist: [f32; 3],
@@ -196,7 +196,7 @@ fn compute_graph<'p>(
         t1,
         t2,
         t2dash,
-        d * 1e-9, // convert to m²/s
+        d.scaled(1e-9), // convert to m²/s
         max_dist_count,
         min_dist_mag,
         nyquist,
