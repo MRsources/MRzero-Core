@@ -112,7 +112,7 @@ def execute_graph(graph: Graph,
         shim_array = torch.as_tensor(rep.pulse.shim_array)
         
         # Off-resonance treatment 
-        freq_ratio = (torch.abs(data.B0 - rep.pulse.freq_offset)) / rep.pulse.pulse_freq    # TO DO: replace res_freq with angle/pulse_dur    
+        freq_ratio = (2*torch.pi * (rep.pulse.freq_offset - data.B0)) / rep.pulse.pulse_freq    # TO DO: replace res_freq with angle/pulse_dur    
         Delta = torch.arctan(freq_ratio)                        # Delta = arctan(delta_omega/omega_1)
         angle = angle * torch.sqrt(1 + freq_ratio**2)
 
