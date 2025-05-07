@@ -102,8 +102,20 @@ def execute_graph(graph: Graph,
     # Calculate kt_vec ourselves for autograd
     graph[0][0].kt_vec = torch.zeros(4, device=data.device)
 
+    # compute the T1 and T2 values for each repetition
+    if data.T1.ndim==2:
+        assert data.T1.shape[0] == len(seq)
+        list_T1 = data.T1.clone()
+    elif data.T1.ndim==1:
+        list_T1 = data.T1.clone().expand(len(seq),-1)
+    if data.T2.ndim==2:
+        assert data.T2.shape[0] == len(seq)
+        list_T2 = data.T2.clone()
+    elif data.T1.ndim==1:
+        list_T2 = data.T2.clone().expand(len(seq),-1)
+    
     mag_adc = []
-    for i, (dists, rep) in enumerate(zip(graph[1:], seq)):
+    for i, (dists, rep, current_T1, current_T2) in enumerate(zip(graph[1:], seq, list_T1, list_T2)):
         if print_progress:
             print(f"\rCalculating repetition {i+1} / {len(seq)}", end='')
 
@@ -160,8 +172,8 @@ def execute_graph(graph: Graph,
         dt = rep.event_time
 
         total_time = rep.event_time.sum()
-        r1 = torch.exp(-total_time / torch.abs(data.T1))
-        r2 = torch.exp(-total_time / torch.abs(data.T2))
+        r1 = torch.exp(-total_time / torch.abs(current_T1))
+        r2 = torch.exp(-total_time / torch.abs(current_T2))
 
         # Use the same adc phase for all coils
         adc_rot = torch.exp(1j * rep.adc_phase).unsqueeze(1)
@@ -234,7 +246,7 @@ def execute_graph(graph: Graph,
                 else:
                     adc_motion_phase = motion_phase
 
-                T2 = torch.exp(-trajectory[adc, 3:] / torch.abs(data.T2))
+                T2 = torch.exp(-trajectory[adc, 3:] / torch.abs(current_T2))
                 T2dash = torch.exp(-torch.abs(adc_dist_traj[:, 3:]) / torch.abs(data.T2dash))
                 rot = torch.exp(2j * np.pi * (
                     (adc_dist_traj[:, 3:] * data.B0) +

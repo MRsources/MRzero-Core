@@ -3,10 +3,55 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::iter;
 use std::rc::Rc;
+use std::error::Error;
+use std::fmt;
 
 pub type RcDist = Rc<RefCell<Distribution>>;
 type DistVec = Vec<RcDist>;
 type DistMap = HashMap<[i32; 4], RcDist>;
+
+#[derive(Clone)]
+pub enum TInput {
+    Single(f32),
+    List(Vec<f32>),
+}
+#[derive(Debug)]
+pub struct SizeMismatchError {
+    expected: usize,
+    found: usize,
+}
+
+impl fmt::Display for SizeMismatchError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Size mismatch: expected {}, but found {}",
+            self.expected, self.found
+        )
+    }
+}
+
+impl Error for SizeMismatchError {}
+
+impl TInput {
+    pub fn into_vec(self, n: usize) -> Result<Vec<f32>, SizeMismatchError> {
+        match self {
+            TInput::Single(value) => Ok(vec![value; n]), // Create a vector of size `n` with `value`
+            TInput::List(values) => {
+                let current_size = values.len();
+                if current_size != n {
+                    // Return an error if the sizes do not match
+                    Err(SizeMismatchError {
+                        expected: n,
+                        found: current_size,
+                    })
+                } else {
+                    Ok(values)
+                }
+            }
+        }
+    }
+}
 
 #[derive(PartialEq, Eq, Copy, Clone, Default)]
 pub enum DistType {
@@ -80,8 +125,8 @@ pub struct Repetition {
 #[allow(clippy::too_many_arguments)]
 pub fn comp_graph(
     seq: &[Repetition],
-    t1: f32,
-    t2: f32,
+    t1: TInput,
+    t2: TInput,
     t2dash: f32,
     d: f32, // expected to be defined in m²/s
     max_dist_count: usize,
@@ -104,6 +149,9 @@ pub fn comp_graph(
         1.0 / (0.1 * min_kt_step[2].unwrap_or(1.0)).clamp(1e-6, 1.0),
         1.0 / (0.1 * min_kt_step[3].unwrap_or(1e-3)).clamp(1e-9, 1e-3),
     ];
+    // convert t1 and t2 to a list of values
+    let list_t1: Vec<f32> = t1.into_vec(seq.len()).unwrap();
+    let list_t2: Vec<f32> = t2.into_vec(seq.len()).unwrap();
     let mut graph: Vec<Vec<RcDist>> = Vec::new();
 
     let mut dists_p = DistVec::new();
@@ -116,7 +164,7 @@ pub fn comp_graph(
 
     graph.push(vec![dist_z0.clone()]);
 
-    for rep in seq {
+    for ((rep, current_t1), current_t2) in seq.iter().zip(list_t1.iter()).zip(list_t2.iter()) {
         {
             let (_dists_p, _dists_z, _dist_z0) = apply_pulse(
                 &dists_p,
@@ -141,7 +189,7 @@ pub fn comp_graph(
         );
 
         // Simulate and measure + states
-        let r2_vec: Vec<f32> = rep.event_time.iter().map(|dt| (-dt / t2).exp()).collect();
+        let r2_vec: Vec<f32> = rep.event_time.iter().map(|dt| (-dt / current_t2).exp()).collect();
 
         for mut dist in dists_p.iter().map(|d| d.borrow_mut()) {
             for (((r2, gradm), dt), adc) in r2_vec
@@ -177,7 +225,7 @@ pub fn comp_graph(
 
         // Apply relaxation to z states
         let rep_time: f32 = rep.event_time.iter().sum();
-        let r1 = (-rep_time / t1).exp();
+        let r1 = (-rep_time / current_t1).exp();
 
         for mut dist in dists_z.iter().map(|d| d.borrow_mut()) {
             let sqr = |x| x * x;

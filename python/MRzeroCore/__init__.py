@@ -9,6 +9,7 @@ if not hasattr(numpy, "complex"):
 from .sequence import PulseUsage, Pulse, Repetition, Sequence, chain
 from .phantom.voxel_grid_phantom import VoxelGridPhantom
 from .phantom.custom_voxel_phantom import CustomVoxelPhantom
+from .phantom.dynamic_voxel_phantom import DynamicVoxelPhantom
 from .phantom.sim_data import SimData
 from .phantom.brainweb import generate_brainweb_phantoms
 from .simulation.isochromat_sim import isochromat_sim
