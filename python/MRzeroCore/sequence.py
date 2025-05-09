@@ -73,6 +73,7 @@ class Pulse:
         
         pulse_freq: torch.Tensor,
         freq_offset: torch.Tensor,
+        off_res: bool,
         
         shim_array: torch.Tensor,
         selective: bool,
@@ -84,6 +85,7 @@ class Pulse:
         
         self.pulse_freq = pulse_freq
         self.freq_offset = freq_offset
+        self.off_res = off_res
         
         self.shim_array = shim_array
         self.selective = selective
@@ -97,6 +99,7 @@ class Pulse:
             
             torch.as_tensor(self.pulse_freq, dtype=torch.float32).cpu(),
             torch.as_tensor(self.freq_offset, dtype=torch.float32).cpu(),
+            self.off_res,
             
             torch.as_tensor(self.shim_array, dtype=torch.float32).cpu(),
             self.selective
@@ -111,6 +114,7 @@ class Pulse:
             
             torch.as_tensor(self.pulse_freq, dtype=torch.float32).cuda(device),
             torch.as_tensor(self.freq_offset, dtype=torch.float32).cuda(device),
+            self.off_res,
             
             torch.as_tensor(self.shim_array, dtype=torch.float32).cuda(device),
             self.selective
@@ -130,6 +134,7 @@ class Pulse:
             torch.zeros(1, dtype=torch.float32),
             torch.zeros(1, dtype=torch.float32),
             torch.zeros(1, dtype=torch.float32),
+            False,
             torch.asarray([[1, 0]], dtype=torch.float32),
             True
         )
@@ -143,6 +148,7 @@ class Pulse:
             
             self.pulse_freq.clone(), # allgemin für SEQ! 
             self.freq_offset.clone(),
+            self.off_res,
             
             self.shim_array.clone(),
             self.selective

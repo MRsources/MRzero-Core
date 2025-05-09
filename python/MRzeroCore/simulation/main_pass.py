@@ -110,11 +110,6 @@ def execute_graph(graph: Graph,
         angle = torch.as_tensor(rep.pulse.angle)
         phase = torch.as_tensor(rep.pulse.phase)
         shim_array = torch.as_tensor(rep.pulse.shim_array)
-        
-        # Off-resonance treatment 
-        freq_ratio = (2*torch.pi * (rep.pulse.freq_offset - data.B0)) / rep.pulse.pulse_freq    # TO DO: replace res_freq with angle/pulse_dur    
-        Delta = torch.arctan(freq_ratio)                        # Delta = arctan(delta_omega/omega_1)
-        angle = angle * torch.sqrt(1 + freq_ratio**2)
 
         # 1Tx or pTx?
         if shim_array.shape[0] == 1:
@@ -127,33 +122,50 @@ def execute_graph(graph: Graph,
         angle = angle * B1.abs()
         phase = phase + B1.angle()        
 
-        # Unaffected magnetisation
-        # z_to_z = torch.cos(angle)
-        z_to_z = torch.cos(angle) * torch.cos(Delta)**2 + torch.sin(Delta)**2
-        
-        #p_to_p = torch.cos(angle/2)**2
-        T_r = torch.cos(angle/2)**2 * torch.cos(Delta)**2 + torch.cos(angle) * torch.sin(Delta)**2
-        T_i = torch.sin(angle) * torch.sin(Delta)    
-        phi_T = torch.arctan(T_i/T_r)     
-        p_to_p = torch.sqrt(T_r**2 + T_i**2) * torch.exp(1j*phi_T)
-        
-        # Excited magnetisation
-        L_r = torch.sin(angle) 
-        L_i = 2 * torch.sin(angle/2)**2 * torch.sin(Delta)
-        phi_L = torch.arctan(L_i/L_r)    
-        
-        #z_to_p = -0.70710678118j * torch.sin(angle) * torch.exp(1j*phase)
-        z_to_p = -0.70710678118j * torch.sqrt(L_r**2 + L_i**2) * torch.cos(Delta) * torch.exp(1j*(phase+phi_L))
-        
-        p_to_z = -z_to_p.conj()
-        #p_to_z = -0.70710678118j * torch.sqrt(L_r**2 + L_i**2) * torch.cos(Delta) * torch.exp(1j*(-phase+phi_L))
-        
-        m_to_z = -z_to_p
-        #m_to_z = 0.70710678118j * torch.sqrt(L_r**2 + L_i**2) * torch.cos(Delta) * torch.exp(1j*(phase-phi_L))
-        
-        # Refocussed magnetisation
-        #m_to_p = (1 - p_to_p) * torch.exp(2j*phase)
-        m_to_p = torch.sin(angle/2)**2 * torch.cos(Delta)**2 * torch.exp(2j*phase)
+        if rep.pulse.off_res: 
+            # Off-resonance treatment 
+            freq_ratio = (2*torch.pi * (rep.pulse.freq_offset - data.B0)) / rep.pulse.pulse_freq    # TO DO: replace res_freq with angle/pulse_dur    
+            #freq_ratio = (2*torch.pi * (rep.pulse.freq_offset)) / rep.pulse.pulse_freq
+            
+            Delta = torch.arctan(freq_ratio)                        # Delta = arctan(delta_omega/omega_1)
+            angle = angle * torch.sqrt(1 + freq_ratio**2)            
+            
+            # Unaffected magnetisation
+            z_to_z = torch.cos(angle) * torch.cos(Delta)**2 + torch.sin(Delta)**2
+           
+           
+            T_r = torch.cos(angle/2)**2 * torch.cos(Delta)**2 + torch.cos(angle) * torch.sin(Delta)**2
+            T_i = torch.sin(angle) * torch.sin(Delta)    
+            phi_T = torch.arctan(T_i/T_r)     
+            p_to_p = torch.sqrt(T_r**2 + T_i**2) * torch.exp(1j*phi_T)
+           
+            # Excited magnetisation
+            L_r = torch.sin(angle) 
+            L_i = 2 * torch.sin(angle/2)**2 * torch.sin(Delta)
+            phi_L = torch.arctan(L_i/L_r)    
+           
+            z_to_p = -0.70710678118j * torch.sqrt(L_r**2 + L_i**2) * torch.cos(Delta) * torch.exp(1j*(phase+phi_L))
+           
+            p_to_z = -z_to_p.conj()
+            #p_to_z = -0.70710678118j * torch.sqrt(L_r**2 + L_i**2) * torch.cos(Delta) * torch.exp(1j*(-phase+phi_L))
+           
+            m_to_z = -z_to_p
+            #m_to_z = 0.70710678118j * torch.sqrt(L_r**2 + L_i**2) * torch.cos(Delta) * torch.exp(1j*(phase-phi_L))
+           
+            # Refocussed magnetisation
+            #m_to_p = (1 - p_to_p) * torch.exp(2j*phase)
+            m_to_p = torch.sin(angle/2)**2 * torch.cos(Delta)**2 * torch.exp(2j*phase)
+           
+        else: 
+           # Unaffected magnetisation
+           z_to_z = torch.cos(angle)           
+           p_to_p = torch.cos(angle/2)**2
+           
+           # Excited magnetisation
+           z_to_p = -0.70710678118j * torch.sin(angle) * torch.exp(1j*phase)
+           p_to_z = -z_to_p.conj()
+           m_to_z = -z_to_p
+           m_to_p = (1 - p_to_p) * torch.exp(2j*phase)
 
         def calc_mag(ancestor: tuple) -> torch.Tensor:
             if ancestor[0] == 'zz':
