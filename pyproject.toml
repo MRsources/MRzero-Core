@@ -17,14 +17,16 @@ classifiers = [
 ]
 requires-python = ">=3.9"
 dependencies = [
-    "torch>=1.12",
-    "pypulseq",
+    "ismrmrd",
     "matplotlib>=3.5",
-    "scipy>=1.7",
+    "pydisseqt>=0.1.13",
+    "pypulseq",
     "requests>=2.20",
     "scikit-image",
+    "scipy>=1.7",
     "torchkbnufft",
-    "pydisseqt>=0.1.13"
+    "torch>=1.12",
+    "tqdm",
 ]
 
 [project.urls]
