@@ -126,12 +126,12 @@ def execute_graph(graph: Graph,
 
         if rep.pulse.off_res:
             # Off-resonance treatment 
-            #freq_ratio = (2*torch.pi * (rep.pulse.freq_offset - data.B0)) / rep.pulse.pulse_freq   
-            freq_ratio = (2*torch.pi * (rep.pulse.freq_offset)) / rep.pulse.pulse_freq            
+            freq_ratio = (2*torch.pi * (rep.pulse.freq_offset - data.B0)) / rep.pulse.pulse_freq   
+            #freq_ratio = (2*torch.pi * (rep.pulse.freq_offset)) / rep.pulse.pulse_freq            
             
             #Delta = torch.arctan(freq_ratio)                        # Delta = arctan(delta_omega/omega_1)  
-            #Delta = torch.arctan2(2*torch.pi * (rep.pulse.freq_offset - data.B0), rep.pulse.pulse_freq)
-            Delta = torch.arctan2(2*torch.pi * (rep.pulse.freq_offset), rep.pulse.pulse_freq)
+            Delta = torch.arctan2(2*torch.pi * (rep.pulse.freq_offset - data.B0), rep.pulse.pulse_freq)
+            #Delta = torch.arctan2(2*torch.pi * (rep.pulse.freq_offset), rep.pulse.pulse_freq)
             
             angle = angle * torch.sqrt(1 + freq_ratio**2)         
             
