@@ -164,7 +164,7 @@ phantom.T2dash = 50e-3  # T2' dephasing effects with 1/T2* = 1/T2 + 1/T2'
 ```
 Tips:
 - Use literature values for tissue types
-- T2' does NOT include intravoxel B0 inhomogeneity effects, this can be achived by high enoigh B0 map resolution.
+- T2' does NOT include intravoxel B0 inhomogeneity effects, this can be achieved by high enough B0 map resolution.
 
 
 ## **Q: Sequence created in MATLAB doesn't work in Python**

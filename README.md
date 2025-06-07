@@ -20,7 +20,7 @@ The typical way of using it is like the following:
 import MRzeroCore as mr0
 ```
 
-Examples on how to use can be found in the [Playground](https://mrzero-core.readthedocs.io/en/latest/playground_mr0/overview.html).
+Examples on how to use MR-zero can be found in the [Playground](https://mrzero-core.readthedocs.io/en/latest/playground_mr0/overview.html).
 
 ## Pulseq Integration
 

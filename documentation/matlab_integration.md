@@ -22,7 +22,8 @@ seq = mr.Sequence();
 % ... build your sequence ...
 seq.write('my_flash.seq');
 ```
-
+Then switch to python and load the seq file.
+    
 ```python
 # In Python/Colab: Simulate with one line
 import MRzeroCore as mr0
