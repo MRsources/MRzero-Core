@@ -104,6 +104,7 @@ def execute_graph(graph: Graph,
 
     mag_adc = []
     mag_z = []
+    mag_z0 = []
     for i, (dists, rep) in enumerate(zip(graph[1:], seq)):
         if print_progress:
             print(f"\rCalculating repetition {i+1} / {len(seq)}", end='')
@@ -122,16 +123,17 @@ def execute_graph(graph: Graph,
 
         angle = angle * B1.abs()
         phase = phase + B1.angle()
-                
-
+        
+        ## TO DO: PHASE HANDLING 
+        ## - look for gradients  in x,y -> use phase as is in pulse 
+        ## - for off-resonant pulses revert phase accumulated since the last pulse
+        ## - ADC phase ebenfalls entsprechend anpassen                
+        
+        # Simulate pulse with off-resonance treatment 
         if rep.pulse.off_res:
-            # Off-resonance treatment 
-            freq_ratio = (2*torch.pi * (rep.pulse.freq_offset - data.B0)) / rep.pulse.pulse_freq   
-            #freq_ratio = (2*torch.pi * (rep.pulse.freq_offset)) / rep.pulse.pulse_freq            
-            
-            #Delta = torch.arctan(freq_ratio)                        # Delta = arctan(delta_omega/omega_1)  
-            Delta = torch.arctan2(2*torch.pi * (rep.pulse.freq_offset - data.B0), rep.pulse.pulse_freq)
-            #Delta = torch.arctan2(2*torch.pi * (rep.pulse.freq_offset), rep.pulse.pulse_freq)
+
+            freq_ratio = (2*torch.pi * (rep.pulse.freq_offset - data.B0)) / rep.pulse.pulse_freq             
+            Delta = torch.arctan2(2*torch.pi * (rep.pulse.freq_offset - data.B0), rep.pulse.pulse_freq) # Delta = arctan(delta_omega/omega_1) 
             
             angle = angle * torch.sqrt(1 + freq_ratio**2)         
             
@@ -139,10 +141,8 @@ def execute_graph(graph: Graph,
             z_to_z = torch.cos(angle) * torch.cos(Delta)**2 + torch.sin(Delta)**2
            
             T_r = torch.cos(angle/2)**2 * torch.cos(Delta)**2 + torch.cos(angle) * torch.sin(Delta)**2
-            T_i = torch.sin(angle) * torch.sin(Delta)    
-            #phi_T = torch.arctan(T_i/T_r)  
-            phi_T = torch.arctan2(T_i,T_r) 
-            
+            T_i = torch.sin(angle) * torch.sin(Delta)      
+            phi_T = torch.arctan2(T_i,T_r)             
             p_to_p = torch.sqrt(T_r**2 + T_i**2) * torch.exp(1j*phi_T) # minus sign 'artificially' added to phase
            
             # Excited magnetisation
@@ -151,18 +151,21 @@ def execute_graph(graph: Graph,
             #phi_L = torch.arctan(L_i/L_r)  
             phi_L = torch.arctan2(L_i,L_r) 
            
+            # Matrix elements as derived 
             # z_to_p = -0.70710678118j * torch.sqrt(L_r**2 + L_i**2) * torch.cos(Delta) * torch.exp(1j*(phase+phi_L))
             # p_to_z = -z_to_p.conj()
             # m_to_z = -z_to_p
             
-            z_to_p = -0.70710678118j * torch.sqrt(L_r**2 + L_i**2) * torch.cos(Delta) * torch.exp(1j*(phase+phi_L)) # minus sign 'artificially' added to phase
+            # manipulated to mach the sign convention asserted by the on-resonant marix
+            z_to_p = -0.70710678118j * torch.sqrt(L_r**2 + L_i**2) * torch.cos(Delta) * torch.exp(1j*(phase+phi_L))
             p_to_z = z_to_p          
             m_to_z = z_to_p.conj()      
             
             # Refocussed magnetisation
             #m_to_p = (1 - p_to_p) * torch.exp(2j*phase)
             m_to_p = torch.sin(angle/2)**2 * torch.cos(Delta)**2 * torch.exp(2j*phase)
-           
+         
+        # Ignore off-resonances and simulate pulse with on-resonance matrix 
         else:             
            # Unaffected magnetisation
            z_to_z = torch.cos(angle)           
@@ -174,6 +177,9 @@ def execute_graph(graph: Graph,
            m_to_z = -z_to_p 
            
            m_to_p = (1 - p_to_p) * torch.exp(2j*phase)
+           
+        # Integrated for testing
+        matrix = [z_to_z[0].item(), p_to_p[0].item(), z_to_p[0].item(), p_to_z[0].item(), m_to_z[0].item(), m_to_p[0].item()]
 
         def calc_mag(ancestor: tuple) -> torch.Tensor:
             if ancestor[0] == 'zz':
@@ -221,6 +227,13 @@ def execute_graph(graph: Graph,
 
         mag_adc_rep = []
         mag_adc.append(mag_adc_rep)
+        
+        mag_z_rep = []
+        mag_z.append(mag_z_rep)
+        
+        mag_z0_rep = []
+        mag_z0.append(mag_z0_rep)
+        
         for dist in dists:
             # Create a list only containing ancestors that were simulated
             ancestors = list(filter(
@@ -233,9 +246,13 @@ def execute_graph(graph: Graph,
                 continue  # skip dists for which no ancestors were simulated
 
             dist.mag = sum([calc_mag(ancestor) for ancestor in ancestors])
+            
             if dist.dist_type in ['z0', 'z']:
-                mag_z.append(dist.mag)
-
+                mag_z_rep.append(dist.mag)
+                
+            if dist.dist_type == 'z0':
+                mag_z0_rep.append(dist.mag)
+                
             # The pre_pass already calculates kt_vec, but that does not
             # work with autograd -> we need to calculate it with torch
             if dist.dist_type == 'z0':
@@ -326,6 +343,6 @@ def execute_graph(graph: Graph,
         print(" - done")
 
     if return_mag_adc:
-        return torch.cat(signal), mag_adc, mag_z
+        return torch.cat(signal), mag_adc, mag_z, mag_z0, matrix, angle
     else:
         return torch.cat(signal)
