@@ -1,3 +1,6 @@
+- 0.4.0
+  - Integrate ISMRMD exporter
+  - Update documentation
 - 0.3.13
   - bugfix: util.load_phantom - B0_polynomial computation used wrong number of dims
   - default `clear_state_mag` to `True` to avoid memory problems
