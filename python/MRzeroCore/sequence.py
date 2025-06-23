@@ -146,7 +146,7 @@ class Pulse:
             self.angle.clone(),
             self.phase.clone(),
             
-            self.pulse_freq.clone(), # allgemin für SEQ! 
+            self.pulse_freq.clone(),
             self.freq_offset.clone(),
             self.off_res,
             
@@ -521,6 +521,10 @@ class Sequence(list):
             # Fetch additional data needed for building the mr0 sequence
             pulse = parser.integrate_one(pulses[i][0], pulses[i][1]).pulse
             shim = parser.sample_one(rep_start).pulse.shim
+            
+            # load pulse frequency-offset needed for potential treatment off off-resonance
+            frequency = parser.sample_one(rep_start).pulse.amplitude
+            frequency_offset = parser.sample_one(rep_start).pulse.frequency
 
             adcs = parser.events("adc", rep_start, rep_end)
 
@@ -584,10 +588,18 @@ class Sequence(list):
             # -- Now we build the mr0 Sequence repetition --
 
             rep = seq.new_rep(event_count)
-            rep.pulse.angle = pulse.angle
-            rep.pulse.phase = pulse.phase
+            rep.event_time[:] = torch.as_tensor(np.diff(abs_times))
             
-            # TO DO: dfoff resonance treatment - pulse so far does not contain pulse_freq and freq_offset attributes
+            rep.pulse.angle = pulse.angle
+            rep.pulse.phase = pulse.phase                       
+            
+            # provide frequency and frequency-offset to pulse object needed for potential treatment off off-resonance
+            rep.pulse.pulse_freq = 2*torch.pi * frequency # rad/s # may only work for block-pulses
+            rep.pulse.freq_offset = frequency_offset      # Hz
+            if rep.pulse.freq_offset != 0:
+                 rep.pulse.off_res = True
+            
+            # TO DO: off-resonance treatment - pulse so far does not contain pulse_freq and freq_offset attributes
             #rep.pulse.pulse_freq = pulse.pulse_freq
             #rep.pulse.freq_offset = pulse.freq_offset # frequency offset for Off-Resonance
             
@@ -597,7 +609,7 @@ class Sequence(list):
             else:
                 rep.pulse.shim_array = torch.as_tensor(shim)
 
-            rep.event_time[:] = torch.as_tensor(np.diff(abs_times))
+            #rep.event_time[:] = torch.as_tensor(np.diff(abs_times))
 
             rep.gradm[:, 0] = torch.as_tensor(moments.gradient.x)
             rep.gradm[:, 1] = torch.as_tensor(moments.gradient.y)
