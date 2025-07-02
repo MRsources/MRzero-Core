@@ -3,7 +3,6 @@ numpy
 pytest
 pypulseq
 torchkbnufft
-MRzeroCore
 pydisseqt
 requests>=2.20
 scikit-image
