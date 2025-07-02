@@ -19,6 +19,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install ipykernel  # ensures the python3 kernel is installed
           python -m ipykernel install --user --name python3 --display-name "Python 3"
+          pip install -e .
           pip install -r tests/requirements.txt
 
       - name: Install PyTorch CPU-only
