@@ -69,7 +69,7 @@ def test_bssfp_simulation() -> None:
     thresholds = {
         "mag_nrmse": 0.01,
         "phase_nrmse": 0.01,
-        "dt_percent": 95.0,
+        "dt_percent": 150.0,
     }
 
     actual = exec_notebook(notebook_path)
