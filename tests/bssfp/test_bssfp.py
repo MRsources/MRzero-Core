@@ -1,7 +1,13 @@
-from tests.utils import exec_notebook, load_reference
 import numpy as np
 import pathlib
 from typing import Dict, Any,Tuple
+import os
+import sys
+from config import NOTE_BOOK_PATH,REF_FILE,MAG_NRMSE,PHASE_NRMSE,DT_PERCENT
+
+# Add parent directory to path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from utils import exec_notebook,load_reference
 
 def compare_bssfp_outputs(actual: Dict[str, Any], reference: Dict[str, Any], thresholds: Dict[str, float]) -> Tuple[bool, str]:
     """
@@ -25,10 +31,9 @@ def compare_bssfp_outputs(actual: Dict[str, Any], reference: Dict[str, Any], thr
     ref_dt = reference.get("dt")
     ref_space_3d = reference.get("space_3d")
 
-
-    if(acc_array is None) : return False, "Missing required variable acc_array in notebook output."
-    if(dt is None) : return False, "Missing required variable dt in notebook output."
-    if(space_3d is None) : return False, "Missing required variable space_3d in notebook output."
+    if((acc_array is None) or len(acc_array) == 0) : return False, "Missing required variable acc_array in notebook output."
+    if((dt is None) or len(dt) == 0) : return False, "Missing required variable dt in notebook output."
+    if((space_3d is None) or len(space_3d) == 0) : return False, "Missing required variable space_3d in notebook output."
 
     # Check lengths match
     if len(acc_array) != len(ref_acc_array):
@@ -38,7 +43,7 @@ def compare_bssfp_outputs(actual: Dict[str, Any], reference: Dict[str, Any], thr
         acc = acc_array[i]
         mag_rmse = np.sqrt(np.mean((np.abs(space_3d[i]) - np.abs(ref_space_3d[i])) ** 2)) / np.mean(np.abs(space_3d[i]))
         phase_rmse = np.sqrt(np.mean((np.angle(space_3d[i]) - np.angle(ref_space_3d[i])) ** 2))
-        dt_diff_percent = abs((dt[i] - ref_dt[i]) / ref_dt[i]) * 100
+        dt_diff_percent = ((dt[i] - ref_dt[i]) / ref_dt[i]) * 100
 
         if mag_rmse > thresholds["mag_nrmse"]:
             return False, f"Mag RMSE too high ({mag_rmse:.5f}) at acc={acc:.5f}"
@@ -57,22 +62,24 @@ def test_bssfp_simulation() -> None:
     to a reference dataset using defined accuracy and timing thresholds.
     
     Raises:
-        AssertionError: If the notebook or reference file is not found,
+        AssertionError: If the notebook is not found,
                         or if the output comparison fails the defined thresholds.
     """
     notebook_path = "documentation/playground_mr0/mr0_bSSFP_2D_seq.ipynb"
     assert pathlib.Path(notebook_path).is_file(), f"Notebook file not found: {notebook_path}" 
 
-    reference_path = "documentation/playground_mr0/reference_bssfp_data_feb2025.npz"
-    assert pathlib.Path(reference_path).is_file(), f"Reference data file not found: {reference_path}" 
+    assert pathlib.Path(REF_FILE).is_file(), f"Reference file not found: {REF_FILE}" 
 
     thresholds = {
-        "mag_nrmse": 0.01,
-        "phase_nrmse": 0.01,
-        "dt_percent": 200.0,
+        "mag_nrmse": MAG_NRMSE,
+        "phase_nrmse": PHASE_NRMSE,
+        "dt_percent": DT_PERCENT,
     }
 
-    actual = exec_notebook(notebook_path)
-    reference = load_reference(reference_path)
+    actual = exec_notebook(NOTE_BOOK_PATH)
+    reference = load_reference(REF_FILE)
     passed, message = compare_bssfp_outputs(actual, reference, thresholds)
-    assert passed, message
+    assert passed, message 
+
+if __name__ == "__main__":
+    test_bssfp_simulation()
