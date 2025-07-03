@@ -27,8 +27,14 @@ def exec_notebook(nb_path : str) -> Dict[str, Any]:
     namespace = {}
     for cell in nb.cells:
         if cell.cell_type == "code":
+            # Filter out lines starting with "!"
+            filtered_lines = [
+                line for line in cell.source.splitlines()
+                if not line.strip().startswith("!")
+            ]
+            filtered_source = "\n".join(filtered_lines)
             try:
-                exec(cell.source, namespace, namespace)
+                exec(filtered_source, namespace, namespace)
             except Exception as e:
                 print("Error executing cell:", e)
 
