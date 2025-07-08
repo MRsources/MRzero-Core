@@ -1,4 +1,5 @@
 [![Documentation Status](https://readthedocs.org/projects/mrzero-core/badge/?version=latest)](https://mrzero-core.readthedocs.io/en/latest/?badge=latest)
+![PyPI - Version](https://img.shields.io/pypi/v/MRzeroCore)
 
 # MRzero Core
 

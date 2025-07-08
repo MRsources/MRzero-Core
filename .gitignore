@@ -4,6 +4,7 @@
 out/
 *.seq
 *.env
+*.ipynb_checkpoints
 
 *.pdf
 
