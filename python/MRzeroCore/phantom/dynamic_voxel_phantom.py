@@ -625,3 +625,28 @@ class DynamicVoxelPhantom(VoxelGridPhantom):
             tissue_masks=resample_masks(self.tissue_masks),
             time_points=self.time_points,
         )
+        
+    def save(self, file_name: str) -> None:
+        """Save the phantom to a npz file.
+
+        Parameters
+        ----------
+        file_name : str
+            The name of the file to save the phantom to.
+        """
+        if not file_name.endswith(".npz"):
+            file_name += ".npz"
+        np.savez(
+            file_name,
+            PD_map=self.PD.cpu().numpy(),
+            T1_map=self.T1.cpu().numpy(),
+            T2_map=self.T2.cpu().numpy(),
+            T2dash_map=self.T2dash.cpu().numpy(),
+            D_map=self.D.cpu().numpy(),
+            B0_map=self.B0.cpu().numpy(),
+            B1_map=self.B1.cpu().numpy(),
+            coil_sens=self.coil_sens.cpu().numpy(),
+            FOV=self.size.cpu().numpy(),
+            time_points=self.time_points.cpu().numpy(),
+            **{f"tissue_{key}": mask.cpu().numpy() for key, mask in self.tissue_masks.items()}
+        )
