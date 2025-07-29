@@ -29,6 +29,7 @@ def execute_graph(graph: Graph,
                   data: SimData,
                   min_emitted_signal=1e-2,
                   min_latent_signal=1e-2,
+                  gradient_threshold=500,
                   print_progress=True,
                   return_mag_adc=False,
                   clear_state_mag=True,
@@ -49,6 +50,9 @@ def execute_graph(graph: Graph,
     min_latent_signal: float
         Minimum "latent_signal" metric of a state for it to be simulated.
         Should be <= than min_emitted_signal.
+    gradient_threshold: float
+        Threshold for gradient moment events to be considered as spoiler.
+        Parameter used in treatment of phase accumulation due to off-resonance.
     print_progress: bool
         If true, the current repetition is printed while simulating.
     return_mag_adc: int or bool
@@ -105,6 +109,10 @@ def execute_graph(graph: Graph,
     mag_adc = []
     mag_z = []
     mag_z0 = []
+    
+    ## PHASE HANDLING
+    acc_phase = 0 # at the beginning no phase has been accumulated
+    
     for i, (dists, rep) in enumerate(zip(graph[1:], seq)):
         if print_progress:
             print(f"\rCalculating repetition {i+1} / {len(seq)}", end='')
@@ -121,16 +129,29 @@ def execute_graph(graph: Graph,
             shim = shim_array[:, 0] * torch.exp(-1j * shim_array[:, 1])
             B1 = (data.B1 * shim[:, None]).sum(0)
 
-        angle = angle * B1.abs()
-        phase = phase + B1.angle()
+        angle = angle * B1.abs()       
+                
+        ## PHASE HANDLING 
+        ## + for off-resonant pulses compute phase accumulated in the sequence
+        ## + revert this phase accumulation (neccesary for rotation matrix formalism)
+        ## + follow with ADC phase for this correction  
+        ## TODO: look for spoiler gradients in x,y: set acc_phase to zero
         
-        ## TO DO: PHASE HANDLING 
-        ## - look for gradients  in x,y -> use phase as is in pulse 
-        ## - for off-resonant pulses revert phase accumulated since the last pulse
-        ## - ADC phase ebenfalls entsprechend anpassen                
+        phase -= acc_phase          # revert phase accumulated until the current repetition
+        rep.adc_phase += acc_phase  # follow with ADC; for some reason needs to go in opposite direction
+                
+        ## TODO: CHECK IF NECESSARY
+        if (rep.gradm > gradient_threshold).any():
+            acc_phase = 0  # reset accumulated phase if there are spoiler gradients present in the current repetition        
+        
+        phase = phase + B1.angle()                
         
         # Simulate pulse with off-resonance treatment 
         if rep.pulse.off_res:
+            
+            ## PHASE HANDLING
+            ## + add phase accumulation due to off-resonant pulse for later calculations
+            acc_phase = torch.remainder(acc_phase + 2*torch.pi * rep.pulse.freq_offset * rep.event_time[0]*2, 2*torch.pi)
 
             freq_ratio = (2*torch.pi * (rep.pulse.freq_offset - data.B0)) / rep.pulse.pulse_freq             
             Delta = torch.arctan2(2*torch.pi * (rep.pulse.freq_offset - data.B0), rep.pulse.pulse_freq) # Delta = arctan(delta_omega/omega_1) 
@@ -166,7 +187,7 @@ def execute_graph(graph: Graph,
             m_to_p = torch.sin(angle/2)**2 * torch.cos(Delta)**2 * torch.exp(2j*phase)
          
         # Ignore off-resonances and simulate pulse with on-resonance matrix 
-        else:             
+        else:                          
            # Unaffected magnetisation
            z_to_z = torch.cos(angle)           
            p_to_p = torch.cos(angle/2)**2
@@ -177,7 +198,7 @@ def execute_graph(graph: Graph,
            m_to_z = -z_to_p 
            
            m_to_p = (1 - p_to_p) * torch.exp(2j*phase)
-           
+            
         # Integrated for testing
         matrix = [z_to_z[0].item(), p_to_p[0].item(), z_to_p[0].item(), p_to_z[0].item(), m_to_z[0].item(), m_to_p[0].item()]
 
@@ -247,11 +268,12 @@ def execute_graph(graph: Graph,
 
             dist.mag = sum([calc_mag(ancestor) for ancestor in ancestors])
             
-            if dist.dist_type in ['z0', 'z']:
-                mag_z_rep.append(dist.mag)
+            if return_mag_adc:
+                if dist.dist_type in ['z0', 'z']:
+                    mag_z_rep.append(dist.mag)
                 
-            if dist.dist_type == 'z0':
-                mag_z0_rep.append(dist.mag)
+                if dist.dist_type == 'z0':
+                    mag_z0_rep.append(dist.mag)
                 
             # The pre_pass already calculates kt_vec, but that does not
             # work with autograd -> we need to calculate it with torch
@@ -312,6 +334,7 @@ def execute_graph(graph: Graph,
                     1.41421356237 * dist.mag.unsqueeze(0)
                     * rot * T2 * T2dash * diffusion[adc, :] * dephasing
                 )
+                
                 if return_mag_adc:
                     mag_adc_rep.append(adc_rot[adc] * transverse_mag * torch.abs(data.PD))
 

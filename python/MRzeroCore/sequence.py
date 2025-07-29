@@ -59,6 +59,8 @@ class Pulse:
         pulse frequency omega_1 = angle/duration
     freq_offset: torch.Tensor
         Frequency offset in Hz
+    off_ress: bool
+        Specifies if the pulse should be simulated with the off-resonance treatment        
     shim_array : torch.Tensor
         Contains B1 mag and phase, used for pTx. 2D tensor([[1, 0]]) for 1Tx.
     selective : bool
@@ -598,10 +600,6 @@ class Sequence(list):
             rep.pulse.freq_offset = frequency_offset      # Hz
             if rep.pulse.freq_offset != 0:
                  rep.pulse.off_res = True
-            
-            # TO DO: off-resonance treatment - pulse so far does not contain pulse_freq and freq_offset attributes
-            #rep.pulse.pulse_freq = pulse.pulse_freq
-            #rep.pulse.freq_offset = pulse.freq_offset # frequency offset for Off-Resonance
             
             rep.pulse.usage = pulse_usage(pulse.angle)
             if shim is None:
