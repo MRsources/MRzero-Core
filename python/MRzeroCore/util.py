@@ -104,7 +104,7 @@ def insert_signal_plot(seq: pp.Sequence, signal: np.ndarray):
         sp11.plot(time, np.real(samples), label='real', linewidth=0.5)
         sp11.plot(time, np.imag(samples), label='imag', linewidth=0.5)
 
-        sp11.legend(loc='right', bbox_to_anchor=(1.12, 0.5), fontsize='xx-small')
+        sp11.legend(loc='right', bbox_to_anchor=(1, 0.5), fontsize='xx-small')
 
 
 # This plot function is a modified version from the one provided by
