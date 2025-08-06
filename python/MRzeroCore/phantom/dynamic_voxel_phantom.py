@@ -3,6 +3,8 @@ from typing import Callable, Any, Literal, Optional, Dict
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+from matplotlib.animation import PillowWriter
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from .sim_data import SimData, calc_avg_B1_trig
 from ..util import imshow
@@ -560,6 +562,168 @@ class DynamicVoxelPhantom(VoxelGridPhantom):
                 plt.axis('off')
 
         plt.tight_layout()
+        plt.show()
+    
+    def plot_dynamic(self, plot_masks=False, plot_slice="center", time_unit="s", display_units=False,
+                     delay_frame=1e-3, repeat=True, save_gif=False, gif_filename='dynamic_Phantom.gif') -> None:
+        """
+        Print and plot all data stored in this phantom.
+
+        Parameters
+        ----------
+        plot_masks : bool
+            Plot tissue masks stored in this phantom (assumes they exist)
+        plot_slice : str | int
+            If int, the specified slice is plotted. "center" plots the center
+            slice and "all" plots all slices as a grid.
+        time_unit : str
+            Unit used to display T1, T2 and T2dash. Either "s" or "ms". Default to "s"
+        display_units : bool
+            If True, display parameter units. Default to False
+        delay_frame : float
+            Delay between time frames in seconds. Default to 1 milliseconds.
+        repeat : bool
+            Whether to loop the animation once it ends. Default is True
+        save_gif : bool
+            If True, the animation is saved as a GIF file instead of being displayed. Default is False
+        gif_filename : str
+            Filename (including extension) used when saving the animation as a GIF. Default is "dynamic_Phantom.gif"
+        """
+        assert time_unit in ["ms", "s"], "time_unit should be either 's' or 'ms'"
+        time_factor = 1e3 if time_unit=="ms" else 1
+        print("VoxelGridPhantom")
+        print(f"size = {self.size}")
+        # Center slice
+        if plot_slice == "center":
+            s = self.PD.shape[2] // 2
+        elif plot_slice == "all":
+            s = slice(None)
+        elif isinstance(plot_slice, int):
+            s = plot_slice
+        else:
+            raise ValueError("expected plot_slice to be 'all', 'center' or an integer")
+        # Warn if we only print a part of all data
+        if self.coil_sens.shape[0] > 1:
+            print(f"Plotting 1st of {self.coil_sens.shape[0]} coil sens maps")
+        if self.B1.shape[0] > 1:
+            print(f"Plotting 1st of {self.B1.shape[0]} B1 maps")
+        if self.PD.shape[2] > 1:
+            print(f"Plotting slice {s} / {self.PD.shape[2]}")
+
+        # Determine the number of subplots needed
+        num_plots = 9  # Base number of plots without masks
+        if plot_masks:
+            num_masks = len(self.tissue_masks)
+            num_plots += num_masks
+
+        # Calculate the grid size based on the number of plots
+        cols = 3
+        rows = int(np.ceil(num_plots / cols))
+
+        fig = plt.figure(figsize=(12, rows * 3))
+        suptitle = fig.suptitle(f"Time: {self.time_points[0]:.2f} s", fontsize=16)
+
+        # Plot the basic maps
+        ax = plt.subplot(rows, cols, 1)
+        plt.title("PD (a.u.)") if display_units else plt.title("PD")
+        imshow(self.PD[:, :, s], vmin=0)
+        plt.axis('off')
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        plt.colorbar(cax=cax)
+
+        ax = plt.subplot(rows, cols, 2)
+        plt.title("T1 (%s)" % time_unit) if display_units else plt.title("T1")
+        img_T1 = imshow(self.T1[0,:, :, s]*time_factor, vmin=0, animated=True)
+        plt.axis('off')
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        plt.colorbar(cax=cax)
+
+        ax = plt.subplot(rows, cols, 3)
+        plt.title("T2 (%s)" % time_unit) if display_units else plt.title("T2")
+        img_T2 = imshow(self.T2[0,:, :, s]*time_factor, vmin=0, animated=True)
+        plt.axis('off')
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        plt.colorbar(cax=cax)
+
+        ax = plt.subplot(rows, cols, 4)
+        plt.title("T2' (%s)" % time_unit) if display_units else plt.title("T2'")
+        img_T2dash = imshow(self.T2dash[0,:, :, s]*time_factor, vmin=0, animated=True)
+        plt.axis('off')
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        plt.colorbar(cax=cax)
+
+        ax = plt.subplot(rows, cols, 5)
+        plt.title("D (x$10^{-3}$ mm$^2$/s)") if display_units else plt.title("D")
+        img_D = imshow(self.D[0,:, :, s], vmin=0, animated=True)
+        plt.axis('off')
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        plt.colorbar(cax=cax)
+
+        ax = plt.subplot(rows, cols, 7)
+        plt.title("B0 (Hz)") if display_units else plt.title("B0")
+        img_B0 = imshow(self.B0[0,:, :, s], animated=True)
+        plt.axis('off')
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        plt.colorbar(cax=cax)
+
+        ax = plt.subplot(rows, cols, 8)
+        plt.title("B1 (a.u.)") if display_units else plt.title("B1")
+        imshow(torch.abs(self.B1[0, :, :, s]))
+        plt.axis('off')
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        plt.colorbar(cax=cax)
+
+        ax = plt.subplot(rows, cols, 9)
+        plt.title("coil sens (a.u.)") if display_units else plt.title("coil sens")
+        imshow(torch.abs(self.coil_sens[0, :, :, s]), vmin=0)
+        plt.axis('off')
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        plt.colorbar(cax=cax)
+        
+        # Conditionally plot masks if plot_masks is True
+        if plot_masks:
+            for i, (key, mask) in enumerate(self.tissue_masks.items()):
+                plt.subplot(rows, cols, 10 + i)
+                plt.title(key)
+                imshow(mask)
+                plt.colorbar()
+                plt.axis('off')
+
+        plt.tight_layout()
+        
+        def data_gen():
+            T1_maps = self.T1[:, :, :, s]*time_factor
+            T2_maps = self.T2[:, :, :, s]*time_factor
+            T2dash_maps = self.T2dash[:, :, :, s]*time_factor
+            D_maps = self.D[:, :, :, s]
+            B0_maps = self.B0[:, :, :, s]
+            for t, time in enumerate(self.time_points):
+                yield T1_maps[t], T2_maps[t], T2dash_maps[t], D_maps[t], B0_maps[t], time
+                
+        def run(data):
+            T1_map, T2_map, T2dash_map, D_map, B0_map, time = data
+            img_T1.set_data(T1_map.T)
+            img_T2.set_data(T2_map.T)
+            img_T2dash.set_data(T2dash_map.T)
+            img_D.set_data(D_map.T)
+            img_B0.set_data(B0_map.T)
+            suptitle.set_text(f"Time: {time:.1f} s")
+            return [img_T1, img_T2, img_T2dash, img_D, img_B0]
+        ani = animation.FuncAnimation(fig, run, data_gen, blit=False, interval=delay_frame*1e3, repeat=repeat)
+        
+        if save_gif:
+            print(f"Saving animation to {gif_filename}...")
+            ani.save(gif_filename, writer=PillowWriter(fps=5))
+            print("Saved.")
+        
         plt.show()
     
     def interpolate(self, x: int, y: int, z: int) -> DynamicVoxelPhantom:
