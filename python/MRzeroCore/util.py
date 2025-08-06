@@ -341,7 +341,7 @@ def imshow(data: Union[np.ndarray, torch.Tensor], *args, **kwargs):
             y = ((rows * cols - i - 1) // cols)*tmp.shape[1]
             data[x:x+tmp.shape[0], y:y+tmp.shape[1]] = tmp[:, :, i]
 
-    plt.imshow(data.T, *args, origin="lower", **kwargs)
+    return plt.imshow(data.T, *args, origin="lower", **kwargs)
 
 
 DEFAULT_PHANTOM_URL = "https://github.com/MRsources/MRzero-Core/raw/main/documentation/playground_mr0/numerical_brain_cropped.mat"
