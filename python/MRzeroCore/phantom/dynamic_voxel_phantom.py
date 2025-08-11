@@ -565,7 +565,7 @@ class DynamicVoxelPhantom(VoxelGridPhantom):
         plt.show()
     
     def plot_dynamic(self, plot_masks=False, plot_slice="center", time_unit="s", display_units=False,
-                     delay_frame=1e-3, repeat=True, save_gif=False, gif_filename='dynamic_Phantom.gif') -> None:
+                     delay_frame=0.1, repeat=True, save_gif=False, gif_filename='dynamic_Phantom.gif') -> None:
         """
         Print and plot all data stored in this phantom.
 
@@ -581,7 +581,7 @@ class DynamicVoxelPhantom(VoxelGridPhantom):
         display_units : bool
             If True, display parameter units. Default to False
         delay_frame : float
-            Delay between time frames in seconds. Default to 1 milliseconds.
+            Delay between time frames in seconds. Default to 0.1 seconds.
         repeat : bool
             Whether to loop the animation once it ends. Default is True
         save_gif : bool
@@ -715,7 +715,12 @@ class DynamicVoxelPhantom(VoxelGridPhantom):
             img_T2dash.set_data(T2dash_map.T)
             img_D.set_data(D_map.T)
             img_B0.set_data(B0_map.T)
-            suptitle.set_text(f"Time: {time:.1f} s")
+            # Set timnig in a nice format
+            if time >= 60:
+                minutes, seconds = divmod(time.item(), 60)
+                suptitle.set_text(f"Time: {int(minutes):02d}:{int(seconds):02d}")
+            else:
+                suptitle.set_text(f"Time: {time:.1f} s")
             return [img_T1, img_T2, img_T2dash, img_D, img_B0]
         ani = animation.FuncAnimation(fig, run, data_gen, blit=False, interval=delay_frame*1e3, repeat=repeat)
         
