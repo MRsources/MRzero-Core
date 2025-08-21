@@ -1,3 +1,4 @@
+import warnings
 import numpy as np
 import glob
 import os
@@ -5,6 +6,9 @@ import shutil
 from nbformat import read
 import matplotlib
 from typing import Dict, Any
+import sys
+import io
+from contextlib import contextmanager
 
 def exec_notebook(nb_path : str) -> Dict[str, Any]: 
     """
@@ -25,6 +29,7 @@ def exec_notebook(nb_path : str) -> Dict[str, Any]:
         nb = read(f, as_version=4)
 
     namespace = {}
+    cell_count = 0
     for cell in nb.cells:
         if cell.cell_type == "code":
             # Filter out lines starting with "!"
@@ -33,10 +38,23 @@ def exec_notebook(nb_path : str) -> Dict[str, Any]:
                 if not line.strip().startswith("!")
             ]
             filtered_source = "\n".join(filtered_lines)
+
+            # Redirect stdout to suppress prints
+            old_stdout = sys.stdout
+            sys.stdout = io.StringIO()
+
             try:
-                exec(filtered_source, namespace, namespace)
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    with suppress_output():  # your context manager to silence prints & native output
+                        exec(filtered_source, namespace, namespace)
             except Exception as e:
-                print("Error executing cell:", e)
+                # Restore stdout before printing errors
+                sys.stdout = old_stdout
+                sys.exit(f"Error executing cell {cell_count}: {e} at {nb_path}")
+            else :
+                sys.stdout = old_stdout
+            cell_count += 1
 
     cleanup_generated_files()
     return namespace
@@ -50,7 +68,7 @@ def cleanup_generated_files() -> None:
     patterns = [
         "*.png", "*.jpg", "*.jpeg", "*.svg", "*.gif",
         "*.json", "*.npz", "*.npy", "*.mat",
-        ".ipynb_checkpoints",".seq"
+        ".ipynb_checkpoints","*.seq"
     ]
     for pattern in patterns:
         for path in glob.glob(pattern):
@@ -72,5 +90,31 @@ def load_reference(npz_path: str) -> Dict[str, np.ndarray]:
     Returns:
         Dict[str, np.ndarray]: Dictionary mapping variable names to arrays stored in the .npz file.
     """
-    with np.load(npz_path) as data:
-        return dict(data)
+    with np.load(npz_path, allow_pickle=True) as data:
+        return {key: data[key] for key in data.files}
+
+@contextmanager
+def suppress_output():
+    try:
+        fd_stdout = sys.__stdout__.fileno()
+        fd_stderr = sys.__stderr__.fileno()
+    except Exception:
+        # If fileno() is not supported, just yield without suppressing
+        yield
+        return
+
+    null_fds = [os.open(os.devnull, os.O_RDWR) for _ in range(2)]
+    saved_stdout = os.dup(fd_stdout)
+    saved_stderr = os.dup(fd_stderr)
+
+    try:
+        os.dup2(null_fds[0], fd_stdout)
+        os.dup2(null_fds[1], fd_stderr)
+        yield
+    finally:
+        os.dup2(saved_stdout, fd_stdout)
+        os.dup2(saved_stderr, fd_stderr)
+        os.close(null_fds[0])
+        os.close(null_fds[1])
+        os.close(saved_stdout)
+        os.close(saved_stderr)
