@@ -8,8 +8,9 @@ function CleanFolder {
     Remove-Item -Recurse -Force $mainBranch -ErrorAction SilentlyContinue
     Remove-Item -Path "tests\simulation_test\ref_files" -Recurse -Force
     Remove-Item -Path "tests\simulation_test\actual_files" -Recurse -Force
-    Remove-Item *.mat, *.seq -Force
+    Remove-Item numerical_brain_cropped.mat -Force
 }
+
 Write-Host "Cleaning up old directories..."
 Remove-Item -Recurse -Force $mainBranch -ErrorAction SilentlyContinue
 mkdir "tests\simulation_test\ref_files" -Force
@@ -21,7 +22,7 @@ git clone https://github.com/MRsources/MRzero-Core.git $mainBranch
 Write-Host "=========================== Installing main branch version ==========================="
 Set-Location $mainBranch
 pip uninstall -y $packageName
-pip install -e .
+pip install .
 
 Write-Host "=========================== Generate reference data ==========================="
 Set-Location ..
