@@ -86,3 +86,6 @@ docs/_build/
 
 # Pyenv
 .python-version
+
+# keep test seq files
+!tests/simulation_test/seq_files/*.seq

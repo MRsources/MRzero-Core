@@ -1,40 +1,90 @@
-name: Simulation Tests
+name: Simulation Test
 
 on: [push, pull_request]
 
 jobs:
-  bssfp-test:
-    runs-on: ubuntu-latest
+    generate-ref-files:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout current branch
+              uses: actions/checkout@v3
 
-    steps:
-      - uses: actions/checkout@v3
+            - name: Set up Python
+              uses: actions/setup-python@v5
+              with:
+                python-version: '3.10'
 
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
+            - name: Cloning main branch
+              run: |
+                git clone https://github.com/MRsources/MRzero-Core.git main_branch
+                mkdir tests/simulation_test/ref_files
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install ipykernel  # ensures the python3 kernel is installed
-          python -m ipykernel install --user --name python3 --display-name "Python 3"
-          pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
-          pip install -r tests/requirements.txt
-      
-      - name : Install released version of MRzeroCore
-        run : |
-          pip uninstall -y MRzeroCore
-          pip install MRzeroCore --no-deps
-      
-      - name : Generate reference file
-        run: python tests/bssfp/generate_ref_file.py
+            - name: Installing main branch version
+              run: |
+                pip install -e ./main_branch
 
-      - name: Uninstall released version and install local version
-        run: | 
-          pip uninstall -y MRzeroCore
-          pip install -e .
+            - name: Generate reference files
+              run: |
+                python tests/simulation_test/generate_ref_files.py
 
-      - name: Run tests
-        run: |
-          pytest -p no:warnings --disable-warnings tests/
+            - name: Upload ref files
+              uses: actions/upload-artifact@v3
+              with:
+                name: ref_files
+                path: tests/simulation_test/ref_files
+
+    generate-actual-files:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout current branch
+              uses: actions/checkout@v3
+
+            - name: Set up Python
+              uses: actions/setup-python@v5
+              with:
+                python-version: '3.10'
+
+            - name: Installing current version
+              run: |
+                mkdir tests/simulation_test/actual_files
+                pip uninstall -y MRzeroCore
+                pip install -e .
+
+            - name: Generate actual files
+              run: |
+                python tests/simulation_test/generate_actual_files.py
+
+            - name: Upload actual files
+              uses: actions/upload-artifact@v3
+              with:
+                name: actual_files
+                path: tests/simulation_test/actual_files
+
+    run-sequences-test:
+        runs-on: ubuntu-latest
+        needs: [generate-ref-files, generate-actual-files]
+        
+        steps:
+            - name: Checkout current branch
+              uses: actions/checkout@v3
+
+            - name: Set up Python
+              uses: actions/setup-python@v5
+              with:
+                python-version: '3.10'
+
+            - name: Download reference files
+              uses: actions/download-artifact@v3
+              with:
+                name: ref_files
+                path: tests/simulation_test/ref_files
+
+            - name: Download actual files
+              uses: actions/download-artifact@v3
+              with:
+                name: actual_files
+                path: tests/simulation_test/actual_files
+
+            - name: Run sequences test
+              run: |
+                python tests/simulation_test/test_simulation.py
