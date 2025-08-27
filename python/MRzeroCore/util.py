@@ -126,14 +126,14 @@ def pulseq_plot(seq: pp.Sequence,
     if version>=1.4:
         # This works since pypulseq 1.4, which introduced the plot_now argument
         if signal is None:
-            seq.plot()
+            seq.plot(time_range=time_range,time_disp=time_disp,show_blocks=show_blocks)
         else:
-            seq.plot(plot_now=False)
+            seq.plot(plot_now=False,time_range=time_range,time_disp=time_disp,show_blocks=show_blocks)
             insert_signal_plot(seq, signal)
         plt.show()
     else:
         # This works for older pypulseq versions expect the newest dev branch
-        sp_adc, t_adc = pulseq_plot_pre14(seq=seq,signal=signal)
+        sp_adc, t_adc = pulseq_plot_pre14(seq=seq,time_range=time_range,time_disp=time_disp,signal=signal)
                                     
 # This plot function is a modified version from the one provided by
 # pypulseq 1.2.0post1, all changes are marked
@@ -596,5 +596,6 @@ def simulate_2d(seq, sim_size=None, noise_level=0, dB0=0, B0_scale=1, B0_polynom
         signal += noise_level * torch.randn(*signal.shape, dtype=signal.dtype)
     
     return signal
+
 
 
