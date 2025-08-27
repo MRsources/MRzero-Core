@@ -123,7 +123,7 @@ def pulseq_plot(seq: pp.Sequence,
 
     version=float(version[:3]) # to float major.minor
         
-    if version>=1.4
+    if version>=1.4:
         # This works since pypulseq 1.4, which introduced the plot_now argument
         if signal is None:
             seq.plot()
@@ -596,4 +596,5 @@ def simulate_2d(seq, sim_size=None, noise_level=0, dB0=0, B0_scale=1, B0_polynom
         signal += noise_level * torch.randn(*signal.shape, dtype=signal.dtype)
     
     return signal
+
 
