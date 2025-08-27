@@ -107,10 +107,38 @@ def insert_signal_plot(seq: pp.Sequence, signal: np.ndarray):
         sp11.legend(loc='right', bbox_to_anchor=(1.12, 0.5), fontsize='xx-small')
 
 
+def pulseq_plot(seq: pp.Sequence,
+                type: Literal['Gradient', 'Kspace'] = 'Gradient',
+                time_range: tuple[float, float] = (0, np.inf),
+                time_disp: Literal['s', 'ms', 'us'] = 's',
+                clear=False, signal=None, figid=(1, 2)):
+    try:
+        signal=signal.numpy()
+    except:
+        signal=signal
+    try: 
+        version=pp.__version__ # this works for 1.4
+    except:
+        version=f"{pp.major}.{pp.minor}.{pp.revision}"  # this works for 1.3 and lower
+
+    version=float(version[:3]) # to float major.minor
+        
+    if version>=1.4
+        # This works since pypulseq 1.4, which introduced the plot_now argument
+        if signal is None:
+            seq.plot()
+        else:
+            seq.plot(plot_now=False)
+            insert_signal_plot(seq, signal)
+        plt.show()
+    else:
+        # This works for older pypulseq versions expect the newest dev branch
+        sp_adc, t_adc = pulseq_plot_pre14(seq=seq,signal=signal)
+                                    
 # This plot function is a modified version from the one provided by
 # pypulseq 1.2.0post1, all changes are marked
 # NOTE: the parameters have changed in the 1.4 version, maybe we should adapt them
-def pulseq_plot(seq: pp.Sequence,
+def pulseq_plot_pre14(seq: pp.Sequence,
                 type: Literal['Gradient', 'Kspace'] = 'Gradient',
                 time_range: tuple[float, float] = (0, np.inf),
                 time_disp: Literal['s', 'ms', 'us'] = 's',
@@ -568,3 +596,4 @@ def simulate_2d(seq, sim_size=None, noise_level=0, dB0=0, B0_scale=1, B0_polynom
         signal += noise_level * torch.randn(*signal.shape, dtype=signal.dtype)
     
     return signal
+
