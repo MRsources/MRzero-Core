@@ -105,7 +105,6 @@ def insert_signal_plot(seq: pp.Sequence, signal: np.ndarray):
         sp11.plot(time, np.real(samples), label='real', linewidth=0.5)
         sp11.plot(time, np.imag(samples), label='imag', linewidth=0.5)
 
-        sp11.legend().remove()  # clear old legend
         sp11.legend(loc='upper right', bbox_to_anchor=(1.02, 1.0), fontsize='small')
 
 
@@ -634,6 +633,9 @@ def imshow(data: Union[np.ndarray, torch.Tensor], *args, **kwargs):
     data as a grid of slices. Also prints x-axis horizontal and y vertiacl.
     
     Assumes data to be indexed [c, x, y, z]"""
+    # Handle negative strides by making a copy if needed
+    if isinstance(data, np.ndarray) and data.strides and any(s < 0 for s in data.strides):
+        data = data.copy()
     data = torch.as_tensor(data).detach().cpu()
     assert 2 <= data.ndim <= 4
 
@@ -880,4 +882,3 @@ def simulate_2d(seq, sim_size=None, noise_level=0, dB0=0, B0_scale=1, B0_polynom
         signal += noise_level * torch.randn(*signal.shape, dtype=signal.dtype)
     
     return signal
-
