@@ -15,6 +15,19 @@ chapters:
     sections:
     - file: api/simulation/pdg_sim
     - file: api/simulation/isochromat_sim
+- file: pulseq_integration
+  title: Pulseq Integration
+  sections:
+  - file: matlab_integration
+    title: MATLAB ↔ Python Guide
+  - file: mr0_upload_seq
+    title: Upload & Simulate .seq Files
+    url: playground_mr0/mr0_upload_seq.ipynb
+  - file: mr0_pypulseq_exmpls_seq
+    title: PyPulseq Examples
+    url: playground_mr0/mr0_pypulseq_exmpls_seq.ipynb
+- file: faq
+  title: FAQ & Troubleshooting
 - file: playground_mr0/overview
   sections:
   - file: playground_mr0/mr0_FID_seq.ipynb

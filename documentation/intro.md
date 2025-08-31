@@ -1,18 +1,64 @@
-# Introduction
+# MR-zero Core Documentation
 
+## MR-zero Overview
 
-## MRzero Overview
+[MR-zero](https://onlinelibrary.wiley.com/doi/abs/10.1002/mrm.28727) is a framework that replicates the whole MRI pipeline consisting of sequence and phantom definition, signal simulation, and image reconstruction. It uses a state-of-the-art PDG Bloch simulation, capable of calculating an accurate ADC signal comparable to that returned by a in vivo measurement of the signal in less time and while exhibiting no noise compared to isochromat based Monte-Carlo simulations.
 
-[MRzero](https://onlinelibrary.wiley.com/doi/abs/10.1002/mrm.28727) is a framework that replicates the whole MRI pipeline consisting of sequence and phantom definition, signal simulation, and image reconstruction. It uses a state-of-the-art PDG Bloch simulation, capable of calculating an accurate ADC signal comparable to that returned by a in vivo measurement of the signal in less time and while exhibiting no noise compared to isochromat based Monte-Carlo simulations.
+**MR-zero  is a python package** that you can install via 
+```python
+pip install MRzeroCore
+```
 
-The MRzero Framework is built using [PyTorch](https://pytorch.org/), enabling it to run on CUDA capable GPUs and providing automatic differentiation via backpropagation of the whole pipeline. This means that sequence parameters or phantom values can be optimized based on loss functions that consider the reconstructed image of the simulated signal.
+The MR-zero Framework is built using [PyTorch](https://pytorch.org/), enabling it to run on CUDA capable GPUs and providing automatic differentiation via backpropagation of the whole pipeline. This means that sequence parameters or phantom values can be optimized based on loss functions that consider the reconstructed image of the simulated signal.
+
+**MR-zero is compatible with Pulseq and PyPulseq** thus you can simulate arbutrary sequences defined in pypulseq or by Matlab generated .seq-files.
+
+## **Simulate Any Pulseq Sequence in One Line**
+
+**MR-zero Core makes MRI sequence simulation easy** - just one line for simuateing .seq-files:
+
+```python
+import MRzeroCore as mr0
+
+# That's it - automatic phantom download and simulation!
+signal, ktraj_adc = mr0.util.simulate('your_sequence.seq')
+```
+
+**Even simpler with PyPulseq** - no .seq file needed, just the seq object.
+```python
+import pypulseq as pp
+# Create sequence with PyPulseq
+seq = pp.Sequence()
+# ... build sequence ...
+signal, ktraj_adc = mr0.util.simulate(seq)
+```
+
+**Learn more**: [Complete Pulseq Integration Guide →](pulseq_integration.html)
+
+**Try it now**: [Explore the Playground →](playground_mr0)
+
+---
+
+## **Popular Examples**
+
+**Immediately runnable in Google Colab:**
+
+| **Sequence Type** | **Description** | **Try Now** |
+|------------------|------------------|-------------|
+| **Upload Any .seq** | Universal .seq file simulator | [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_upload_seq.ipynb) |
+| **FLASH 2D** | Basic gradient echo imaging | [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_FLASH_2D_seq.ipynb) |
+| **EPI** | Echo planar imaging | [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_EPI_2D_seq.ipynb) |
+| **TSE** | Turbo spin echo | [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_TSE_2D_multi_shot_seq.ipynb) |
+
+[**Browse All Examples →**](playground_mr0/overview.html)
+
 ## Playground MR0
 
 MRzero Core can be used in Jupyter Notebooks and can be used in online services like Google Colab.
 A constantly increasing selection of example script can be found in the [Playground MR0](playground_mr0)
 
 ## Getting Started
-
+MR-zero has also an internal representation of sequences.
 To see a simple sequence in action, have a look at the [FLASH](flash) example!
 
 All examples are provided as [Jupyter Notebooks](https://jupyter.org/) and can be explored on sites like [Binder](https://mybinder.org/) or [Google Colab](https://colab.research.google.com/). Options are listed in the header of the according documentation pages.
@@ -26,7 +72,7 @@ MRzeroCore also contains a pulseq .seq file parser and sequence exporter. It is 
 
 ```{note}
 This documentation builds on Jupyter Notebooks to represent text, code and outputs in an easy and reproducible way.
-For the best user experience, it is recommended to install MRzeroCore locally and to use Python scripts for development. Editors like [PyCharm](https://www.jetbrains.com/de-de/pycharm/), [Spyder](https://www.spyder-ide.org/) or [VSCode](https://code.visualstudio.com/) provide autocompletion, an interactive console and direct access to the extensive documentation of MRzero.
+For the best user experience, it is recommended to install MRzeroCore locally and to use Python scripts for development. Editors like [PyCharm](https://www.jetbrains.com/de-de/pycharm/), [Spyder](https://www.spyder-ide.org/) or [VSCode](https://code.visualstudio.com/) provide autocompletion, an interactive console and direct access to the extensive documentation of MR-zero.
 ```
 
 ## Literature

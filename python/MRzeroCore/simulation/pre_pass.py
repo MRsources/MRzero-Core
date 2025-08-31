@@ -94,27 +94,30 @@ class Graph(list):
     """:class:`Graph` is a wrapper around the list of states returned by the prepass."""
     def __init__(self, graph: list[list[_prepass.PyDistribution]]) -> None:
         super().__init__(graph)
-
-    def plot(self,
+    
+    def plot_data(self,
              transversal_mag: bool = True,
              dephasing: str = "tau",
-             color: str = "latent signal",
-             log_color: bool = True):
-        """Visualize the graph.
+             color: str = "latent signal"):
+        """Retrieve the data used for visualization in `plot()`.
 
         Parameters
         ----------
         transversal_mag : bool
-            If true, show only + states, otherwise z(0)
+            If true, return + states, otherwise z(0)
         dephasing : str
             Use one of ``['k_x', 'k_y', 'k_z', 'tau']`` dephasing as the
-            y-position of a state in the scatter plot
+            y-position of a state in the returned data
         color : str
             Use one of ``['abs(mag)', 'phase(mag)', 'latent signal', 'signal',
             'latent signal unormalized', 'emitted signal']``
-            as the color of a state in the scatter plot
-        log_color : bool
-            If true, use the logarithm of the chosen property for coloring
+            as the color of a state in the returned data
+        
+        Returns
+        -------
+        nd.array:
+            All selected states as a (state_count, 3) array, where the second
+            dimension is `[repetition, dephasing, coloring_value]`.
         """
         data = []
         kt_idx = {"k_x": 0, "k_y": 1, "k_z": 2, "tau": 3}[dephasing]
@@ -134,8 +137,6 @@ class Graph(list):
                 value = state.emitted_signal
             else:
                 raise AttributeError(f"Unknown property color={color}")
-            if log_color:
-                value = np.log10(np.abs(value) + 1e-7)
             return value
 
         for r, rep in enumerate(self):
@@ -149,6 +150,38 @@ class Graph(list):
 
         data.sort(key=lambda d: d[2])
         data = np.asarray(data)
+        
+        return data
+
+
+    def plot(self,
+             transversal_mag: bool = True,
+             dephasing: str = "tau",
+             color: str = "latent signal",
+             log_color: bool = True):
+        """Visualize the graph.
+
+        When using this function, you need to create and show the matplotlib
+        figure yourself. This function uses `plot_data` to generate the data,
+        which is then shown as scatter plots.
+
+        Parameters
+        ----------
+        transversal_mag : bool
+            If true, show + states, otherwise z(0)
+        dephasing : str
+            Use one of ``['k_x', 'k_y', 'k_z', 'tau']`` dephasing as the
+            y-position of a state in the scatter plot
+        color : str
+            Use one of ``['abs(mag)', 'phase(mag)', 'latent signal', 'signal',
+            'latent signal unormalized', 'emitted signal']``
+            as the color of a state in the scatter plot
+        log_color : bool
+            If true, use the logarithm of the chosen property for coloring
+        """
+        data = self.plot_data(transversal_mag, dephasing, color)
+        if log_color:
+            data[:, 2] = np.log10(np.abs(data[:, 2]) + 1e-7)
 
         plt.scatter(data[:, 0], data[:, 1], c=data[:, 2], s=20)
         plt.xlabel("Repetition")
