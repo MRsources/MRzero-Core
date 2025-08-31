@@ -3,9 +3,10 @@
 .. currentmodule:: MRzeroCore
 ```
 
-# Sequence
+# Sequence definition in MRzeroCore
 
-A MRI {class}`Sequence` is a Python list of {class}`Repetition` s, each of which is starting with an instantaneous {class}`Pulse` .
+The MRzeroCore {class}`Sequence` is a Python list of {class}`Repetition` s, each of which is starting with an instantaneous {class}`Pulse` .
+Thus, MRzeroCore treats all sequences as list of 'repetitions', that have the same building blocks of pulse, gradient moments, adcs and event times. However each 'repetition' can be different, thus some events can be just zero. See **repetition** for more details.
 The {class}`PulseUsage` of these pulses is only used for automatically building the k-space trajectory for easier reconstruction.
 Typical use is similar to the following:
 
@@ -35,22 +36,18 @@ for i in range(64):
     rep.adc_phase[2:-2] = pi - rep.pulse.phase
 ```
 
-## Pulseq
+Sometimes it might be desirable to measure multiple contrasts in a single sequence. This can be realized by combining sequences with {func}`chain`, followed by masking the simulated signal using {meth}`Sequence.get_contrasts()`. Alternatively, {attr}`Repetition.adc_usage` allows to manually assign ADC samples to different contrasts.
 
-Sequences can also be imported from [Pulseq](https://pulseq.github.io/) `.seq` files using the {meth}`Sequence.from_seq_file` method.
 
 :::{note}
 The importer tries to minimize the amount of events for imported sequences. This can be undesirable for diffusion-weighted sequences that rely on spoiler gradients, which might be removed in this process. For that reason, this behaviour might be removed in the future. Furthermore, MRzero currently uses instantaneous pulses and will ignore slice selection, off-resonance etc.
 :::
 
-Sometimes it might be desirable to measure multiple contrasts in a single sequence. This can be realized by combining sequences with {func}`chain`, followed by masking the simulated signal using {meth}`Sequence.get_contrasts()`. Alternatively, {attr}`Repetition.adc_usage` allows to manually assign ADC samples to different contrasts.
 
-To export MRzero sequences as Pulseq .seq files, {func}`pulseq_write_cartesian` can be used. This exporter does only support sequences with k-space trajectories that are on a cartesian grid. Exporters that are more flexible will be added in the future, as well as better documentation of these exporters.
 
 ```{eval-rst}
 .. autofunction:: pulseq_write_cartesian
 ```
-
 
 ## Sequence
 
@@ -61,16 +58,14 @@ To export MRzero sequences as Pulseq .seq files, {func}`pulseq_write_cartesian` 
 .. autofunction:: chain
 ```
 
-
 ## Repetition
 
-In MRzero, a repetition describes a section of the sequence starting with an RF pulse and ending just before the next. This is intuitive for sequences that consists of many similar sections (usually identical apart from phase encoding), but is used more loosely here as a general term even for sequences, where those "repetitions" are completely different.
+In MRzeroCore, a repetition describes a section of the sequence starting with an RF pulse and ending just before the next. This is intuitive for sequences that consists of many similar sections (usually identical apart from phase encoding), but is used more loosely here as a general term even for sequences, where those "repetitions" are completely different.
 
 ```{eval-rst}
 .. autoclass:: Repetition
     :members:
 ```
-
 
 ## Pulse
 
@@ -79,10 +74,29 @@ In MRzero, a repetition describes a section of the sequence starting with an RF 
     :members:
 ```
 
-
 ## PulseUsage
 
 ```{eval-rst}
 .. autoclass:: PulseUsage
     :members:
 ```
+
+# **Import of Pulseq sequences into the MRzeroCore sequence format**
+
+You can import Pulseq files into the internal MRzeroCore sequence format.
+
+```python
+import pypulseq as pp
+import MRzeroCore as mr0
+
+seq0 = mr0.Sequence.import_file('temp.seq')
+
+# Now simulate with MR-zero
+signal = mr0.util.simulate(seq0)
+```
+
+See more Details under the item [Pulseq Integration →](pulseq_integration.html)
+Examples in Colab:
+- [![Upload and simulate a .seq file](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_upload_seq.ipynb)
+- [Simulate PyPulseq example sequences](mr0_pypulseq_example)
+
