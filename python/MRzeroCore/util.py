@@ -117,12 +117,12 @@ def pulseq_plot(seq: pp.Sequence,
     except:
         signal=signal
     try: 
-        version=pp.__version__ # this works for 1.4
+        version = f"{pp.Sequence.version_major}.{pp.Sequence.version_minor}.{pp.Sequence.version_revision}" # this works for 1.4
     except:
         try:
-            version=f"{pp.major}.{pp.minor}.{pp.revision}"  # this works for 1.3post1 
+            version=f"{pp.major}.{pp.minor}.{pp.revision}"  # this works for 1.3post1 and lower
         except:
-            version = f"{pp.Sequence.version_major}.{pp.Sequence.version_minor}.{pp.Sequence.version_revision}" # this maybe for 1.3 and lower?
+            version=pp.__version__ # forgot in which version this worked, but here it is if everything else fails
 
     version=float(version[:3]) # to float major.minor
         
@@ -599,6 +599,7 @@ def simulate_2d(seq, sim_size=None, noise_level=0, dB0=0, B0_scale=1, B0_polynom
         signal += noise_level * torch.randn(*signal.shape, dtype=signal.dtype)
     
     return signal
+
 
 
 
