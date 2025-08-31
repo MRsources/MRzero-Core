@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import pypulseq as pp
 
 
-def get_signal_from_real_system(path: str, NRep: int, NCol: int):
+def get_signal_from_real_system(path: str, NRep: int, NRead: int,ncoils = 20, heuristic_shift = 4):
     """Wait for a TWIX file and return its data.
 
     This function assumes 20 recieve coils and a readout with equal number of
@@ -20,14 +20,16 @@ def get_signal_from_real_system(path: str, NRep: int, NCol: int):
         Path to TWIX file
     NRep : int
         Number of repetitions of the measured sequence
-    NCol : int
+    NRead : int
         Number of ADC samples per repetition
 
     Returns
     -------
     torch.tensor
         A (samples x coils) tensor with the signal extracted from the file
-    """
+    """ 
+    
+    
     print('waiting for TWIX file from the scanner... ' + path)
     done_flag = False
     while not done_flag:
@@ -35,26 +37,25 @@ def get_signal_from_real_system(path: str, NRep: int, NCol: int):
             # read twix file
             print("TWIX file arrived. Reading....")
 
-            ncoils = 20
             time.sleep(0.2)
             raw = np.loadtxt(path)
 
-            heuristic_shift = 4
-            expected_size = NRep * ncoils * (NCol + heuristic_shift) * 2
+            expected_size = NRep * ncoils * (NRead + heuristic_shift) * 2
             print(f"raw size: {raw.size}, expected size: {expected_size}")
 
             if raw.size != expected_size:
                 print("get_signal_from_real_system: SERIOUS ERROR, "
                       "TWIX dimensions corrupt, returning zero array..")
-                raw = np.zeros((NRep, ncoils, NCol + heuristic_shift, 2))
-                raw = raw[:, :, :NCol, 0] + 1j * raw[:, :, :NCol, 1]
+                print(f"Try different nuber of coils (ncoils), maybe around {raw.size/(2*NRep*NRead + heuristic_shift*2*NRep)}.")
+                raw = np.zeros((NRep, ncoils, NRead + heuristic_shift, 2))
+                raw = raw[:, :, :NRead, 0] + 1j * raw[:, :, :NRead, 1]
             else:
-                raw = raw.reshape([NRep, ncoils, NCol + heuristic_shift, 2])
-                raw = raw[:, :, :NCol, 0] + 1j * raw[:, :, :NCol, 1]
+                raw = raw.reshape([NRep, ncoils, NRead + heuristic_shift, 2])
+                raw = raw[:, :, :NRead, 0] + 1j * raw[:, :, :NRead, 1]
 
-            # raw = raw.transpose([1,2,0]) #ncoils,NRep,NCol
-            raw = raw.transpose([0, 2, 1])  # NRep,NCol,NCoils
-            raw = raw.reshape([NRep * NCol, ncoils])
+            # raw = raw.transpose([1,2,0]) #ncoils,NRep,NRead
+            raw = raw.transpose([0, 2, 1])  # NRep,NRead,NCoils
+            raw = raw.reshape([NRep * NRead, ncoils])
             raw = np.copy(raw)
             done_flag = True
 
