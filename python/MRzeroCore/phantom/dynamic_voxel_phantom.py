@@ -454,7 +454,7 @@ class DynamicVoxelPhantom(VoxelGridPhantom):
         """
         assert time_unit in ["ms", "s"], "time_unit should be either 's' or 'ms'"
         time_factor = 1e3 if time_unit=="ms" else 1
-        print("VoxelGridPhantom")
+        print("DynamicVoxelPhantom")
         print(f"size = {self.size}")
         # Center slice
         if plot_slice == "center":
