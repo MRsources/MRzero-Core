@@ -207,6 +207,10 @@ class VoxelGridPhantom:
                 size = torch.tensor(data['FOV'], dtype=torch.float)
             except KeyError:
                 size = torch.tensor([0.192, 0.192, 0.192])
+            try:
+                coil_sens = torch.tensor(data['coil_sens'])
+            except KeyError:
+                coil_sens = torch.ones(1, *PD.shape)
 
             tissue_masks = {
                 key: torch.tensor(mask)
@@ -219,7 +223,7 @@ class VoxelGridPhantom:
 
         return cls(
             PD, T1, T2, T2dash, D, B0, B1,
-            torch.ones(1, *PD.shape), size,
+            coil_sens, size,
             tissue_masks=tissue_masks
         )
 
