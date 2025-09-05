@@ -1,0 +1,9 @@
+nbformat
+numpy
+pytest
+pypulseq
+torchkbnufft
+pydisseqt
+requests>=2.20
+scikit-image
+matplotlib
