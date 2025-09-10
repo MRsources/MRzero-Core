@@ -5,6 +5,8 @@ pip install pypulseq &> /dev/null
 pip install pydisseqt
 pip install MRzeroCore --no-deps
 pip install ismrmrd
+pip install pywt
+pip install tqdm
 
 if [ "$mode" == "test" ]; then
     pip install  torchkbnufft
