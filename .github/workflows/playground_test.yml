@@ -15,7 +15,7 @@ jobs:
       - name: List all notebooks
         id: set-matrix
         run: |
-          NOTEBOOKS=$(find documentation/playground_mr0/ -name '*.ipynb' | jq -R -s -c 'split("\n")[:-1]')
+          NOTEBOOKS=$(find documentation/playground_mr0/ -maxdepth 1 -type f -name '*.ipynb' | jq -R -s -c 'split("\n")[:-1]')
           echo "matrix=$NOTEBOOKS" >> $GITHUB_OUTPUT
 
   test-notebooks:

@@ -7,6 +7,7 @@ pip install MRzeroCore --no-deps
 pip install ismrmrd
 pip install PyWavelets
 pip install tqdm
+pip install scikit-image
 
 if [ "$mode" == "test" ]; then
     pip install  torchkbnufft
