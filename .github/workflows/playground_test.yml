@@ -1,0 +1,42 @@
+name: Playground Notebooks Test
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+
+jobs:
+  generate-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      notebook-matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v3  
+      - name: List all notebooks
+        id: set-matrix
+        run: |
+          NOTEBOOKS=$(find documentation/playground_mr0/ -name '*.ipynb' | jq -R -s -c 'split("\n")[:-1]')
+          echo "matrix=$NOTEBOOKS" >> $GITHUB_OUTPUT
+
+  test-notebooks:
+    needs: generate-matrix
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        notebook: ${{fromJSON(needs.generate-matrix.outputs.notebook-matrix)}}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+            pip install jupyter nbconvert
+            bash documentation/playground_mr0/notebook_requirements.sh test
+      - run: |
+            echo "🧪 Testing ${{ matrix.notebook }}..."
+            python tests/playground_test.py ${{ matrix.notebook }}
