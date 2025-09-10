@@ -22,6 +22,7 @@ jobs:
     needs: generate-matrix
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         notebook: ${{fromJSON(needs.generate-matrix.outputs.notebook-matrix)}}
 
