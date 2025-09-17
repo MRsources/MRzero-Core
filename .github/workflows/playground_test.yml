@@ -1,0 +1,62 @@
+name: Playground Notebooks Test
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+
+jobs:
+  generate-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      notebook-matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v3  
+      - name: List all notebooks
+        id: set-matrix
+        run: |
+          NOTEBOOKS=$(printf '%s\n' \
+            documentation/playground_mr0/mr0_FID_seq.ipynb \
+            documentation/playground_mr0/mr0_SE_CPMG_seq.ipynb \
+            documentation/playground_mr0/mr0_STE_3pulses_5echoes_seq.ipynb \
+            documentation/playground_mr0/mr0_FLASH_2D_seq.ipynb \
+            documentation/playground_mr0/mr0_EPI_2D_seq.ipynb \
+            documentation/playground_mr0/mr0_DWI_SE_EPI.ipynb \
+            documentation/playground_mr0/mr0_diffusion_prep_STEAM_2D_seq.ipynb \
+            documentation/playground_mr0/mr0_RARE_2D_seq.ipynb \
+            documentation/playground_mr0/mr0_TSE_2D_multi_shot_seq.ipynb \
+            documentation/playground_mr0/mr0_GRE_to_FLASH.ipynb \
+            documentation/playground_mr0/mr0_bSSFP_2D_seq.ipynb \
+            documentation/playground_mr0/mr0_DREAM_STE_seq.ipynb \
+            documentation/playground_mr0/pulseq_rf_shim.ipynb \
+          | jq -R -s -c 'split("\n")[:-1]')
+          echo "matrix=$NOTEBOOKS" >> $GITHUB_OUTPUT
+
+  test-notebooks:
+    needs: generate-matrix
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        notebook: ${{fromJSON(needs.generate-matrix.outputs.notebook-matrix)}}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+            pip install pypulseq &> /dev/null
+            pip install pydisseqt
+            pip install MRzeroCore --no-deps
+            pip install ismrmrd
+            pip install  torchkbnufft PyWavelets tqdm scikit-image
+            wget https://github.com/MRsources/MRzero-Core/raw/main/documentation/playground_mr0/numerical_brain_cropped.mat &> /dev/null
+            pip install jupyter nbconvert
+      - run: |
+            echo "🧪 Testing ${{ matrix.notebook }}..."
+            python tests/playground_test.py ${{ matrix.notebook }}
