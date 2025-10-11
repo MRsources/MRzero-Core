@@ -58,3 +58,4 @@ chapters:
   - file: playground_mr0/flash_DWI
   - file: playground_mr0/pulseq_flash
   - file: playground_mr0/pulseq_sim_pTx
+  - file: playground_mr0/pulseq_zero_DESC_demo.ipynb
