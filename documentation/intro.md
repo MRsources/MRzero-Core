@@ -153,3 +153,62 @@ ISMRM & ISMRT Annual Meeting & Exhibition 2024, Singapore (2024); #0528.
 _West D, Glang F, Endres J, Zaiss M, Hajnal J, Malik S._
 **Overcoming System Imperfections Using End-to-End MR Sequence Design.**
 ISMRM & ISMRT Annual Meeting & Exhibition 2023, Toronto (ON, Canada) (2023); #0061.
+
+
+#### ESMRMB 2025
+
+_Moritz Zaiss_
+**Agentic MR sequence development - Leveraging LLMs with MR tools and tests for physics-informed sequence development**
+FT1 Oral
+
+_Martin Freudensprung_
+**Highly accelerated snapshot readout for high-resolution CEST imaging**
+FT1 LT
+
+_Felix Dietz_
+**Phase graph-based MRI simulation including off-resonant pulse response**
+FT3 LT
+
+_Jonathan Endres_
+**Exact motion simulation vs. Retrospective application on static data**
+Poster 5
+
+_Jonathan Endres_
+**Simulation of dynamic B0 with Phase Distribution Graphs**
+FT3 LT
+
+_Magda Duarte_
+**Breast Digital Twin: simulating with MR-zero**
+FT3 Oral
+
+_Magda Duarte_
+**Breast tissue segmentation at 7T using Chemical Exchange Saturation Transfer (CEST)**
+FT3 Oral
+
+_Jan-Rüdiger Schüre_
+**COVID-19: Investigation of BC007 for the treatment of patients with Post-COVID syndrome (PCS) using comprehensive CEST imaging**
+Poster 6
+
+_Jan-Rüdiger Schüre_
+**CRYO-CEST: Non-invasive imaging of cryoprotectants using chemical exchange saturation transfer**
+Poster 6
+
+_Peter Dawood_
+**End-to-End Optimization of Variable Flip Angle Schemes for Enhanced Apparent Resolution in 7T 3D Fast Spin Echo MRI**
+FT1 LT
+
+_Simon Köppel_
+**Detecting CEST Peaks using Curvature Analysis in High Resolution CEST Spectra**
+Poster 5
+
+_Martin Freudensprung_
+**Optimal control pulses and MIMOSA for CEST preparation at 7 T**
+Poster 6
+
+_Simon Weinmüller_
+**B0 and B1 Robust Spiral Turbo Spin Echo Sequence at 7T**
+Poster 1
+
+_Deepak Charles_
+**Patient specific quantitative MR twins for synthetic previews and protocol planning**
+Poster 3
