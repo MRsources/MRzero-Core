@@ -130,6 +130,10 @@ def sig_to_mrd(
             header.available_channels = num_cha
             header.active_channels = num_cha
             header.sample_time_us = dwell * 1e6
+            # We don't know the orientation but we set it to something reasonable
+            header.read_dir[0] = 1
+            header.phase_dir[1] = 1
+            header.slice_dir[2] = 1
             header = _labels_to_acq_head(header, acq_labels)
 
             # Write header to acquisition
@@ -228,19 +232,25 @@ def _seq_write_mrd_head(
     verbose: int = 0,
 ) -> ismrmrd.xsd.ismrmrdHeader:
     """Writes the pulseq sequence definitions and labels to the ISMRMRD header."""
+    
+    def m_to_mm(x_in_m):
+        return x_in_m * 1e3
+    
+    def s_to_ms(x_in_s):
+        return x_in_s * 1e3
 
     mrd_seq_params = ismrmrd.xsd.sequenceParametersType()
 
-    mrd_seq_params.TE = _to_list(seq.definitions.get("TE", []))
-    mrd_seq_params.TR = _to_list(seq.definitions.get("TR", []))
-    mrd_seq_params.TI = _to_list(seq.definitions.get("TI", []))
+    mrd_seq_params.TE = [s_to_ms(val) for val in _to_list(seq.definitions.get("TE", []))]
+    mrd_seq_params.TR = [s_to_ms(val) for val in _to_list(seq.definitions.get("TR", []))]
+    mrd_seq_params.TI =[s_to_ms(val) for val in _to_list(seq.definitions.get("TI", []))]
     if verbose > 4:
         print(
             f"Wrote TE/TR/TI to mrd header with {mrd_seq_params.TE}/{mrd_seq_params.TR}/{mrd_seq_params.TI}"
         )
 
     seq_res = seq.definitions.get("RES", [None, None, None])
-    seq_fov = seq.definitions.get("FOV", [None, None, None])
+    seq_fov = [m_to_mm(val) for val in seq.definitions.get("FOV", [None, None, None])]
     seq_labels = seq.evaluate_labels(evolution="adc")
 
     mrd_enc_params = ismrmrd.xsd.encodingType()
@@ -280,8 +290,13 @@ def _seq_write_mrd_head(
         )
 
     mrd_enc_params.encodingLimits = _labels_to_encodinglimits(seq_labels)
+    
+    # The Lamour frequency is a required field in the ISMRMRD header
+    exp = ismrmrd.xsd.experimentalConditionsType()
+    exp.H1resonanceFrequency_Hz = int(seq.system.B0 * 42.5764 * 1e6)
 
     mrd_head = ismrmrd.xsd.ismrmrdHeader(
+        experimentalConditions=exp,
         measurementInformation=ismrmrd.xsd.measurementInformationType(),
         acquisitionSystemInformation=ismrmrd.xsd.acquisitionSystemInformationType(),
         sequenceParameters=mrd_seq_params,
