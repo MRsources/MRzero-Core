@@ -1,0 +1,62 @@
+---
+description: MRzero Jupyter notebook organization and structure guidelines
+globs: *.ipynb
+---
+
+# MRzero Jupyter Notebook Structure Guidelines
+
+## Notebook Organization
+
+### Cell Structure for Sequence Notebooks:
+1. **Cell 0**: Colab badge and links
+2. **Cell 1**: Package installations (`!pip install`)
+3. **Cell 2**: Title/header markdown
+4. **Cell 3**: Sequence function definition only
+5. **Cell 4**: Imports, parameter definitions, function call, variable extraction
+6. **Subsequent cells**: Simulation, plotting, analysis
+
+## Import Standards
+```python
+import numpy as np
+import MRzeroCore as mr0
+import pypulseq as pp
+import torch
+import matplotlib.pyplot as plt
+```
+
+## Parameter Definition Pattern
+```python
+# Define parameters as plain variables
+experiment_id = 'SEQUENCE_NAME'
+fov = (200e-3, 200e-3, 8e-3)
+Nread = 64
+Nphase = 64
+FA = torch.tensor(10 * np.pi / 180)
+verbose = True
+
+# Generate sequence using standard parameters
+seq = seq_SEQUENCE_NAME(
+    fov=fov,
+    Nread=Nread,
+    Nphase=Nphase,
+    FA=FA,
+    experiment_id=experiment_id,
+    verbose=verbose
+)
+```
+
+## Variable Extraction Pattern
+```python
+# Extract parameters for reconstruction from sequence definitions
+fov_scalar = fov[0]  # Extract scalar FOV for compatibility
+slice_thickness = fov[2]  # Extract slice thickness from FOV tuple
+
+# Get variables from sequence definitions (set inside the function)
+permvec = seq.get_definition('permvec')
+```
+
+## Code Organization Principles
+- **Separation of Concerns**: Function definition separate from usage
+- **Plain Variables**: Use defined variables, not inline values
+- **No Duplication**: Avoid duplicate `seq.set_definition()` calls
+- **Clean Structure**: One responsibility per cell

@@ -1,18 +1,64 @@
-# Introduction
+# MR-zero Core Documentation
 
+## MR-zero Overview
 
-## MRzero Overview
+[MR-zero](https://onlinelibrary.wiley.com/doi/abs/10.1002/mrm.28727) is a framework that replicates the whole MRI pipeline consisting of sequence and phantom definition, signal simulation, and image reconstruction. It uses a state-of-the-art PDG Bloch simulation, capable of calculating an accurate ADC signal comparable to that returned by a in vivo measurement of the signal in less time and while exhibiting no noise compared to isochromat based Monte-Carlo simulations.
 
-[MRzero](https://onlinelibrary.wiley.com/doi/abs/10.1002/mrm.28727) is a framework that replicates the whole MRI pipeline consisting of sequence and phantom definition, signal simulation, and image reconstruction. It uses a state-of-the-art PDG Bloch simulation, capable of calculating an accurate ADC signal comparable to that returned by a in vivo measurement of the signal in less time and while exhibiting no noise compared to isochromat based Monte-Carlo simulations.
+**MR-zero  is a python package** that you can install via 
+```python
+pip install MRzeroCore
+```
 
-The MRzero Framework is built using [PyTorch](https://pytorch.org/), enabling it to run on CUDA capable GPUs and providing automatic differentiation via backpropagation of the whole pipeline. This means that sequence parameters or phantom values can be optimized based on loss functions that consider the reconstructed image of the simulated signal.
+The MR-zero Framework is built using [PyTorch](https://pytorch.org/), enabling it to run on CUDA capable GPUs and providing automatic differentiation via backpropagation of the whole pipeline. This means that sequence parameters or phantom values can be optimized based on loss functions that consider the reconstructed image of the simulated signal.
+
+**MR-zero is compatible with Pulseq and PyPulseq** thus you can simulate arbutrary sequences defined in pypulseq or by Matlab generated .seq-files.
+
+## **Simulate Any Pulseq Sequence in One Line**
+
+**MR-zero Core makes MRI sequence simulation easy** - just one line for simuateing .seq-files:
+
+```python
+import MRzeroCore as mr0
+
+# That's it - automatic phantom download and simulation!
+signal, ktraj_adc = mr0.util.simulate('your_sequence.seq')
+```
+
+**Even simpler with PyPulseq** - no .seq file needed, just the seq object.
+```python
+import pypulseq as pp
+# Create sequence with PyPulseq
+seq = pp.Sequence()
+# ... build sequence ...
+signal, ktraj_adc = mr0.util.simulate(seq)
+```
+
+**Learn more**: [Complete Pulseq Integration Guide →](pulseq_integration.html)
+
+**Try it now**: [Explore the Playground →](playground_mr0)
+
+---
+
+## **Popular Examples**
+
+**Immediately runnable in Google Colab:**
+
+| **Sequence Type** | **Description** | **Try Now** |
+|------------------|------------------|-------------|
+| **Upload Any .seq** | Universal .seq file simulator | [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_upload_seq.ipynb) |
+| **FLASH 2D** | Basic gradient echo imaging | [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_FLASH_2D_seq.ipynb) |
+| **EPI** | Echo planar imaging | [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_EPI_2D_seq.ipynb) |
+| **TSE** | Turbo spin echo | [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_TSE_2D_multi_shot_seq.ipynb) |
+
+[**Browse All Examples →**](playground_mr0/overview.html)
+
 ## Playground MR0
 
 MRzero Core can be used in Jupyter Notebooks and can be used in online services like Google Colab.
 A constantly increasing selection of example script can be found in the [Playground MR0](playground_mr0)
 
 ## Getting Started
-
+MR-zero has also an internal representation of sequences.
 To see a simple sequence in action, have a look at the [FLASH](flash) example!
 
 All examples are provided as [Jupyter Notebooks](https://jupyter.org/) and can be explored on sites like [Binder](https://mybinder.org/) or [Google Colab](https://colab.research.google.com/). Options are listed in the header of the according documentation pages.
@@ -26,7 +72,7 @@ MRzeroCore also contains a pulseq .seq file parser and sequence exporter. It is 
 
 ```{note}
 This documentation builds on Jupyter Notebooks to represent text, code and outputs in an easy and reproducible way.
-For the best user experience, it is recommended to install MRzeroCore locally and to use Python scripts for development. Editors like [PyCharm](https://www.jetbrains.com/de-de/pycharm/), [Spyder](https://www.spyder-ide.org/) or [VSCode](https://code.visualstudio.com/) provide autocompletion, an interactive console and direct access to the extensive documentation of MRzero.
+For the best user experience, it is recommended to install MRzeroCore locally and to use Python scripts for development. Editors like [PyCharm](https://www.jetbrains.com/de-de/pycharm/), [Spyder](https://www.spyder-ide.org/) or [VSCode](https://code.visualstudio.com/) provide autocompletion, an interactive console and direct access to the extensive documentation of MR-zero.
 ```
 
 ## Literature
@@ -107,3 +153,62 @@ ISMRM & ISMRT Annual Meeting & Exhibition 2024, Singapore (2024); #0528.
 _West D, Glang F, Endres J, Zaiss M, Hajnal J, Malik S._
 **Overcoming System Imperfections Using End-to-End MR Sequence Design.**
 ISMRM & ISMRT Annual Meeting & Exhibition 2023, Toronto (ON, Canada) (2023); #0061.
+
+
+#### ESMRMB 2025
+
+_Moritz Zaiss_
+**Agentic MR sequence development - Leveraging LLMs with MR tools and tests for physics-informed sequence development**
+FT1 Oral
+
+_Martin Freudensprung_
+**Highly accelerated snapshot readout for high-resolution CEST imaging**
+FT1 LT
+
+_Felix Dietz_
+**Phase graph-based MRI simulation including off-resonant pulse response**
+FT3 LT
+
+_Jonathan Endres_
+**Exact motion simulation vs. Retrospective application on static data**
+Poster 5
+
+_Jonathan Endres_
+**Simulation of dynamic B0 with Phase Distribution Graphs**
+FT3 LT
+
+_Magda Duarte_
+**Breast Digital Twin: simulating with MR-zero**
+FT3 Oral
+
+_Magda Duarte_
+**Breast tissue segmentation at 7T using Chemical Exchange Saturation Transfer (CEST)**
+FT3 Oral
+
+_Jan-Rüdiger Schüre_
+**COVID-19: Investigation of BC007 for the treatment of patients with Post-COVID syndrome (PCS) using comprehensive CEST imaging**
+Poster 6
+
+_Jan-Rüdiger Schüre_
+**CRYO-CEST: Non-invasive imaging of cryoprotectants using chemical exchange saturation transfer**
+Poster 6
+
+_Peter Dawood_
+**End-to-End Optimization of Variable Flip Angle Schemes for Enhanced Apparent Resolution in 7T 3D Fast Spin Echo MRI**
+FT1 LT
+
+_Simon Köppel_
+**Detecting CEST Peaks using Curvature Analysis in High Resolution CEST Spectra**
+Poster 5
+
+_Martin Freudensprung_
+**Optimal control pulses and MIMOSA for CEST preparation at 7 T**
+Poster 6
+
+_Simon Weinmüller_
+**B0 and B1 Robust Spiral Turbo Spin Echo Sequence at 7T**
+Poster 1
+
+_Deepak Charles_
+**Patient specific quantitative MR twins for synthetic previews and protocol planning**
+Poster 3

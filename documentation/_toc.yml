@@ -15,6 +15,17 @@ chapters:
     sections:
     - file: api/simulation/pdg_sim
     - file: api/simulation/isochromat_sim
+- file: pulseq_integration
+  title: Pulseq Integration
+  sections:
+  - file: matlab_integration
+    title: MATLAB ↔ Python Guide
+  - file: playground_mr0/mr0_upload_seq
+    title: Upload & Simulate .seq Files
+  - file: playground_mr0/mr0_pypulseq_exmpls_seq
+    title: PyPulseq Examples
+- file: faq
+  title: FAQ & Troubleshooting
 - file: playground_mr0/overview
   sections:
   - file: playground_mr0/mr0_FID_seq.ipynb
@@ -45,3 +56,4 @@ chapters:
   - file: playground_mr0/flash_DWI
   - file: playground_mr0/pulseq_flash
   - file: playground_mr0/pulseq_sim_pTx
+  - file: playground_mr0/pulseq_zero_DESC_demo
