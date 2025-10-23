@@ -22,7 +22,7 @@ git clone https://github.com/MRsources/MRzero-Core.git $mainBranch
 Write-Host "=========================== Installing main branch version ==========================="
 Set-Location $mainBranch
 pip uninstall -y $packageName
-pip install .
+pip install -e .
 
 Write-Host "=========================== Generate reference data ==========================="
 Set-Location ..
@@ -54,7 +54,7 @@ if ($LASTEXITCODE -ne 0) {
     Write-Host "=========================== Failed ==========================="
     Write-Host "Failed to generate actual data. Exit code: $LASTEXITCODE"
     CleanFolder
-    exit 
+    exit
 } else {
     Write-Host "All actual files generated successfully."
 }
