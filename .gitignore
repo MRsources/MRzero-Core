@@ -89,3 +89,6 @@ docs/_build/
 
 # keep test seq files
 !tests/simulation_test/seq_files/*.seq
+
+# cursor files
+.cursor/

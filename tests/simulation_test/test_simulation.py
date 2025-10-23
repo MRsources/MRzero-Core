@@ -52,8 +52,7 @@ def test_bssfp_simulation() -> None:
         AssertionError: If the notebook is not found,
                         or if the output comparison fails the defined thresholds.
     """
-    args = sys.argv[1:]
-    seq_files = args if args else config.GetSeqFiles()
+    seq_files = config.GetSeqFiles()
     for seq_file in seq_files:
         seq_base_name = os.path.basename(seq_file)
         ref_file = os.path.join(config.REF_FOLDER, f"{seq_base_name}.npz")

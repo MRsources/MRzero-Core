@@ -5,6 +5,7 @@ import sys
 import MRzeroCore as mr0
 import config
 import torch
+from tqdm import tqdm
 
 # Add parent directory to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -20,15 +21,12 @@ class SimulationParametersComputer:
             self.__graph = mr0.compute_graph(self.__seq, self.__data, 2000, 1e-5)
 
     def __load_phantom(self):
-        sys.stdout = open(os.devnull, 'w')
-        phantom = mr0.util.load_phantom()
-        sys.stdout = sys.__stdout__
-        return phantom
+        return mr0.util.load_phantom()
 
     def generate_simulation_parameters(self):
         timing_results = np.zeros(len(config.ACC_ARRAY))
         signal_list = np.empty(len(config.ACC_ARRAY), dtype=object)
-        for i, acc in enumerate(config.ACC_ARRAY):
+        for i, acc in enumerate(tqdm(config.ACC_ARRAY, desc="Generating simulation parameters")):
             signal, total_time = self.__get_seq_parameters(acc)
             timing_results[i] = total_time
             signal_list[i] = signal.numpy()
@@ -36,7 +34,7 @@ class SimulationParametersComputer:
     
     def __get_seq_parameters(self, accuracy):
         signal = self.__execute_graph(accuracy)
-        total_time = timeit(lambda:  self.__execute_graph(accuracy), number=10)
+        total_time = timeit(lambda:  self.__execute_graph(accuracy), number=1)
         return signal, total_time
 
     def __execute_graph(self, accuracy):
@@ -55,6 +53,10 @@ def generate_files(output_folder, seq_files, description="data"):
     for seq_file in seq_files:
         seq_base_name = os.path.basename(seq_file)
         print(f"Generating {description} for {seq_base_name}")
+        
+        _, ext = os.path.splitext(seq_file)
+        if(ext == ".ipynb"): # mr0_diffusion_prep_STEAM_2D_seq.ipynb
+            seq_file = "tests/simulation_test/seq_files/"+os.path.splitext(seq_base_name)[0]+".seq"
 
         sim_params_comp = SimulationParametersComputer(seq_file)
         timing_results, signal = sim_params_comp.generate_simulation_parameters()

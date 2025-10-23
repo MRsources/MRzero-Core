@@ -28,7 +28,6 @@ jobs:
             documentation/playground_mr0/mr0_GRE_to_FLASH.ipynb \
             documentation/playground_mr0/mr0_bSSFP_2D_seq.ipynb \
             documentation/playground_mr0/mr0_DREAM_STE_seq.ipynb \
-            documentation/playground_mr0/pulseq_rf_shim.ipynb \
           | jq -R -s -c 'split("\n")[:-1]')
           echo "matrix=$NOTEBOOKS" >> $GITHUB_OUTPUT
 

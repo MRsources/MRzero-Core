@@ -51,22 +51,18 @@ def extract_and_run_seq_function(notebook_path):
             print("❌ No sequence function found in this notebook")
             return
         
-        print(f"🔧 Found sequence function: {seq_function_name}")
-        
         # Create a temporary Python file to run the function
         with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False, encoding='utf-8') as temp_file:
             # Write the function code
-            temp_file.write(f"import pypulseq as pp\nimport numpy as np\nimport pickle\n")
+            temp_file.write(f"import pypulseq as pp\nimport numpy as np\nimport pickle\nimport torch\n")
             temp_file.write(seq_function_code)
             temp_file.write(f"\n\n# Test the function\nif __name__ == '__main__':\n")
             temp_file.write(f"    # You can add test parameters here\n")
-            temp_file.write(f"    result = {seq_function_name}()\n")
-            temp_file.write(f"    print(pickle.dumps(result).hex())\n")
+            temp_file.write(f"    seq = {seq_function_name}()\n")
+            temp_file.write(f"    seq.write(f'tests/simulation_test/seq_files/{notebook_file.name.replace('.ipynb', '.seq')}')\n")
+            
         
         temp_file_path = temp_file.name
-        
-        print(f"📝 Created temporary file: {temp_file_path}")
-        print(f"🚀 Running the function...")
         
         # Run the Python file
         try:
@@ -75,11 +71,6 @@ def extract_and_run_seq_function(notebook_path):
             
             if result.returncode == 0:
                 print("✅ Function executed successfully!")
-                if result.stdout:
-                    seq = pickle.loads(bytes.fromhex(result.stdout))
-                    seq.write("teeest.seq")
-                    # print("📤 Output:")
-                    # print(seq)
             else:
                 print("❌ Function execution failed!")
                 if result.stderr:
@@ -94,7 +85,6 @@ def extract_and_run_seq_function(notebook_path):
         # Clean up temporary file
         try:
             os.unlink(temp_file_path)
-            print(f"🧹 Cleaned up temporary file")
         except:
             pass
             
@@ -102,13 +92,26 @@ def extract_and_run_seq_function(notebook_path):
         print(f"❌ Error processing notebook: {e}")
 
 def main():
-    if len(sys.argv) != 2:
-        print("Usage: python script.py <notebook_path>")
-        print("Example: python script.py documentation/playground_mr0/mr0_FLASH_2D_seq.ipynb")
-        sys.exit(1)
-    
-    notebook_path = sys.argv[1]
-    extract_and_run_seq_function(notebook_path)
+    args = sys.argv[1:]
+    notebook_paths = ["documentation/playground_mr0/mr0_FID_seq.ipynb",
+            "documentation/playground_mr0/mr0_SE_CPMG_seq.ipynb",
+            "documentation/playground_mr0/mr0_STE_3pulses_5echoes_seq.ipynb",
+            "documentation/playground_mr0/mr0_FLASH_2D_seq.ipynb",
+            "documentation/playground_mr0/mr0_EPI_2D_seq.ipynb",
+            "documentation/playground_mr0/mr0_DWI_SE_EPI.ipynb",
+            "documentation/playground_mr0/mr0_diffusion_prep_STEAM_2D_seq.ipynb",
+            "documentation/playground_mr0/mr0_RARE_2D_seq.ipynb",
+            "documentation/playground_mr0/mr0_TSE_2D_multi_shot_seq.ipynb",
+            "documentation/playground_mr0/mr0_GRE_to_FLASH.ipynb",
+            "documentation/playground_mr0/mr0_bSSFP_2D_seq.ipynb",
+            "documentation/playground_mr0/mr0_DREAM_STE_seq.ipynb"]
+    if args:
+        notebook_paths = args
+    for notebook_path in notebook_paths:
+        if not os.path.exists(notebook_path):
+            print(f"❌ Notebook not found: {notebook_path}")
+            continue
+        extract_and_run_seq_function(notebook_path)
 
 if __name__ == "__main__":
     main()
