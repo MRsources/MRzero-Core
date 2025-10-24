@@ -48,6 +48,7 @@ jobs:
         run: |
           pip install pypulseq
           pip install torchkbnufft
+          pip install nbformat
 
       - name: Generate sequence file
         run: |
