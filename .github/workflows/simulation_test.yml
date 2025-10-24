@@ -43,15 +43,16 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.12"
-      
-      - name: Generate sequence file
-        run: |
-          mkdir tests/simulation_test/seq_files
-          python tests/simulation_test/generate_seq_files.py ${{ matrix.notebook }}
+
       - name: Install dependencies
         run: |
           pip install pypulseq
           pip install torchkbnufft
+
+      - name: Generate sequence file
+        run: |
+          mkdir tests/simulation_test/seq_files
+          python tests/simulation_test/generate_seq_files.py ${{ matrix.notebook }}
 
       - name: Cloning main branch
         run: |
