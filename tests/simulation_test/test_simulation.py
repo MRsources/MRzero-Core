@@ -10,15 +10,24 @@ from utils import load_reference
 
 def compare_seq_parameters(actual: Dict[str, Any], reference: Dict[str, Any]) -> Tuple[bool, str]:
     """
-    Compare bSSFP simulation outputs from a notebook against reference data.
+    Compare MR sequence simulation outputs against reference data across multiple accuracy levels.
+    
+    This function validates that MR sequence simulations produce consistent results by comparing
+    actual simulation outputs with reference data. It tests multiple accuracy levels defined in
+    the configuration to ensure robust validation across different simulation precision settings.
 
     Parameters:
-        actual (Dict[str, Any]): Dictionary of variables from the executed notebook.
-        reference (Dict[str, Any]): Dictionary of reference data (from .npz file).
+        actual (Dict[str, Any]): Dictionary containing actual simulation results from .npz file.
+                                Expected keys:
+                                - 'signal': Complex signal data array for each accuracy level
+                                - 'timing_results': Execution time for each accuracy level
+        reference (Dict[str, Any]): Dictionary containing reference simulation results from .npz file.
+                                  Must have same structure as 'actual' parameter.
 
     Returns:
-        Tuple[bool, str]: (passed, message), where `passed` indicates whether the comparison was successful,
-                          and `message` provides diagnostic information.
+        Tuple[bool, str]: A tuple containing:
+            - bool: True if all comparisons pass thresholds, False otherwise
+            - str: Diagnostic message indicating pass status or specific failure details
     """
     dt = actual.get("timing_results")
     signal = actual.get("signal")
@@ -43,14 +52,9 @@ def compare_seq_parameters(actual: Dict[str, Any], reference: Dict[str, Any]) ->
 
     return True, "All tests passed."
 
-def test_bssfp_simulation() -> None:
+def test_all_sequence_simulations() -> None:
     """
-    Run an automated test for bSSFP simulation by executing a notebook and comparing its output 
-    to a reference dataset using defined accuracy and timing thresholds.
-    
-    Raises:
-        AssertionError: If the notebook is not found,
-                        or if the output comparison fails the defined thresholds.
+    Run comprehensive automated tests for all MR sequence simulations.
     """
     seq_files = config.GetSeqFiles()
     for seq_file in seq_files:
@@ -68,4 +72,4 @@ def test_bssfp_simulation() -> None:
         
     print(f"All sequences passed ✅")
 if __name__ == "__main__":
-    test_bssfp_simulation()
+    test_all_sequence_simulations()

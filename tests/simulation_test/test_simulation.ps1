@@ -23,17 +23,16 @@ mkdir "tests\simulation_test\ref_files" -Force
 mkdir "tests\simulation_test\actual_files" -Force
 mkdir "tests\simulation_test\seq_files" -Force
 
-Write-Host "=========================== Cloning main branch ==========================="
-git clone https://github.com/MRsources/MRzero-Core.git $mainBranch
-
-Write-Host "=========================== Installing main branch version ==========================="
-Set-Location $mainBranch
-pip uninstall -y $packageName
-pip install -e .
-Set-Location ..
-
 Write-Host "=========================== Generate sequence files ==========================="
 if ($args.Count -gt 0) {
+    # Check if the specified notebook exists
+    $notebookPath = $args[0]
+    if (-not (Test-Path $notebookPath)) {
+        Write-Host "=========================== Failed ==========================="
+        Write-Host "Notebook not found: $notebookPath"
+        CleanFolder
+        exit 1
+    }
     python tests\simulation_test\generate_seq_files.py @args
 } else {
     python tests\simulation_test\generate_seq_files.py
@@ -46,6 +45,15 @@ if ($LASTEXITCODE -ne 0) {
 } else {
     Write-Host "All sequence files generated successfully."
 }
+
+Write-Host "=========================== Cloning main branch ==========================="
+git clone https://github.com/MRsources/MRzero-Core.git $mainBranch
+
+Write-Host "=========================== Installing main branch version ==========================="
+Set-Location $mainBranch
+pip uninstall -y $packageName
+pip install -e .
+Set-Location ..
 
 Write-Host "=========================== Generate reference data ==========================="
 python tests\simulation_test\generate_ref_files.py

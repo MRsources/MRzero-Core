@@ -1,5 +1,5 @@
 import os
-from timeit import timeit
+from timeit import Timer
 import numpy as np
 import sys
 import MRzeroCore as mr0
@@ -27,15 +27,30 @@ class SimulationParametersComputer:
         timing_results = np.zeros(len(config.ACC_ARRAY))
         signal_list = np.empty(len(config.ACC_ARRAY), dtype=object)
         for i, acc in enumerate(tqdm(config.ACC_ARRAY, desc="Generating simulation parameters")):
-            signal, total_time = self.__get_seq_parameters(acc)
-            timing_results[i] = total_time
+            signal, avg_time = self.__get_seq_parameters(acc)
+            timing_results[i] = avg_time
             signal_list[i] = signal.numpy()
         return timing_results, signal_list
     
     def __get_seq_parameters(self, accuracy):
         signal = self.__execute_graph(accuracy)
-        total_time = timeit(lambda:  self.__execute_graph(accuracy), number=1)
-        return signal, total_time
+        timer = Timer(lambda: self.__execute_graph(accuracy))
+        number_of_runs, total_time = self.__autorange_custom(timer)
+        return signal, total_time / number_of_runs
+
+    def __autorange_custom(self, timer, min_time=1.0):
+        """
+        Run timeit() repeatedly, increasing number of loops until total time >= min_time seconds.
+        Returns (number, total_time).
+        """
+        # same loop progression as timeit.autorange()
+        total_time = 0
+        number_of_runs = 1
+        while total_time < min_time:
+            time = timer.timeit(1)
+            total_time += time
+            number_of_runs += 1
+        return number_of_runs, total_time
 
     def __execute_graph(self, accuracy):
         if torch.cuda.is_available():
