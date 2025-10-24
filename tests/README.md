@@ -18,7 +18,7 @@ Use the PowerShell script in `simulation_test/` folder (run from project root di
 .\tests\simulation_test\test_simulation.ps1
 
 # Test specific notebook
-.\tests\simulation_test\test_simulation.ps1 "documentation/playground_mr0/mr0_FLASH_2D_seq.ipynb"
+.\tests\simulation_test\test_simulation.ps1 documentation/playground_mr0/mr0_FLASH_2D_seq.ipynb
 ```
 
 **Note**: The script installs the main branch version of MRzeroCore during testing. If you cancel the test (Ctrl+C), make sure to reinstall your version:
