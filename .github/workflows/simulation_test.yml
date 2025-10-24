@@ -48,7 +48,11 @@ jobs:
         run: |
           mkdir tests/simulation_test/seq_files
           python tests/simulation_test/generate_seq_files.py ${{ matrix.notebook }}
-      
+      - name: Install dependencies
+        run: |
+          pip install pypulseq
+          pip install torchkbnufft
+
       - name: Cloning main branch
         run: |
           git clone https://github.com/MRsources/MRzero-Core.git main_branch

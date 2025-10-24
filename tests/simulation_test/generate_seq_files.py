@@ -4,8 +4,6 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
-import ast
-import pickle
 
 def extract_and_run_seq_function(notebook_path):
     """
