@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
+import config
 
 def extract_and_run_seq_function(notebook_path):
     """
@@ -91,20 +92,11 @@ def extract_and_run_seq_function(notebook_path):
 
 def main():
     args = sys.argv[1:]
-    notebook_paths = ["documentation/playground_mr0/mr0_FID_seq.ipynb",
-            "documentation/playground_mr0/mr0_SE_CPMG_seq.ipynb",
-            "documentation/playground_mr0/mr0_STE_3pulses_5echoes_seq.ipynb",
-            "documentation/playground_mr0/mr0_FLASH_2D_seq.ipynb",
-            "documentation/playground_mr0/mr0_EPI_2D_seq.ipynb",
-            "documentation/playground_mr0/mr0_DWI_SE_EPI.ipynb",
-            "documentation/playground_mr0/mr0_diffusion_prep_STEAM_2D_seq.ipynb",
-            "documentation/playground_mr0/mr0_RARE_2D_seq.ipynb",
-            "documentation/playground_mr0/mr0_TSE_2D_multi_shot_seq.ipynb",
-            "documentation/playground_mr0/mr0_GRE_to_FLASH.ipynb",
-            "documentation/playground_mr0/mr0_bSSFP_2D_seq.ipynb",
-            "documentation/playground_mr0/mr0_DREAM_STE_seq.ipynb"]
+    notebook_paths = config.NOTEBOOKS_TO_TEST
+    
     if args:
         notebook_paths = args
+
     for notebook_path in notebook_paths:
         if not os.path.exists(notebook_path):
             print(f"❌ Notebook not found: {notebook_path}")

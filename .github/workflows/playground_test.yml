@@ -15,21 +15,14 @@ jobs:
       - name: List all notebooks
         id: set-matrix
         run: |
-          NOTEBOOKS=$(printf '%s\n' \
-            documentation/playground_mr0/mr0_FID_seq.ipynb \
-            documentation/playground_mr0/mr0_SE_CPMG_seq.ipynb \
-            documentation/playground_mr0/mr0_STE_3pulses_5echoes_seq.ipynb \
-            documentation/playground_mr0/mr0_FLASH_2D_seq.ipynb \
-            documentation/playground_mr0/mr0_EPI_2D_seq.ipynb \
-            documentation/playground_mr0/mr0_DWI_SE_EPI.ipynb \
-            documentation/playground_mr0/mr0_diffusion_prep_STEAM_2D_seq.ipynb \
-            documentation/playground_mr0/mr0_RARE_2D_seq.ipynb \
-            documentation/playground_mr0/mr0_TSE_2D_multi_shot_seq.ipynb \
-            documentation/playground_mr0/mr0_GRE_to_FLASH.ipynb \
-            documentation/playground_mr0/mr0_bSSFP_2D_seq.ipynb \
-            documentation/playground_mr0/mr0_DREAM_STE_seq.ipynb \
-          | jq -R -s -c 'split("\n")[:-1]')
-          echo "matrix=$NOTEBOOKS" >> $GITHUB_OUTPUT
+          python -c "
+          import sys
+          sys.path.append('tests/simulation_test')
+          from config import NOTEBOOKS_TO_TEST
+          import json
+          print(json.dumps(NOTEBOOKS_TO_TEST))
+          " > notebooks.json
+          echo "matrix=$(cat notebooks.json)" >> $GITHUB_OUTPUT
 
   test-notebooks:
     needs: generate-matrix
