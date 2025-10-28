@@ -21,11 +21,12 @@ Use the PowerShell script in `simulation_test/` folder (run from project root di
 .\tests\simulation_test\test_simulation.ps1 documentation/playground_mr0/mr0_FLASH_2D_seq.ipynb
 ```
 
-**Note**: The script installs the main branch version of MRzeroCore during testing. If you cancel the test (Ctrl+C), make sure to reinstall your version:
-```powershell
-pip uninstall -y MRzeroCore
-pip install -e .
-```
+**Note**: The script uses a virtual environment (`.test_venv`) to isolate test dependencies from your global packages. The first run will create the virtual environment and install dependencies. Subsequent runs will reuse the existing environment for faster startup.
+
+**Virtual Environment Management:**
+- The virtual environment (`.test_venv`) is created in your project root directory
+- You can safely cancel tests (Ctrl+C) without affecting your global Python packages
+- To recreate the virtual environment, delete the `.test_venv` folder and run the script again
 
 **Requirements for testing all notebooks:**
 - Notebooks must be listed in `config.py` NOTEBOOKS_TO_TEST

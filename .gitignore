@@ -92,3 +92,6 @@ docs/_build/
 
 # cursor files
 .cursor/
+
+# test venv
+.test_venv/

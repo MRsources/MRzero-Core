@@ -1,5 +1,5 @@
 $packageName = "MRzeroCore"
-
+$venvName = ".test_venv"
 $mainBranch = "main_branch"
 
 function CleanFolder {
@@ -23,6 +23,31 @@ mkdir "tests\simulation_test\ref_files" -Force
 mkdir "tests\simulation_test\actual_files" -Force
 mkdir "tests\simulation_test\seq_files" -Force
 
+# Create virtual environment if it doesn't exist
+if (-not (Test-Path "$venvName\Scripts\Activate.ps1")) {
+    Write-Host "=========================== Creating virtual environment ==========================="
+    python -m venv $venvName
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "=========================== Failed ==========================="
+        Write-Host "Failed to create virtual environment. Exit code: $LASTEXITCODE"
+        CleanFolder
+        exit 1
+    }
+    
+    # Activate virtual environment
+    & "$venvName\Scripts\Activate.ps1"
+    Write-Host "Environment activated."
+    
+    Write-Host "=========================== Installing dependencies in virtual environment ==========================="
+    pip install pypulseq torchkbnufft nbformat --quiet
+    Write-Host "Dependencies installed."
+} else {
+    Write-Host "=========================== Using existing virtual environment ==========================="
+    # Activate existing virtual environment
+    & "$venvName\Scripts\Activate.ps1"
+    Write-Host "Environment activated."
+}
+
 Write-Host "=========================== Generate sequence files ==========================="
 if ($args.Count -gt 0) {
     # Check if the specified notebook exists
@@ -30,6 +55,7 @@ if ($args.Count -gt 0) {
     if (-not (Test-Path $notebookPath)) {
         Write-Host "=========================== Failed ==========================="
         Write-Host "Notebook not found: $notebookPath"
+        deactivate
         CleanFolder
         exit 1
     }
@@ -40,6 +66,7 @@ if ($args.Count -gt 0) {
 if ($LASTEXITCODE -ne 0) {
     Write-Host "=========================== Failed ==========================="
     Write-Host "Failed to generate sequence files. Exit code: $LASTEXITCODE"
+    deactivate
     CleanFolder
     exit
 } else {
@@ -51,24 +78,25 @@ git clone https://github.com/MRsources/MRzero-Core.git $mainBranch
 
 Write-Host "=========================== Installing main branch version ==========================="
 Set-Location $mainBranch
-pip uninstall -y $packageName
-pip install -e .
+pip install -e . --quiet
 Set-Location ..
+Write-Host "Main branch version installed."
 
 Write-Host "=========================== Generate reference data ==========================="
 python tests\simulation_test\generate_ref_files.py
 if ($LASTEXITCODE -ne 0) {
     Write-Host "=========================== Failed ==========================="
     Write-Host "Failed to generate reference data. Exit code: $LASTEXITCODE"
+    deactivate
     CleanFolder
     exit
 } else {
     Write-Host "All reference files generated successfully."
 }
 
-Write-Host "=========================== Uninstall main branch version and install current version ==========================="
-pip uninstall -y $packageName
-pip install -e .
+Write-Host "=========================== Installing current branch version ==========================="
+pip install -e . --quiet
+Write-Host "Current branch version installed."
 
 Write-Host "=========================== Generate actual data ==========================="
 python tests\simulation_test\generate_actual_files.py
@@ -76,6 +104,7 @@ python tests\simulation_test\generate_actual_files.py
 if ($LASTEXITCODE -ne 0) {
     Write-Host "=========================== Failed ==========================="
     Write-Host "Failed to generate actual data. Exit code: $LASTEXITCODE"
+    deactivate
     CleanFolder
     exit
 } else {
@@ -86,4 +115,6 @@ Write-Host "=========================== Run tests ==========================="
 python tests\simulation_test\test_simulation.py
 
 Write-Host "Cleaning ..."
+# Deactivate virtual environment before cleanup
+deactivate
 CleanFolder
