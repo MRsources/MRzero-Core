@@ -1,0 +1,76 @@
+name: Simulation Test
+
+on: [push, pull_request]
+
+jobs:
+  generate-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      notebook-matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: List all notebooks
+        id: set-matrix
+        run: |
+          python -c "
+          import sys
+          sys.path.append('tests/simulation_test')
+          from config import NOTEBOOKS_TO_TEST
+          import json
+          print(json.dumps(NOTEBOOKS_TO_TEST))
+          " > notebooks.json
+          echo "matrix=$(cat notebooks.json)" >> $GITHUB_OUTPUT
+
+  test-notebooks:
+    needs: generate-matrix
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        notebook: ${{fromJSON(needs.generate-matrix.outputs.notebook-matrix)}}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install pypulseq
+          pip install torchkbnufft
+          pip install nbformat
+
+      - name: Generate sequence file
+        run: |
+          mkdir tests/simulation_test/seq_files
+          python tests/simulation_test/generate_seq_files.py ${{ matrix.notebook }}
+
+      - name: Cloning main branch
+        run: |
+          git clone https://github.com/MRsources/MRzero-Core.git main_branch
+          mkdir tests/simulation_test/ref_files
+
+      - name: Installing main branch version
+        run: |
+          pip install -e ./main_branch
+
+      - name: Generate reference files
+        run: |
+          python tests/simulation_test/generate_ref_files.py
+      
+      - name: Uninstall main branch version and install current version
+        run: |
+          pip uninstall -y MRzeroCore
+          pip install -e .
+
+      - name: Generate actual files
+        run: |
+          mkdir tests/simulation_test/actual_files
+          python tests/simulation_test/generate_actual_files.py
+
+      - name: Run Simulation Test
+        run: |
+          python tests/simulation_test/test_simulation.py
