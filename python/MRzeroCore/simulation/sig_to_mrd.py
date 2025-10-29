@@ -340,7 +340,7 @@ def _label_limits(
     type_limits = ismrmrd.xsd.limitType(
         minimum=int(np.min(label_evol)),
         maximum=int(np.max(label_evol)),
-        center=int((np.max(label_evol) - np.min(label_evol)) // 2),
+        center=int((np.max(label_evol) - np.min(label_evol)) // 2 + 1 if label in ('LIN', 'PAR') else 0),
     )
 
     return type_limits
