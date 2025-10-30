@@ -172,15 +172,9 @@ def execute_graph(graph: Graph,
             #phi_L = torch.arctan(L_i/L_r)  
             phi_L = torch.arctan2(L_i,L_r) 
            
-            # Matrix elements as derived 
-            # z_to_p = -0.70710678118j * torch.sqrt(L_r**2 + L_i**2) * torch.cos(Delta) * torch.exp(1j*(phase+phi_L))
-            # p_to_z = -z_to_p.conj()
-            # m_to_z = -z_to_p
-            
-            # manipulated to mach the sign convention asserted by the on-resonant marix
             z_to_p = -0.70710678118j * torch.sqrt(L_r**2 + L_i**2) * torch.cos(Delta) * torch.exp(1j*(phase+phi_L))
-            p_to_z = z_to_p          
-            m_to_z = z_to_p.conj()      
+            p_to_z = -z_to_p.conj()         
+            m_to_z = -z_to_p      
             
             # Refocussed magnetisation
             #m_to_p = (1 - p_to_p) * torch.exp(2j*phase)
