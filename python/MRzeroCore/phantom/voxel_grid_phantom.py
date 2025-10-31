@@ -564,15 +564,18 @@ class VoxelGridPhantom:
 
 def recover(mask, sim_data: SimData) -> VoxelGridPhantom:
     """Provided to :class:`SimData` to reverse the ``build()``"""
+
+    mask = mask.to(sim_data.device)
+    
     def to_full(sparse):
         assert sparse.ndim < 3
         if sparse.ndim == 2:
             full = torch.zeros(
-                [sparse.shape[0], *mask.shape], dtype=sparse.dtype)
-            full[:, mask] = sparse.cpu()
+                [sparse.shape[0], *mask.shape], dtype=sparse.dtype, device=mask.device)
+            full[:, mask] = sparse
         else:
-            full = torch.zeros(mask.shape)
-            full[mask] = sparse.cpu()
+            full = torch.zeros(mask.shape, device=mask.device)
+            full[mask] = sparse
         return full
 
     return VoxelGridPhantom(
