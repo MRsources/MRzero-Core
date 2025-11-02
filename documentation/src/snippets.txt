@@ -1,0 +1,7 @@
+// ANCHOR: colab_button
+![](https://colab.research.google.com/assets/colab-badge.svg)
+// ANCHOR_END: colab_button
+
+// ANCHOR: colab_url
+https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0
+// ANCHOR_END: colab_url
