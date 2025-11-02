@@ -1,4 +1,6 @@
 # Summary
 
-- [Chapter 1](./chapter_1.md)
+[Introduction](README.md)
+
 - [Playground](./playground.md)
+- [Literature](./literature.md)
