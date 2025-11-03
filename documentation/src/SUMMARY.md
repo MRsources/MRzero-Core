@@ -2,7 +2,9 @@
 
 [Introduction](README.md)
 
-# Guide
+---
+
+# 📝 Examples
 
 - [Playground](playground.md)
 - [Integration](integration.md)
@@ -11,9 +13,14 @@
     - [Pulseq-zero]()
     - [ISMRMD]()
 - [FAQ](faq.md)
-- [Literature](literature.md)
 
-# API
+---
+
+# 🖥️ MRzeroCore - API
 
 - [State selection](api/state_selection.md)
 - [Todo]()
+
+---
+
+[Literature](literature.md)
