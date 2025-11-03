@@ -2,11 +2,14 @@
 
 [Introduction](README.md)
 
-# Guides
+# Guide
 
 - [Playground](playground.md)
-- [Pulseq Integration](pulseq.md)
-- [Matlab Integration](matlab.md)
+- [Integration](integration.md)
+    - [Pulseq Integration](integration-pulseq.md)
+    - [Matlab Integration](integration-matlab.md)
+    - [Pulseq-zero]()
+    - [ISMRMD]()
 - [FAQ](faq.md)
 - [Literature](literature.md)
 
