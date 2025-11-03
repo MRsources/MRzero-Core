@@ -84,6 +84,7 @@ def sig_to_mrd(
 
     # Write each ADC object to an mrd acquisition
     current_sample = 0
+    current_traj_sample = 0
     scan_counter = 1
     for n_acq, adc_id in enumerate(adc_ids):
         # Read the number of samples and dwell time for the current ADC
@@ -94,11 +95,17 @@ def sig_to_mrd(
         num_samples_adc = int(adc_obj[0])
         dwell = float(adc_obj[1])
 
-        # Extract signal and k-space trajectory for the current ADC
-        s_acq = mr0_signal_numpy[current_sample : current_sample + num_samples_adc, :]
-        k_acq = kadc[:, current_sample : current_sample + num_samples_adc]
-
-        current_sample += num_samples_adc
+        # Extract signal and k-space trajectory for the current ADC. If it is a noise sample than no signal is available
+        k_acq = kadc[:, current_traj_sample : current_traj_sample + num_samples_adc]
+        current_traj_sample += num_samples_adc
+        if "NOISE" in labels and labels["NOISE"][n_acq] > 0:
+            s_acq = np.zeros(
+                (num_samples_adc, mr0_signal_numpy.shape[1]), dtype=mr0_signal_numpy.dtype
+            )
+        else:
+            s_acq = mr0_signal_numpy[current_sample : current_sample + num_samples_adc, :]
+            current_sample += num_samples_adc
+        
 
         # Split the k-space trajectory and data into multiple segments depending on the maximum segment length
         k_acq, s_acq = _split_adc_sets(k_acq, s_acq, max_segment_samples)
@@ -348,3 +355,4 @@ def _label_limits(
 
 def _to_list(v):
     return v if isinstance(v, list) else [v]
+
