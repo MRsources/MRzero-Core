@@ -68,11 +68,18 @@ maturin build --interpreter python
 docker run --rm -v <path-to-repo>/MRzero-Core:/io ghcr.io/pyo3/maturin build
 ```
 
-To **build the documentation**, run
+**Building the documentation**
+
+Install newest (beta) version of mdBook:
+```bash
+cargo install --git https://github.com/rust-lang/mdBook.git mdbook
 ```
-jupyter-book build documentation/
+
+Run a live-preview server:
+```bash
+# in the root directory:
+mdbook serve documentation
 ```
-in the root folder of this project. This requires jupyter-book as well as MRzeroCore itself to be installed.
 
 
 ## Official builds
