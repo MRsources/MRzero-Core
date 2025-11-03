@@ -12,4 +12,5 @@
 
 # API
 
+- [State selection](api/state_selection.md)
 - [Todo]()
