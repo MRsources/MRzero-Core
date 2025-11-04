@@ -9,17 +9,16 @@ For detailed descriptions of each items, look at their Python docstrings (as wri
 ```python
 import MRzeroCore as mr0
 ```
-- [Sequence building blocks](sequence.md)
-    - [`mr0.Sequence`](sequence.md#sequence)
-    - [`mr0.chain`](sequence.md#chain)
-    - [`mr0.Repetition`](sequence.md#repetition)
-    - [`mr0.Pulse`](sequence.md#pulse)
-    - [`mr0.PulseUsage`](sequence.md#pulseusage)
+- [Sequence building blocks](api-sequence.md)
+    - [`mr0.Sequence`](api-sequence.md#sequence)
+    - [`mr0.chain`](api-sequence.md#chain)
+    - [`mr0.Repetition`](api-sequence.md#repetition)
+    - [`mr0.Pulse`](api-sequence.md#pulse)
+    - [`mr0.PulseUsage`](api-sequence.md#pulseusage)
 - Simulation data
-    - `mr0.VoxelGridPhantom`
-    - `mr0.CustomVoxelPhantom`
-    - `mr0.SimData`
-    - `mr0.generate_brainweb_phantoms`
+    - [`mr0.SimData`](api-phantom.md#simdata)
+    - [`mr0.VoxelGridPhantom`](api-phantom.md#voxelgridphantom)
+    - [`mr0.CustomVoxelPhantom`](api-phantom.md#customvoxelphantom)
 - Simulation
     - `mr0.isochromat_sim`
     - `mr0.compute_graph`
@@ -29,6 +28,7 @@ import MRzeroCore as mr0
 - `mr0.sig_to_mrd`
 - `mr0.reco_adjoint`
 - `mr0.pulseq_write_cartesian`
+- `mr0.generate_brainweb_phantoms`
 - `util` module
     - `mr0.util.get_signal_from_real_system`
     - `mr0.util.insert_signal_plot`

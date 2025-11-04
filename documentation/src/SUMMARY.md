@@ -18,10 +18,11 @@
 
 # 🖥️ MRzeroCore
 
-- [Generating phantoms](phantoms.md)
+- [🔧 Generating phantoms](phantoms.md)
 - [State selection](state_selection.md)
 - [API overview](api.md)
     - [Sequence building blocks](api-sequence.md)
+    - [Simulation Phantoms](api-phantom.md)
 
 ---
 
