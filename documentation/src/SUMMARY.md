@@ -23,6 +23,7 @@
 - [API overview](api.md)
     - [Sequence building blocks](api-sequence.md)
     - [Simulation Phantoms](api-phantom.md)
+    - [Simulation](api-simulation.md)
     - [Reconstruction methods](api-reconstruction.md)
 
 ---

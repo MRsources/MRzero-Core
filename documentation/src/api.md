@@ -20,11 +20,11 @@ import MRzeroCore as mr0
     - [`mr0.VoxelGridPhantom`](api-phantom.md#voxelgridphantom)
     - [`mr0.CustomVoxelPhantom`](api-phantom.md#customvoxelphantom)
 - Simulation
-    - `mr0.isochromat_sim`
-    - `mr0.compute_graph`
-    - `mr0.compute_graph_ext`
-    - `mr0.Graph`
-    - `mr0.execute_graph`
+    - [`mr0.isochromat_sim`](api-simulation.md#isochromat_sim)
+    - [`mr0.compute_graph`](api-simulation.md#compute_graph)
+    - [`mr0.compute_graph_ext`](api-simulation.md#compute_graph_ext)
+    - [`mr0.Graph`](api-simulation.md#graph)
+    - [`mr0.execute_graph`](api-simulation.md#execute_graph)
 - `mr0.sig_to_mrd`
 - [`mr0.reco_adjoint`](api-reconstruction.md#reco_adjoint)
 - `mr0.pulseq_write_cartesian`
