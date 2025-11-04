@@ -26,7 +26,7 @@ import MRzeroCore as mr0
     - `mr0.Graph`
     - `mr0.execute_graph`
 - `mr0.sig_to_mrd`
-- `mr0.reco_adjoint`
+- [`mr0.reco_adjoint`](api-reconstruction.md#reco_adjoint)
 - `mr0.pulseq_write_cartesian`
 - `mr0.generate_brainweb_phantoms`
 - `util` module
