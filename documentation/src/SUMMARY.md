@@ -10,16 +10,17 @@
 - [Integration](integration.md)
     - [Pulseq Integration](integration-pulseq.md)
     - [Matlab Integration](integration-matlab.md)
-    - [Pulseq-zero]()
+    - [Pulseq-zero](integration-pulseqzero.md)
     - [ISMRMD]()
 - [FAQ](faq.md)
 
 ---
 
-# 🖥️ MRzeroCore - API
+# 🖥️ MRzeroCore
 
-- [State selection](api/state_selection.md)
-- [Todo]()
+- [State selection](state_selection.md)
+- [API overview](api.md)
+    - [Sequence building blocks](api-sequence.md)
 
 ---
 
