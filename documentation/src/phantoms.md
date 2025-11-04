@@ -1,7 +1,5 @@
-(generating_phantoms)=
-```{eval-rst}
-.. currentmodule:: MRzeroCore
-```
+> [!CAUTION]
+> This document might be outdated. We definitely should include **NIfTI Phantoms** here
 
 # Generating Phantoms
 
