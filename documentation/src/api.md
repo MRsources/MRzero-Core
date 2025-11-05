@@ -25,10 +25,10 @@ import MRzeroCore as mr0
     - [`mr0.compute_graph_ext`](api-simulation.md#compute_graph_ext)
     - [`mr0.Graph`](api-simulation.md#graph)
     - [`mr0.execute_graph`](api-simulation.md#execute_graph)
-- `mr0.sig_to_mrd`
 - [`mr0.reco_adjoint`](api-reconstruction.md#reco_adjoint)
-- `mr0.pulseq_write_cartesian`
-- `mr0.generate_brainweb_phantoms`
+- [`mr0.sig_to_mrd`](api-unsorted.md#sig_to_mrd)
+- [`mr0.pulseq_write_cartesian`](api-unsorted.md#pulseq_write_cartesian)
+- [`mr0.generate_brainweb_phantoms`](api-unsorted.md#generate_brainweb_phantoms)
 - `util` module
     - `mr0.util.get_signal_from_real_system`
     - `mr0.util.insert_signal_plot`
