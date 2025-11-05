@@ -82,6 +82,7 @@ Parameters of this function are identical to those of [`SimData`](#simdata), exc
 They are indexed `[(channel), x, y, z]`.
 
 - `VoxelGridPhantom.load(file_name)`: Loading phantom from a .npz file
+- `VoxelGridPhantom.load_mat(file_name, ...)`: Loading phantom from a .mat file
 - `VoxelGridPhantom.slices(slices)`: Removing all but the specified list of slices (in z direction)
 - `VoxelGridPhantom.scale_fft()`: Resizing the phantom by doing FFT -> truncate -> FFt
 - `VoxelGridPhantom.interpolate()`: Resizing the phantom by using `torch.nn.functional.interpolate(..., mode='trilinear')`
