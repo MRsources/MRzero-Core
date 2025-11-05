@@ -1,14 +1,12 @@
-(generating_phantoms)=
-```{eval-rst}
-.. currentmodule:: MRzeroCore
-```
+> [!CAUTION]
+> This document might be outdated. We definitely should include **NIfTI Phantoms** here
 
 # Generating Phantoms
 
 Phantoms are built from [BrainWeb](https://brainweb.bic.mni.mcgill.ca/) data. This data is not included directly.
 Instead, a BrainWeb downloader is part of `mr0`, that can be run once to download all segmentation data provided by BrainWeb, which is then filled to produce files that can be loaded as mentioned [here](load_brainweb).
 
-Phantoms can be generated with different configurations, depending on the use-case, like 3T or 7T data, high-res, or whether to include fat are options. A fixed set of configuartions facilitates reproducibility. To execute generation, just run the following code:
+Phantoms can be generated with different configurations, depending on the use-case, like 3T or 7T data, high-res, or whether to include fat are options. A fixed set of configuartions facilitates reproducibility. To execute generation, just use [`mr0.generate_brainweb_phantoms`](api-unsorted.md#generate_brainweb_phantoms):
 
 ```python
 import MRzeroCore as mr0

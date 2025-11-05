@@ -1,10 +1,10 @@
-# FAQ & Troubleshooting
+# Frequently asked questions
 
 Common questions and solutions for MRzero Core and Pulseq integration.
 
-## **Q: What's the easiest way to simulate a sequence?**
+## What's the easiest way to simulate a sequence?
 
-**A:** Code or export your sequence as Puslseq file. One line:
+**A:** Code and export your sequence as Pulseq file. One line:
 ```python
 import MRzeroCore as mr0
 
@@ -14,7 +14,8 @@ signal, ktraj_adc = mr0.util.simulate('your_sequence.seq')
 
 For complete Pulseq integration features, see: [Pulseq Integration Guide →](pulseq_integration.html)
 
-## **Q: Can I simulate PyPulseq sequences directly without writing .seq files?**
+
+## Can I simulate PyPulseq sequences directly without writing .seq files?
 
 **A:** Yes! This is new functionality:
 ```python
@@ -31,7 +32,8 @@ signal, ktraj_adc = mr0.util.simulate(seq)  # seq is PyPulseq object
 Note, this is will still generate a temporary seq file.
 For avoiding seq files completely, check out [Pulseq-zero](https://github.com/pulseq-frame/pulseq-zero) 
 
-## **Q: How do I use custom phantoms with B0 field modifications?**
+
+## How do I use custom phantoms with B0 field modifications?
 
 **A:** 
 ```python
@@ -50,28 +52,33 @@ obj.T2 = 80e-3         # Custom relaxation times
 signal, ktraj_adc = mr0.util.simulate(seq, obj, accuracy=1e-5)
 ```
 
-## **Q: Does MRzero support ISMRMRD raw data format?**
+
+## Does MRzero support ISMRMRD raw data format?
 
 **A:** Current status: ISMRMRD raw data support is **not yet available**, but development is underway as a first pull request exists. So it can be expected in upcoming releases.
 Stay updated:
 - Watch the [GitHub repository](https://github.com/MRsources/MRzero-Core) for ISMRMRD support announcements
 - Check [release notes](https://github.com/MRsources/MRzero-Core/releases) for new features
 
-## **Q: My .seq file won't load / import fails**
 
-**A:** We are most compatible with Pulseq 1.4.2., 1.3 and 1.5 shoudl work but might need some different load and plot functions. See also in the comments of the 
- [![Load seq file Colab Notebook](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_upload_seq.ipynb)
- 
-## **Q: Getting version compatibility errors**
+## My .seq file won't load / import fails
+
+**A:** Pulseq 1.4.2 is used and tested by us the most. Pulseq 1.3 and 1.5 should work too, but might need some different load and plot functions.
+
+See also in the comments in [mr0_upload_seq.ipynb ![](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_upload_seq.ipynb)
+
+
+## Getting version compatibility errors
 
 **A:** Most issues are resolved by:
 - Using matching Pulseq versions between creation and simulation
 - Updating to latest MRzeroCore: `pip install --upgrade MRzeroCore`
 - Checking [GitHub Issues](https://github.com/MRsources/MRzero-Core/issues) for known compatibility problems
 
-## **Q: Simulation is too slow / runs out of memory**
 
-**A:**  Reduce sequence resolution, go to single slice, reduce phantom resolution, reduce accuracy.
+## Simulation is too slow / runs out of memory
+
+**A:** Reduce sequence resolution, go to single slice, reduce phantom resolution, reduce accuracy.
 ```python
 # Reduce phantom size for testing
 phantom = mr0.util.load_phantom(size=(32, 32))  # Instead of (128, 128)
@@ -83,7 +90,8 @@ signal = mr0.util.simulate(seq, accuracy=1e-2)  # Default: 1e-3
 # Remove unnecessary repetitions during development
 ```
 
-## **Q: GPU not being used / CUDA errors**
+
+## GPU not being used / CUDA errors
 
 **A:** 
 ```python
@@ -98,7 +106,8 @@ graph = mr0.compute_graph(seq0, obj, 200, 1e-4)
 signal = mr0.execute_graph(graph, seq0.cuda(), obj.cuda(), 0.01, 0.01)
 ```
 
-## **Q: How does MRzero handle slice-selective pulses?**
+
+## How does MRzero handle slice-selective pulses?
 
 **A:** Current limitation: MRzero uses instantaneous pulses and currently **ignores slice selection gradients**. This means:
 
@@ -117,7 +126,8 @@ Workarounds:
 1. **For 2D simulations**: Use thin phantom slices to approximate slice selection
 2. **For comparison with Scans**: Consider this limitation when comparing to real measurements, apparent flip angles might be smaller due to slice profile effects. 
 
-## **Q: How do I choose the right accuracy parameter?**
+
+## How do I choose the right accuracy parameter?
 
 **A:** The `accuracy` parameter controls simulation precision vs speed. When in doubt rerun with higher accuracy.
 
@@ -132,25 +142,29 @@ signal = mr0.util.simulate(seq, accuracy=1e-2)  # Development/testing
 signal = mr0.util.simulate(seq, accuracy=1e-1)  # Initial debugging only
 ```
 
-## **Q: What does the accuracy parameter actually control?**
+
+## What does the accuracy parameter actually control?
 
 **A:** It sets the `min_emitted_signal` and `min_latent_signal` thresholds in the PDG simulation:
 - Lower values = more computation but higher precision
 - Higher values = faster simulation but potential artifacts
 - For sequences with small signals (like multi-echo), use lower values
 
-## **Q: Does MRzero support magnetization transfer effects?**
+
+## Does MRzero support magnetization transfer effects?
 
 **A:** Current status: MRzero currently does **not model MT effects**. The simulation assumes:
 - Single pool (free water) only
 - No bound pool interactions
 - No MT saturation effects
 
-## **Q: How accurate is diffusion simulation in MRzero?**
+
+## How accurate is diffusion simulation in MRzero?
 
 **A:** MRzero handles currently only isotropic diffusion, using the EPG equations from [Weigel et al.](https://doi.org/10.1016/j.jmr.2010.05.011):
 
-## **Q: How are relaxation times handled?**
+
+## How are relaxation times handled?
 
 **A:** 
 ```python
@@ -167,7 +181,7 @@ Tips:
 - T2' does NOT include intravoxel B0 inhomogeneity effects, this can be achieved by high enough B0 map resolution.
 
 
-## **Q: Sequence created in MATLAB doesn't work in Python**
+## Sequence created in MATLAB doesn't work in Python
 
 **A:** Check Pulseq version compatibility
 ```python

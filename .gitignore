@@ -1,6 +1,5 @@
 /target
-/documentation/_autosummary
-/documentation/_build
+/documentation/book
 out/
 *.seq
 *.env
