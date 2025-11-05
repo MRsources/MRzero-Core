@@ -7,7 +7,7 @@ This guide shows how to seamlessly integrate MATLAB Pulseq with Python MR-zero f
 *Already have MATLAB Pulseq sequences?* Get started in 3 steps:
 
 1. **Export your sequence**: `seq.write('my_sequence.seq')` in MATLAB
-2. **Upload to Colab**: Use our ([mr0_upload_seq.ipynb {{#include snippets.txt:colab_button}}]({{#include snippets.txt:colab_url}}/mr0_upload_seq.ipynb))
+2. **Upload to Colab**: Use our ([mr0_upload_seq.ipynb ![](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_upload_seq.ipynb))
 3. **Simulate instantly**: No Python installation required!
 
 ## Integration Workflows
@@ -31,7 +31,7 @@ seq = mr0.Sequence.import_file('my_flash.seq')
 signal = mr0.util.simulate(seq)
 ```
 
-You can just upload your seq file in [mr0_upload_seq.ipynb {{#include snippets.txt:colab_button}}]({{#include snippets.txt:colab_url}}/mr0_upload_seq.ipynb)
+You can just upload your seq file in [mr0_upload_seq.ipynb ![](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_upload_seq.ipynb)
 
 ### Workflow 2: MATLAB seq creation → Call Python from Matlab using sys command
 

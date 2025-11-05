@@ -33,7 +33,7 @@ mr0.util.insert_signal_plot(seq=seq, signal =signal.numpy())
 plt.show()
 ```
 
-**Try now**: [mr0_upload_seq.ipynb {{#include snippets.txt:colab_button}}]({{#include snippets.txt:colab_url}}/mr0_upload_seq.ipynb)
+**Try now**: [mr0_upload_seq.ipynb ![](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_upload_seq.ipynb)
 
 ## Simplified Workflows
 
@@ -80,13 +80,13 @@ See [MATLAB integration](matlab.md)
 
 ## Examples - Ready-to-run in Google Colab
 
-| Notebook | Complexity | {{#include snippets.txt:colab_button}} |
-| -------- | ---------- | -------------------------------------- |
-| Simulate own uploaded seq files | Beginner | [mr0_upload_seq.ipynb]({{#include snippets.txt:colab_url}}/mr0_upload_seq.ipynb) |
-| FLASH 2D sequence | Beginner | [mr0_FLASH_2D_seq.ipynb]({{#include snippets.txt:colab_url}}/mr0_FLASH_2D_seq.ipynb) |
-| GRE EPI 2D sequence | Intermediate | [mr0_EPI_2D_seq.ipynb]({{#include snippets.txt:colab_url}}/mr0_EPI_2D_seq.ipynb) |
-| DWI SE EPI 2D sequence | Advanced | [mr0_DWI_SE_EPI.ipynb]({{#include snippets.txt:colab_url}}/mr0_DWI_SE_EPI.ipynb) |
-| TSE 2D sequence | Advanced | [mr0_TSE_2D_multi_shot_seq.ipynb]({{#include snippets.txt:colab_url}}/mr0_TSE_2D_multi_shot_seq.ipynb) |
+| Notebook | Complexity | ![](https://colab.research.google.com/assets/colab-badge.svg) |
+| -------- | ---------- | ------------------------------------------------------------- |
+| Simulate own uploaded seq files | Beginner | [mr0_upload_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_upload_seq.ipynb) |
+| FLASH 2D sequence | Beginner | [mr0_FLASH_2D_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_FLASH_2D_seq.ipynb) |
+| GRE EPI 2D sequence | Intermediate | [mr0_EPI_2D_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_EPI_2D_seq.ipynb) |
+| DWI SE EPI 2D sequence | Advanced | [mr0_DWI_SE_EPI.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_DWI_SE_EPI.ipynb) |
+| TSE 2D sequence | Advanced | [mr0_TSE_2D_multi_shot_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_TSE_2D_multi_shot_seq.ipynb) |
 
 
 [**Browse All 20+ Examples →**](playground.md)

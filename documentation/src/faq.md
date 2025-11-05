@@ -65,7 +65,7 @@ Stay updated:
 
 **A:** Pulseq 1.4.2 is used and tested by us the most. Pulseq 1.3 and 1.5 should work too, but might need some different load and plot functions.
 
-See also in the comments in [mr0_upload_seq.ipynb {{#include snippets.txt:colab_button}}]({{#include snippets.txt:colab_url}}/mr0_upload_seq.ipynb)
+See also in the comments in [mr0_upload_seq.ipynb ![](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_upload_seq.ipynb)
 
 
 ## Getting version compatibility errors
