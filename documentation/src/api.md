@@ -15,27 +15,28 @@ import MRzeroCore as mr0
     - [`mr0.Repetition`](api-sequence.md#repetition)
     - [`mr0.Pulse`](api-sequence.md#pulse)
     - [`mr0.PulseUsage`](api-sequence.md#pulseusage)
-- Simulation data
+- [Simulation data](api-phantom.md)
     - [`mr0.SimData`](api-phantom.md#simdata)
     - [`mr0.VoxelGridPhantom`](api-phantom.md#voxelgridphantom)
     - [`mr0.CustomVoxelPhantom`](api-phantom.md#customvoxelphantom)
-- Simulation
+- [Simulation](api-simulation.md)
     - [`mr0.isochromat_sim`](api-simulation.md#isochromat_sim)
     - [`mr0.compute_graph`](api-simulation.md#compute_graph)
     - [`mr0.compute_graph_ext`](api-simulation.md#compute_graph_ext)
     - [`mr0.Graph`](api-simulation.md#graph)
     - [`mr0.execute_graph`](api-simulation.md#execute_graph)
-- [`mr0.reco_adjoint`](api-reconstruction.md#reco_adjoint)
+- [Reconstruction](api-reconstruction.md)
+    - [`mr0.reco_adjoint`](api-reconstruction.md#reco_adjoint)
+- [`util` module](api-util.md)
+    - [`mr0.util.get_signal_from_real_system`](api-util.md#get_signal_from_real_system)
+    - [`mr0.util.insert_signal_plot`](api-util.md#insert_signal_plot)
+    - [`mr0.util.pulseq_plot`](api-util.md#pulseq_plot)
+    - [`mr0.util.pulseq_plot_142`](api-util.md#pulseq_plot_142)
+    - [`mr0.util.pulseq_plot_pre14`](api-util.md#pulseq_plot_pre14)
+    - [`mr0.util.imshow`](api-util.md#imshow)
+    - [`mr0.util.load_phantom`](api-util.md#load_phantom)
+    - [`mr0.util.simulate`](api-util.md#simulate)
+    - [`mr0.util.simulate_2d`](api-util.md#simulate_2d)
 - [`mr0.sig_to_mrd`](api-unsorted.md#sig_to_mrd)
 - [`mr0.pulseq_write_cartesian`](api-unsorted.md#pulseq_write_cartesian)
 - [`mr0.generate_brainweb_phantoms`](api-unsorted.md#generate_brainweb_phantoms)
-- `util` module
-    - `mr0.util.get_signal_from_real_system`
-    - `mr0.util.insert_signal_plot`
-    - `mr0.util.pulseq_plot`
-    - `mr0.util.pulseq_plot_142`
-    - `mr0.util.pulseq_plot_pre14`
-    - `mr0.util.imshow`
-    - `mr0.util.load_phantom`
-    - `mr0.util.simulate`
-    - `mr0.util.simulate_2d`

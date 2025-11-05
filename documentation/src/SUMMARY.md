@@ -26,6 +26,7 @@
     - [Simulation Phantoms](api-phantom.md)
     - [Simulation](api-simulation.md)
     - [Reconstruction methods](api-reconstruction.md)
+    - [util module](api-util.md)
     - [Other methods](api-unsorted.md)
 
 ---
