@@ -33,15 +33,14 @@ chapters:
   - file: playground_mr0/mr0_STE_3pulses_5echoes_seq.ipynb
   - file: playground_mr0/mr0_FLASH_2D_seq.ipynb
   - file: playground_mr0/mr0_EPI_2D_seq.ipynb
-  - file: playground_mr0/mr0_RARE_2D_seq.ipynb
-  - file: playground_mr0/mr0_bSSFP_2D_seq.ipynb
+  - file: playground_mr0/mr0_DWI_SE_EPI.ipynb
   - file: playground_mr0/mr0_diffusion_prep_STEAM_2D_seq.ipynb
+  - file: playground_mr0/mr0_RARE_2D_seq.ipynb
+  - file: playground_mr0/mr0_TSE_2D_multi_shot_seq.ipynb
   - file: playground_mr0/mr0_GRE_to_FLASH.ipynb
+  - file: playground_mr0/mr0_bSSFP_2D_seq.ipynb
   - file: playground_mr0/mr0_DREAM_STE_seq.ipynb
   - file: playground_mr0/mr0_DREAM_STID_seq.ipynb
-  - file: playground_mr0/mr0_burst_TSE.ipynb
-  - file: playground_mr0/mr0_CS_cartesian_seq.ipynb
-  - file: playground_mr0/mr0_CS_radial_seq.ipynb
   - file: playground_mr0/pulseq_rf_shim.ipynb
 
   - file: playground_mr0/mr0_pypulseq_exmpls_seq.ipynb
@@ -49,11 +48,12 @@ chapters:
 
   - file: playground_mr0/mr0_opt_FLASH_2D_IR_Fit_T1.ipynb
   - file: playground_mr0/mr0_opt_FLASH_2D_IR_voxelNN_T1.ipynb
+  - file: playground_mr0/Pulseq_zero_FLASH_FAopt_PSFtask.ipynb
+  - file: playground_mr0/Pulseq_zero_TSE_FAopt_SARtask.ipynb
+  - file: playground_mr0/pulseq_zero_DESC_demo.ipynb
 
   - file: playground_mr0/mr00_FLASH_2D_ernstAngle_opt.ipynb
 
   - file: playground_mr0/flash
-  - file: playground_mr0/flash_DWI
   - file: playground_mr0/pulseq_flash
   - file: playground_mr0/pulseq_sim_pTx
-  - file: playground_mr0/pulseq_zero_DESC_demo
