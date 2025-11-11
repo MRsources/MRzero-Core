@@ -9,6 +9,11 @@ GitHub workflow that validates changes to the MRzero-Core simulation engine don'
 - Multiple MR sequence types (FID, SE, STE, FLASH, EPI, DWI, RARE, TSE, etc.)
 - 11 different accuracy levels (0.6 to 0.00001)
 
+**When it runs:**
+- **On pull requests targeting main** - validates changes before merging to catch issues early
+
+**Note:** The workflow only runs on pull requests targeting the main branch (not on every push or pull request) because the simulations take time to complete.
+
 ## Running Tests Locally
 
 Use the PowerShell script in `simulation_test/` folder (run from project root directory):

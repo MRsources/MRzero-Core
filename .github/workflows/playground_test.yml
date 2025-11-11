@@ -1,7 +1,7 @@
 name: Playground Notebooks Test
 
 on:
-  push:
+  pull_request:
     branches: [ main ]
   workflow_dispatch:
   schedule:
