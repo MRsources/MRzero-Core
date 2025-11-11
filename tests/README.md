@@ -60,3 +60,24 @@ Modify `config.py` to add/remove notebooks or adjust test parameters.
 ## Playground Test
 
 GitHub workflow that tests Jupyter notebook execution in a Colab-like environment to ensure notebooks work online.
+
+**What it tests:**
+- Execution of all playground notebooks to ensure they run without errors
+- Validates that notebooks work in a clean environment similar to Google Colab
+
+**Finding Workflow Results:**
+
+You can view the results of the Playground Test workflow in GitHub:
+
+1. **Navigate to the Actions tab** in your GitHub repository
+2. **Click on "Playground Notebooks Test"** in the left sidebar
+3. **Select a workflow run** from the list to see:
+   - Overall workflow status (success/failure)
+   - Individual notebook test results
+   - Detailed logs for each test step
+   - Any errors or failures that occurred
+
+The workflow runs automatically:
+- **When branches are merged to main** - to verify notebooks work after merging
+- **Weekly** - every Sunday at 00:00 UTC to ensure notebooks remain functional
+- **Manually** - you can trigger it anytime from the Actions tab by clicking "Run workflow"
