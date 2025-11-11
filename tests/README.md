@@ -9,6 +9,11 @@ GitHub workflow that validates changes to the MRzero-Core simulation engine don'
 - Multiple MR sequence types (FID, SE, STE, FLASH, EPI, DWI, RARE, TSE, etc.)
 - 11 different accuracy levels (0.6 to 0.00001)
 
+**When it runs:**
+- **On pull requests targeting main** - validates changes before merging to catch issues early
+
+**Note:** The workflow only runs on pull requests targeting the main branch (not on every push or pull request) because the simulations take time to complete.
+
 ## Running Tests Locally
 
 Use the PowerShell script in `simulation_test/` folder (run from project root directory):
@@ -60,3 +65,24 @@ Modify `config.py` to add/remove notebooks or adjust test parameters.
 ## Playground Test
 
 GitHub workflow that tests Jupyter notebook execution in a Colab-like environment to ensure notebooks work online.
+
+**What it tests:**
+- Execution of all playground notebooks to ensure they run without errors
+- Validates that notebooks work in a clean environment similar to Google Colab
+
+**Finding Workflow Results:**
+
+You can view the results of the Playground Test workflow in GitHub:
+
+1. **Navigate to the Actions tab** in your GitHub repository
+2. **Click on "Playground Notebooks Test"** in the left sidebar
+3. **Select a workflow run** from the list to see:
+   - Overall workflow status (success/failure)
+   - Individual notebook test results
+   - Detailed logs for each test step
+   - Any errors or failures that occurred
+
+The workflow runs automatically:
+- **When branches are merged to main** - to verify notebooks work after merging
+- **Weekly** - every Sunday at 00:00 UTC to ensure notebooks remain functional
+- **Manually** - you can trigger it anytime from the Actions tab by clicking "Run workflow"
