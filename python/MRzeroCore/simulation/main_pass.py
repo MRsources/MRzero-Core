@@ -145,7 +145,8 @@ def execute_graph(graph: Graph,
         if (rep.gradm > gradient_threshold).any():
             acc_phase = 0  # reset accumulated phase if there are spoiler gradients present in the current repetition        
         
-        phase = phase + B1.angle()                
+        phase = phase + B1.angle()   
+        rep.pulse.pulse_freq = rep.pulse.pulse_freq * B1.abs()                 
         
         # Simulate pulse with off-resonance treatment 
         if rep.pulse.off_res:
