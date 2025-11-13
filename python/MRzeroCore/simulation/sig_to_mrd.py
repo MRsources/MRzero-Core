@@ -60,7 +60,7 @@ def sig_to_mrd(
     dataset.write_xml_header(ismrmrd.xsd.ToXML(mrd_head))
 
     # Calcuate the k-space trajectory and sample times
-    kadc, _, _, _, _ = seq.calculate_kspace()
+    kadc, _, _, _, tadc = seq.calculate_kspace()
 
     # A single ADC object has a maximum sample limit that is defined in the sequence.
     # Usually longer readouts are written into multiple ADC objects with increasing 'set' encodes.
@@ -97,6 +97,7 @@ def sig_to_mrd(
 
         # Extract signal and k-space trajectory for the current ADC. If it is a noise sample than no signal is available
         k_acq = kadc[:, current_traj_sample : current_traj_sample + num_samples_adc]
+        t_acq = tadc[current_traj_sample : current_traj_sample + num_samples_adc]
         current_traj_sample += num_samples_adc
         if "NOISE" in labels and labels["NOISE"][n_acq] > 0:
             s_acq = np.zeros(
@@ -109,6 +110,7 @@ def sig_to_mrd(
 
         # Split the k-space trajectory and data into multiple segments depending on the maximum segment length
         k_acq, s_acq = _split_adc_sets(k_acq, s_acq, max_segment_samples)
+        t_acq = np.reshape(t_acq, k_acq.shape[1:])
         num_set, num_samples_set, num_cha = s_acq.shape
         num_dim, _, _ = k_acq.shape
 
@@ -141,6 +143,8 @@ def sig_to_mrd(
             header.read_dir[0] = 1
             header.phase_dir[1] = 1
             header.slice_dir[2] = 1
+            # Time stamps are in integer format, often in units of 2.5ms
+            header.acquisition_time_stamp = int(np.mean(1000*t_acq[n_set,:].flatten())/2.5)
             header = _labels_to_acq_head(header, acq_labels)
 
             # Write header to acquisition
