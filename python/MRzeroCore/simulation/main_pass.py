@@ -129,7 +129,8 @@ def execute_graph(graph: Graph,
             shim = shim_array[:, 0] * torch.exp(-1j * shim_array[:, 1])
             B1 = (data.B1 * shim[:, None]).sum(0)
 
-        angle = angle * B1.abs()       
+        angle = angle * B1.abs() 
+        rep.pulse.pulse_freq = rep.pulse.pulse_freq * B1.abs()    
                 
         ## PHASE HANDLING 
         ## + for off-resonant pulses compute phase accumulated in the sequence
