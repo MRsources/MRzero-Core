@@ -1,0 +1,12 @@
+[book]
+title = "MR-zero"
+description = "Documentation for MR-zero Core and some of its adjacent projects."
+authors = ["Madga Duarte", "Jonathan Endres", "Moritz Zaiss"]
+language = "en"
+src = "src"
+
+[output.html]
+mathjax-support = true
+git-repository-url = "https://github.com/MRsources/MRzero-Core"
+edit-url-template = "https://github.com/MRsources/MRzero-Core/edit/main/documentation/{path}"
+site-url = "/mrzero-core/"

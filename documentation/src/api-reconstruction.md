@@ -1,0 +1,37 @@
+# Reconstruction methods
+
+## NUFFT
+
+> [!NOTE]
+> Currently, only one single reconstruction method exists here - despite more (like NUFFT or GRAPPA) being used in many scripts since a long time.
+> We could integrate them here with MR-zero.
+
+Nufft reconstruction is not integrated into `mr0` directly, but can be realized with `torchkbnufft` and code similar to the following:
+
+```python
+import torchkbnufft as tkbn
+
+# Construct a sequence "seq" and simulate it, resulting in "signal"
+
+kdata = signal.view(1, 1, -1)
+ktraj = seq.get_kspace()[:, :2].T / (2 * np.pi)
+im_size = (64, 64)
+
+adjnufft_ob = tkbn.KbNufftAdjoint(im_size)
+dcomp = tkbn.calc_density_compensation_function(ktraj, im_size=im_size)
+reco = adjnufft_ob(kdata * dcomp, ktraj).view(im_size)
+```
+
+
+## `reco_adjoint`
+
+Adjoint reconstruction builds a very simple backwards version of the encoding / measurement operation.
+It essentially resembles a DFT and is thus slower and consumes more memory than an FFT, but can handle any readout trajectory.
+
+| Parameter | Description |
+| --------- | ----------- |
+| `signal` | `[sample_count, coil_count]` complex tensor |
+| `kspace` | `[sample_count, 4]` tensor (xyz encoding + dephasing time) |
+| `resolution=None` | either `(int, int, int)` or `None` for automatic detection |
+| `FOV=None` | either `(float, float, float) ` or `None` for automatic detection |
+| `return_multicoil=False` | if `False`, returns quadratic combine of coils |
