@@ -261,7 +261,7 @@ def _seq_write_mrd_head(
         )
 
     seq_res = seq.definitions.get("RES", [None, None, None])
-    seq_fov = [m_to_mm(val) for val in seq.definitions.get("FOV", [None, None, None])]
+    seq_fov = [m_to_mm(val) for val in seq.definitions.get("FOV", [1, 1, 1])]
     seq_labels = seq.evaluate_labels(evolution="adc")
 
     mrd_enc_params = ismrmrd.xsd.encodingType()
