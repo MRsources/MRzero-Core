@@ -8,5 +8,5 @@ src = "src"
 [output.html]
 mathjax-support = true
 git-repository-url = "https://github.com/MRsources/MRzero-Core"
-edit-url-template = "https://github.com/MRsources/MRzero-Core/edit/simplify-docs/documentation/{path}"
+edit-url-template = "https://github.com/MRsources/MRzero-Core/edit/main/documentation/{path}"
 site-url = "/mrzero-core/"
