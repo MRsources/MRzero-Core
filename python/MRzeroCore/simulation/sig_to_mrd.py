@@ -60,7 +60,7 @@ def sig_to_mrd(
     dataset.write_xml_header(ismrmrd.xsd.ToXML(mrd_head))
 
     # Calcuate the k-space trajectory and sample times
-    kadc, _, _, _, _ = seq.calculate_kspace()
+    kadc, _, _, _, tadc = seq.calculate_kspace()
 
     # A single ADC object has a maximum sample limit that is defined in the sequence.
     # Usually longer readouts are written into multiple ADC objects with increasing 'set' encodes.
@@ -84,6 +84,7 @@ def sig_to_mrd(
 
     # Write each ADC object to an mrd acquisition
     current_sample = 0
+    current_traj_sample = 0
     scan_counter = 1
     for n_acq, adc_id in enumerate(adc_ids):
         # Read the number of samples and dwell time for the current ADC
@@ -94,14 +95,22 @@ def sig_to_mrd(
         num_samples_adc = int(adc_obj[0])
         dwell = float(adc_obj[1])
 
-        # Extract signal and k-space trajectory for the current ADC
-        s_acq = mr0_signal_numpy[current_sample : current_sample + num_samples_adc, :]
-        k_acq = kadc[:, current_sample : current_sample + num_samples_adc]
-
-        current_sample += num_samples_adc
+        # Extract signal and k-space trajectory for the current ADC. If it is a noise sample than no signal is available
+        k_acq = kadc[:, current_traj_sample : current_traj_sample + num_samples_adc]
+        t_acq = tadc[current_traj_sample : current_traj_sample + num_samples_adc]
+        current_traj_sample += num_samples_adc
+        if "NOISE" in labels and labels["NOISE"][n_acq] > 0:
+            s_acq = np.zeros(
+                (num_samples_adc, mr0_signal_numpy.shape[1]), dtype=mr0_signal_numpy.dtype
+            )
+        else:
+            s_acq = mr0_signal_numpy[current_sample : current_sample + num_samples_adc, :]
+            current_sample += num_samples_adc
+        
 
         # Split the k-space trajectory and data into multiple segments depending on the maximum segment length
         k_acq, s_acq = _split_adc_sets(k_acq, s_acq, max_segment_samples)
+        t_acq = np.reshape(t_acq, k_acq.shape[1:])
         num_set, num_samples_set, num_cha = s_acq.shape
         num_dim, _, _ = k_acq.shape
 
@@ -130,6 +139,12 @@ def sig_to_mrd(
             header.available_channels = num_cha
             header.active_channels = num_cha
             header.sample_time_us = dwell * 1e6
+            # We don't know the orientation but we set it to something reasonable
+            header.read_dir[0] = 1
+            header.phase_dir[1] = 1
+            header.slice_dir[2] = 1
+            # Time stamps are in integer format, often in units of 2.5ms
+            header.acquisition_time_stamp = int(np.mean(1000*t_acq[n_set,:].flatten())/2.5)
             header = _labels_to_acq_head(header, acq_labels)
 
             # Write header to acquisition
@@ -228,19 +243,25 @@ def _seq_write_mrd_head(
     verbose: int = 0,
 ) -> ismrmrd.xsd.ismrmrdHeader:
     """Writes the pulseq sequence definitions and labels to the ISMRMRD header."""
+    
+    def m_to_mm(x_in_m):
+        return x_in_m * 1e3
+    
+    def s_to_ms(x_in_s):
+        return x_in_s * 1e3
 
     mrd_seq_params = ismrmrd.xsd.sequenceParametersType()
 
-    mrd_seq_params.TE = _to_list(seq.definitions.get("TE", []))
-    mrd_seq_params.TR = _to_list(seq.definitions.get("TR", []))
-    mrd_seq_params.TI = _to_list(seq.definitions.get("TI", []))
+    mrd_seq_params.TE = [s_to_ms(val) for val in _to_list(seq.definitions.get("TE", []))]
+    mrd_seq_params.TR = [s_to_ms(val) for val in _to_list(seq.definitions.get("TR", []))]
+    mrd_seq_params.TI =[s_to_ms(val) for val in _to_list(seq.definitions.get("TI", []))]
     if verbose > 4:
         print(
             f"Wrote TE/TR/TI to mrd header with {mrd_seq_params.TE}/{mrd_seq_params.TR}/{mrd_seq_params.TI}"
         )
 
     seq_res = seq.definitions.get("RES", [None, None, None])
-    seq_fov = seq.definitions.get("FOV", [None, None, None])
+    seq_fov = [m_to_mm(val) for val in seq.definitions.get("FOV", [1, 1, 1])]
     seq_labels = seq.evaluate_labels(evolution="adc")
 
     mrd_enc_params = ismrmrd.xsd.encodingType()
@@ -280,8 +301,13 @@ def _seq_write_mrd_head(
         )
 
     mrd_enc_params.encodingLimits = _labels_to_encodinglimits(seq_labels)
+    
+    # The Lamour frequency is a required field in the ISMRMRD header
+    exp = ismrmrd.xsd.experimentalConditionsType()
+    exp.H1resonanceFrequency_Hz = int(seq.system.B0 * 42.5764 * 1e6)
 
     mrd_head = ismrmrd.xsd.ismrmrdHeader(
+        experimentalConditions=exp,
         measurementInformation=ismrmrd.xsd.measurementInformationType(),
         acquisitionSystemInformation=ismrmrd.xsd.acquisitionSystemInformationType(),
         sequenceParameters=mrd_seq_params,
@@ -325,7 +351,7 @@ def _label_limits(
     type_limits = ismrmrd.xsd.limitType(
         minimum=int(np.min(label_evol)),
         maximum=int(np.max(label_evol)),
-        center=int((np.max(label_evol) - np.min(label_evol)) // 2),
+        center=int((np.max(label_evol) - np.min(label_evol)) // 2 + 1 if label in ('LIN', 'PAR') else 0),
     )
 
     return type_limits
@@ -333,3 +359,4 @@ def _label_limits(
 
 def _to_list(v):
     return v if isinstance(v, list) else [v]
+
