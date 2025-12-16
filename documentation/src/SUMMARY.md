@@ -19,6 +19,9 @@
 # 🖥️ MRzeroCore
 
 - [🔧 Generating phantoms](phantoms.md)
+- [NIfTI phantoms](nifti-overview.md)
+  - [Specification](nifti-spec.md)
+  - [Coordinate System](nifti-coords.md)
 - [Motion simulation]()
 - [State selection](state_selection.md)
 - [API overview](api.md)
