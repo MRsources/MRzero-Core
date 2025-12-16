@@ -181,7 +181,7 @@ class VoxelGridPhantom:
             recover_func=lambda data: recover(mask, data),
             phantom_motion=self.phantom_motion,
             voxel_motion=self.voxel_motion,
-            tissue_masks=self.tissue_masks
+            tissue_masks=mask
         )
     
     @classmethod
