@@ -166,11 +166,7 @@ class VoxelGridPhantom:
             raise ValueError(f"Unsupported voxel shape '{voxel_shape}'")
         
         if not self.tissue_masks:
-            # tissue masks is empty -> interpret as one tissue
-            tissue_masks = mask
-        else: 
-            # use provided tissue masks
-            tissue_masks = self.tissue_masks
+            self.tissue_masks = {"combined": mask}
 
         return SimData(
             self.PD[mask],
@@ -188,7 +184,7 @@ class VoxelGridPhantom:
             recover_func=lambda data: recover(mask, data),
             phantom_motion=self.phantom_motion,
             voxel_motion=self.voxel_motion,            
-            tissue_masks = tissue_masks
+            tissue_masks = self.tissue_masks
         )
     
     @classmethod
