@@ -208,6 +208,3 @@ class NiftiPhantom:
                 name: tissue.to_dict() for name, tissue in self.tissues.items()
             },
         }
-
-
-NiftiPhantom.load("brainweb-subj05.json").save("out.json")

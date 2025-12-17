@@ -28,6 +28,7 @@ dependencies = [
     "torchkbnufft",
     "torch>=1.12",
     "tqdm",
+    "nibabel",
 ]
 
 [project.urls]

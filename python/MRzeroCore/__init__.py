@@ -11,6 +11,7 @@ from .phantom.voxel_grid_phantom import VoxelGridPhantom
 from .phantom.custom_voxel_phantom import CustomVoxelPhantom
 from .phantom.sim_data import SimData
 from .phantom.brainweb import generate_brainweb_phantoms
+from .phantom.nifti_phantom import NiftiPhantom, NiftiTissue, NiftiRef, NiftiMapping
 from .simulation.isochromat_sim import isochromat_sim
 from .simulation.pre_pass import compute_graph, compute_graph_ext, Graph
 from .simulation.main_pass import execute_graph
