@@ -157,7 +157,7 @@ def generate_brainweb_phantoms(output_dir: str, subject_count: int | None = None
             pbar.update()
             pbar.set_postfix_str(f"saving '{phantom_name}_B1+.nii.gz'")
             nib.loadsave.save(
-                nib.nifti1.Nifti1Image(B0[..., None], affine),
+                nib.nifti1.Nifti1Image(B1[..., None], affine),
                 phantom_dir / f"{phantom_name}_B1+.nii.gz"
             )
             pbar.update()
