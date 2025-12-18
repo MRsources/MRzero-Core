@@ -236,7 +236,7 @@ def execute_graph(graph: Graph,
 
                 T2 = torch.exp(-trajectory[adc, 3:] / torch.abs(data.T2))
                 T2dash = torch.exp(-torch.abs(adc_dist_traj[:, 3:]) / torch.abs(data.T2dash))
-                rot = torch.exp(2j * np.pi * (
+                rot = torch.exp(-2j * np.pi * (
                     (adc_dist_traj[:, 3:] * data.B0) +
                     (adc_dist_traj[:, :3] @ data.voxel_pos.T) +
                     adc_motion_phase
