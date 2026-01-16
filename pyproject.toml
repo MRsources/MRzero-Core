@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "MRzeroCore"
-version = "0.4.1"
+version = "0.4.2"
 description = "Core functionality of MRzero"
 authors = [
     {name = "Jonathan Endres", email = "jonathan.endres@uk-erlangen.de"},
@@ -28,11 +28,12 @@ dependencies = [
     "torchkbnufft",
     "torch>=1.12",
     "tqdm",
+    "nibabel",
 ]
 
 [project.urls]
 Repository = "https://github.com/MRsources/MRzero-Core"
-Documentation = "https://mrzero-core.readthedocs.io/"
+Documentation = "https://mrsources.github.io/MRzero-Core/"
 MRzero-Paper = "https://arxiv.org/abs/2002.04265"
 
 [tool.maturin]
