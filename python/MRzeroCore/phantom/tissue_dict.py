@@ -44,100 +44,100 @@ class TissueDict(dict[str, VoxelGridPhantom]):
             for name, tissue in config.tissues.items()
         })
     
-    # def save(self, path_to_json: str | Path, B0: float = 3):
-    #     from pathlib import Path
-    #     import os
-    # #     import nibabel as nib
+    def save(self, path_to_json: str | Path, B0: float = 3):
+        from pathlib import Path
+        import os
+        import nibabel as nib
 
-    #     path_to_json = Path(path_to_json)
-    #     base_name = path_to_json.stem
-    #     base_dir = path_to_json.parent
-    #     os.makedirs(base_dir, exist_ok=True)
+        path_to_json = Path(path_to_json)
+        base_name = path_to_json.stem
+        base_dir = path_to_json.parent
+        os.makedirs(base_dir, exist_ok=True)
 
-    #     density = []
-    #     T1 = []
-    #     T2 = []
-    #     T2dash = []
-    #     ADC = []
-    #     dB0 = []
-    #     B1_tx = []
-    #     B1_rx = []
+        density = []
+        T1 = []
+        T2 = []
+        T2dash = []
+        ADC = []
+        dB0 = []
+        B1_tx = []
+        B1_rx = []
 
-    #     def save_tissue(tissue: VoxelGridPhantom):
-    #         config = NiftiTissue
+        def save_tissue(tissue: VoxelGridPhantom):
+            config = {}
 
-    #         def save_map(name, map, nifti):
-    #             ext = f"-{name}" if name != "density" else ""
-    #             # Multi-channel data when setting the same property multiple times
-    #             def set(value):
-    #                 if name in config:
-    #                     config[name].append(value)
-    #                 else:
-    #                     config[name] = value
+            def save_map(name, map, nifti):
+                ext = f"_{name}" if name != "density" else ""
+                # Multi-channel data when setting the same property multiple times
+                def set(value):
+                    if name in config:
+                        config[name].append(value)
+                    else:
+                        config[name] = value
 
-    #             if map.std() < 1e-5:
-    #                 set(float(map.mean()))
-    #             else:
-    #                 # Check if map is shared with other tissues
-    #                 for idx, nifti_map in enumerate(nifti):
-    #                     if torch.equal(map, nifti_map):
-    #                         set(f"{base_name}{ext}.nii.gz[{idx}]")
-    #                         return
-    #                 # Not shared, write new map
-    #                 set(f"{base_name}{ext}.nii.gz[{len(nifti)}]")
-    #                 nifti.append(map)
+                if map.std() < 1e-5:
+                    set(float(map.mean()))
+                else:
+                    # Check if map is shared with other tissues
+                    for idx, nifti_map in enumerate(nifti):
+                        if torch.equal(map, nifti_map):
+                            set(f"{base_name}{ext}.nii.gz[{idx}]")
+                            return
+                    # Not shared, write new map
+                    set(f"{base_name}{ext}.nii.gz[{len(nifti)}]")
+                    nifti.append(map)
 
-    #         save_map("density", tissue.PD, density)
-    #         save_map("T1", tissue.T1, T1)
-    #         save_map("T2", tissue.T2, T2)
-    #         save_map("T2'", tissue.T2dash, T2dash)
-    #         save_map("ADC", tissue.D, ADC)
-    #         save_map("dB0", tissue.B0, dB0)
-    #         config["B1+"] = []
-    #         for channel in tissue.B1:
-    #             save_map("B1+", channel, B1_tx)
-    #         config["B1-"] = []
-    #         for channel in tissue.coil_sens:
-    #             save_map("B1-", channel, B1_rx)
+            save_map("density", tissue.PD, density)
+            save_map("T1", tissue.T1, T1)
+            save_map("T2", tissue.T2, T2)
+            save_map("T2'", tissue.T2dash, T2dash)
+            save_map("ADC", tissue.D, ADC)
+            save_map("dB0", tissue.B0, dB0)
+            config["B1+"] = []
+            for channel in tissue.B1:
+                save_map("B1+", channel, B1_tx)
+            config["B1-"] = []
+            for channel in tissue.coil_sens:
+                save_map("B1-", channel, B1_rx)
 
-    #         return config
+            return NiftiTissue.from_dict(config)
 
-    #     # Generate all tissues (and fill the prop maps)
-    #     tissues = {tissue: save_tissue(self[tissue]) for tissue in self.keys()}
+        # Generate all tissues (and fill the prop maps)
+        tissues = {tissue: save_tissue(self[tissue]) for tissue in self.keys()}
 
-    #     # Write the NIfTIs
-    #     size = np.asarray(next(iter(self.values())).size)
-    #     vs = 1000 * size / np.asarray(density[0].shape)
-    #     affine = np.array(
-    #         [
-    #             [+vs[0], 0, 0, -size[0] / 2 * 1000],
-    #             [0, +vs[1], 0, -size[1] / 2 * 1000],
-    #             [0, 0, -vs[2], +size[2] / 2 * 1000],
-    #             [0, 0, 0, 0],  # Row ignored
-    #         ]
-    #     )
+        # Write the NIfTIs
+        size = np.asarray(next(iter(self.values())).size)
+        vs = 1000 * size / np.asarray(density[0].shape)
+        affine = np.array(
+            [
+                [+vs[0], 0, 0, -size[0] / 2 * 1000],
+                [0, +vs[1], 0, -size[1] / 2 * 1000],
+                [0, 0, +vs[2], -size[2] / 2 * 1000],
+                [0, 0, 0, 0],  # Row ignored
+            ]
+        )
 
-    #     def save_nifti(prop, name):
-    #         if len(prop) > 0:
-    #             ext = f"-{name}" if name != "density" else ""
-    #             file_name = base_dir / f"{base_name}{ext}.nii.gz"
-    #             data = np.stack(prop, -1)
+        def save_nifti(prop, name):
+            if len(prop) > 0:
+                ext = f"-{name}" if name != "density" else ""
+                file_name = base_dir / f"{base_name}{ext}.nii.gz"
+                data = np.stack(prop, -1)
 
-    #             print(f"Storing '{file_name}' - {data.shape}")
-    #             nib.save(nib.nifti1.Nifti1Image(data, affine), file_name)
+                print(f"Storing '{file_name}' - {data.shape}")
+                nib.save(nib.nifti1.Nifti1Image(data, affine), file_name)
         
-    #     save_nifti(density, "density")
-    #     save_nifti(T1, "T1")
-    #     save_nifti(T2, "T2")
-    #     save_nifti(T2dash, "T2'")
-    #     save_nifti(ADC, "ADC")
-    #     save_nifti(dB0, "dB0")
-    #     save_nifti(B1_tx, "B1+")
-    #     save_nifti(B1_rx, "B1-")
+        save_nifti(density, "density")
+        save_nifti(T1, "T1")
+        save_nifti(T2, "T2")
+        save_nifti(T2dash, "T2'")
+        save_nifti(ADC, "ADC")
+        save_nifti(dB0, "dB0")
+        save_nifti(B1_tx, "B1+")
+        save_nifti(B1_rx, "B1-")
 
-    #     config = NiftiPhantom.default(B0=3)
-    #     config.tissues = tissues
-    #     config.save(path_to_json)
+        config = NiftiPhantom.default(B0=3)
+        config.tissues = tissues
+        config.save(path_to_json)
     
     def interpolate(self, x: int, y: int, z: int):
         return TissueDict({

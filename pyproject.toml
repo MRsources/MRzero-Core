@@ -33,7 +33,7 @@ dependencies = [
 
 [project.urls]
 Repository = "https://github.com/MRsources/MRzero-Core"
-Documentation = "https://mrzero-core.readthedocs.io/"
+Documentation = "https://mrsources.github.io/MRzero-Core/"
 MRzero-Paper = "https://arxiv.org/abs/2002.04265"
 
 [tool.maturin]
