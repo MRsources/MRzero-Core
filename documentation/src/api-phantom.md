@@ -1,6 +1,6 @@
 # Simulation Phantoms
 
-Phantoms based on BrainWeb data can be downloaded and generated easily, as explained in [Generating Phantoms](phantoms.md).
+Phantoms based on BrainWeb data can be downloaded and generated easily, as explained in [Generating Phantoms](nifti-generate.md).
 The data required by the simulation defined by [`SimData`](#simdata).
 It should not be created directly, but rather by defining or loading a [`VoxelGridPhantom`](#voxelgridphantom) or [`CustomVoxelPhantom`](#customvoxelphantom).
 
@@ -13,9 +13,9 @@ data = phantom.build().cuda()
 ```
 
 > [!TIP]
-> A new type of phantoms is coming!
+> A new type of phantoms is now officially supported!
 > These are based on NIfTIs and allow partial volume effects, segmented phantoms and easy phantom reconfiguration without code changes.
-> They should be documented here as soon as they are merged with MR-zero Core.
+> Take a look at their [description](nifti.md) and [API](api-nifti.md).
 
 ## Voxel Shape
 
@@ -88,6 +88,26 @@ They are indexed `[(channel), x, y, z]`.
 - `VoxelGridPhantom.interpolate()`: Resizing the phantom by using `torch.nn.functional.interpolate(..., mode='trilinear')`
 - `VoxelGridPhantom.plot()`: Plotting all maps of the phantom (center slice)
 - `VoxelGridPhantom.build(PD_threshold)`: Convert this phantom into [`SimData`](#simdata), sparsifying the arrays (flattening and masking where `pd < PD_threshold`)
+
+## `TissueDict`
+
+A tissue dictionary can store multiple, overlapping tissues (which lead to partial volume effects).
+It is a dictionary of [`VoxelGridPhantom`s](#voxelgridphantom) and provides additional helper functions.
+
+`TissueDict` is modelled to hold the data loaded from a [`NiftiPhantom`](api-nifti.md#niftiphantom).
+To load such a file, you can call `TissueDict.load()` with the config `.json` of the NIfTI phantom.
+Alternatively, you can create a [`NiftiPhantom`](api-nifti.md#niftiphantom) and then load the phantom (and the volume data) with `TissueDict.load()` - this time passing a *folder* and the [`NiftiPhantom`](api-nifti.md#niftiphantom).
+
+```python
+TissueDict(dict[str, VoxelGridPhantom])
+```
+
+- `TissueDict.load(path, config=None)`: either load from `.json` or from a dir + [`NiftiPhantom`](api-nifti.md#niftiphantom)
+- `TissueDict.save(path, gyro, B0)`: save as [NIfTI phantom](nifti.md)
+- `TissueDict.interpolate()`: apply [`VoxelGridPhantom.interpolate()] to all tissues
+- `TissueDict.slices()`: apply [`VoxelGridPhantom.slices()] to all tissues
+- `TissueDict.combine()`: merge all tissues into a single [`VoxelGridPhantom`](#voxelgridphantom)
+- `TissueDict.build(PD_threshold, voxel_shape)`: convert into [`SimData`](#simdata)
 
 ## `CustomVoxelPhantom`
 

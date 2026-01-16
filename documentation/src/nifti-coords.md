@@ -6,7 +6,7 @@
 - The scanner says data is in the `SCANNER` coordinate system, but this changes with sequence settings.
 - Phantom z direction should always point in $B_0$ direction
 
-> [!note] Conclusion
+> [!note]
 > We assume that in measurement and FOV, MRI sequences are aligned to the subject.
 >
 > When storing phantoms, we should always orient them to the subject-aligned RAS+ system (origin best at center of FOV but can be arbitrary).
