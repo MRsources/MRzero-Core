@@ -44,7 +44,7 @@ class TissueDict(dict[str, VoxelGridPhantom]):
             for name, tissue in config.tissues.items()
         })
     
-    def save(self, path_to_json: str | Path, B0: float = 3):
+    def save(self, path_to_json: str | Path, gyro=42.5764, B0=3.0):
         from pathlib import Path
         import os
         import nibabel as nib
@@ -135,7 +135,7 @@ class TissueDict(dict[str, VoxelGridPhantom]):
         save_nifti(B1_tx, "B1+")
         save_nifti(B1_rx, "B1-")
 
-        config = NiftiPhantom.default(B0=3)
+        config = NiftiPhantom.default(gyro, B0)
         config.tissues = tissues
         config.save(path_to_json)
     

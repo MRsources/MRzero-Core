@@ -112,8 +112,8 @@ class NiftiTissue:
     B1_rx: list[float | NiftiRef | NiftiMapping]
 
     @classmethod
-    def default(cls):
-        return cls.from_dict({})
+    def default(cls, density: NiftiRef):
+        return cls.from_dict({"density": density})
 
     @classmethod
     def from_dict(cls, config: dict[str, Any]):
@@ -167,7 +167,7 @@ class NiftiPhantom:
     tissues: dict[str, NiftiTissue]
 
     @classmethod
-    def default(cls, gyro=42.5764, B0=3):
+    def default(cls, gyro=42.5764, B0=3.0):
         return cls(PhantomUnits.default(), PhantomSystem(gyro, B0), {})
 
     @classmethod
