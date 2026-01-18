@@ -3,7 +3,7 @@ requires = ["maturin>=1.5,<2.0"]
 build-backend = "maturin"
 
 [project]
-name = "MRzeroCore"
+name = "mrzerocore"
 version = "0.4.3"
 description = "Core functionality of MRzero"
 authors = [
