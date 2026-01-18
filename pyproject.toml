@@ -3,8 +3,8 @@ requires = ["maturin>=1.5,<2.0"]
 build-backend = "maturin"
 
 [project]
-name = "mrzerocore"
-version = "0.4.2"
+name = "MRzeroCore"
+version = "0.4.3"
 description = "Core functionality of MRzero"
 authors = [
     {name = "Jonathan Endres", email = "jonathan.endres@uk-erlangen.de"},
@@ -39,5 +39,5 @@ MRzero-Paper = "https://arxiv.org/abs/2002.04265"
 [tool.maturin]
 profile = "release"
 strip = true
-module-name = "mrzerocore._prepass"
+module-name = "MRzeroCore._prepass"
 python-source = "python"

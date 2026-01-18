@@ -1,12 +1,11 @@
 [package]
 name = "mrzero_core"
-version = "0.4.2"
+version = "0.4.3"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
 crate-type = ["cdylib"]
-name = "MRzeroCore"
 
 [dependencies]
 pyo3 = { version = "0.21.2", features = ["abi3-py37", "extension-module", "num-complex"] }
