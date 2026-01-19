@@ -19,6 +19,12 @@ They are designed to keep the optimization pipeline differentiable by **passing 
 
 ## Functional Wrappers
 
+To use the wrapper functions:
+
+```python
+from pulseqzero import round, ceil, floor
+``` 
+
 
 ### `ceil(x)`
 
