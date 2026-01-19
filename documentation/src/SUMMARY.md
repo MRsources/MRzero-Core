@@ -36,7 +36,7 @@
 
 # 🖥️ Pulseq-zero
 
-- [math methods for differentiability](api-math.md)
+- [Math methods for differentiability](api-math.md)
 
 
 ---
