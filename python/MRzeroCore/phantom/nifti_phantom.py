@@ -138,7 +138,7 @@ class NiftiTissue:
 
     def to_dict(self) -> dict:
         def serialize_prop(prop):
-            if isinstance(prop, float):
+            if isinstance(prop, (float, int)):
                 return prop
             elif isinstance(prop, NiftiRef):
                 return prop.to_str()
