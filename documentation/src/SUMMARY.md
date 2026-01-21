@@ -34,9 +34,9 @@
     - [Other methods](api-unsorted.md)
   
 
-# 🖥️ Pulseq-zero
+# 📊 Pulseq-zero
 
-- [Math methods for differentiability](api-math.md)
+- [Math methods for differentiability](pulseqzero-math.md)
 
 
 ---
