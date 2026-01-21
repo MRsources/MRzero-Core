@@ -52,10 +52,10 @@ jobs:
 
       - name: Install dependencies
         run: |
-            pip install pypulseq &> /dev/null
+            !pip install pypulseq==1.4.2post1 &> /dev/null
             pip install pydisseqt
-            pip install MRzeroCore --no-deps
             pip install ismrmrd
+            pip install MRzeroCore --no-deps
             pip install  torchkbnufft PyWavelets tqdm scikit-image
             wget https://github.com/MRsources/MRzero-Core/raw/main/documentation/playground_mr0/numerical_brain_cropped.mat &> /dev/null
             pip install jupyter nbconvert
