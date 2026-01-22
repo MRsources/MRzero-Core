@@ -539,28 +539,6 @@ class VoxelGridPhantom:
         plt.tight_layout()
         plt.show()
 
-    def plot3D(self, data2print: int = 0) -> None:
-        """Print and plot all slices of one selected data stored in this phantom."""
-        print("VoxelGridPhantom")
-        print(f"size = {self.size}")
-        print()
-
-        label = ['PD', 'T1', 'T2', "T2'", "D", "B0", "B1", "coil sens"]
-
-        tensors = [
-            self.PD, self.T1, self.T2, self.T2dash, self.D, self.B0,
-            self.B1.squeeze(0), self.coil_sens
-        ]
-
-        # Warn if we only print a part of all data
-        print(f"Plotting {label[data2print]}")
-
-        tensor = tensors[data2print].squeeze(0)
-
-        util.plot3D(tensor, figsize=(20, 5))
-        plt.title(label[data2print])
-        plt.show()
-
 
 def recover(mask, sim_data: SimData) -> VoxelGridPhantom:
     """Provided to :class:`SimData` to reverse the ``build()``"""
