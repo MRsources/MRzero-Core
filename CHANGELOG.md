@@ -1,3 +1,13 @@
+- 0.4.4
+  - Fix: support for empty tissue masks in NIfTI phantom
+  - Fix: support for int - constants in NIfTI phantom
+  - Remove unsupported platforms from build (32bit windows, intel mac)
+- 0.4.3
+  - Fix python package normalization
+- 0.4.2
+  - Add NIfTI phantom support
+  - Fix custom voxel phantom plot
+  - Make isochromat sim GPU compatible
 - 0.4.0
   - Integrate ISMRMD exporter
   - Update documentation

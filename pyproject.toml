@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "mrzerocore"
-version = "0.4.3"
+version = "0.4.4"
 description = "Core functionality of MRzero"
 authors = [
     {name = "Jonathan Endres", email = "jonathan.endres@uk-erlangen.de"},
