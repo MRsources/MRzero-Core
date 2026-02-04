@@ -118,7 +118,7 @@ class NiftiTissue:
     @classmethod
     def from_dict(cls, config: dict[str, Any]):
         def parse_prop(prop):
-            if isinstance(prop, float):
+            if isinstance(prop, (float, int)):#, int
                 return float(prop)
             elif isinstance(prop, str):
                 return NiftiRef.parse(prop)
