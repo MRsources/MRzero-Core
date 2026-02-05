@@ -1,3 +1,6 @@
+- 0.4.5
+  - Fix: NIfTI loader supports `int` constants
+  - Fix: Empty tissue masks in `VoxelGridPhantom`
 - 0.4.4
   - Fix: support for empty tissue masks in NIfTI phantom
   - Fix: support for int - constants in NIfTI phantom
