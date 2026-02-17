@@ -4,7 +4,7 @@ from .nifti_phantom import NiftiPhantom, NiftiTissue, NiftiRef, NiftiMapping
 from pathlib import Path
 import torch
 import numpy as np
-from typing import Literal
+from typing import Literal, Self
 from functools import lru_cache
 
 
@@ -186,13 +186,112 @@ class TissueDict(dict[str, VoxelGridPhantom]):
             "size": data_list[0].size,
             "nyquist": data_list[0].nyquist,
             "dephasing_func": data_list[0].dephasing_func,
+            "recover_func": lambda data: self.recover(data),
+            "tissue_masks": dict(zip(self.keys(), [obj.tissue_masks["combined"] for obj in data_list]))
         }
 
-        # Only add tissue_masks if any object has it non-empty
-        if any(obj.tissue_masks for obj in data_list):
-            kwargs["tissue_masks"] = torch.stack([obj.tissue_masks for obj in data_list])
+        # # Only add tissue_masks if any object has it non-empty
+        # if any(obj.tissue_masks for obj in data_list):
+        #     kwargs["tissue_masks"] = torch.stack([obj.tissue_masks for obj in data_list])
 
         return SimData(**kwargs)
+    
+    def recover(self, sim_data: SimData) -> Self:
+        """Provided to :class:`SimData` to reverse the ``build()``"""
+        
+        assert sim_data.tissue_masks is not None
+        
+        tissues = list(sim_data.tissue_masks.keys())     
+        tissue_begin = 0 # first tissue starts at index 0 in sparse tensors    
+               
+        def to_full(sparse):
+            assert sparse.ndim < 3
+            
+            if sparse.ndim == 2:
+                full = torch.zeros(
+                    [sparse.shape[0], *mask.shape], dtype=sparse.dtype, device=mask.device)
+                full[:, mask] = sparse
+            else:
+                full = torch.zeros(mask.shape, device=mask.device)
+                full[mask] = sparse
+            return full
+        
+        data_list = [] 
+        for tissue in tissues:
+            mask = sim_data.tissue_masks[tissue]     
+            mask = mask.to(sim_data.device)  
+           
+            tissue_end = tissue_begin + torch.sum(mask)  # index of tissue end in sparse tensors         
+            
+            data_list.append(VoxelGridPhantom(
+                                    to_full(sim_data.PD[tissue_begin:tissue_end]),
+                                    to_full(sim_data.T1[tissue_begin:tissue_end]),
+                                    to_full(sim_data.T2[tissue_begin:tissue_end]),
+                                    to_full(sim_data.T2dash[tissue_begin:tissue_end]),
+                                    to_full(sim_data.D[tissue_begin:tissue_end]),
+                                    to_full(sim_data.B0[tissue_begin:tissue_end]),
+                                    to_full(sim_data.B1[:, tissue_begin:tissue_end]),
+                                    to_full(sim_data.coil_sens[:, tissue_begin:tissue_end]),
+                                    sim_data.size
+                                )
+                            )
+            
+            
+            tissue_begin = tissue_end # next tissue in sparse tensors starts where last ended
+        
+        # B0, B1 and coil_sens are common maps to all tissues and hence should be the same for all tissues
+        contribution_count = torch.stack([sim_data.tissue_masks[tissue] for tissue in tissues], dim=0).sum(dim=0) # counts how many tissues contribute to a voxel      
+        B0 = torch.stack([phantom.B0 for phantom in data_list], dim=0).sum(dim=0) / contribution_count
+        B1 = torch.stack([phantom.B1 for phantom in data_list], dim=0).sum(dim=0) / contribution_count 
+        coil_sens = torch.stack([phantom.coil_sens for phantom in data_list], dim=0).sum(dim=0) / contribution_count
+        
+        # replace nan values
+        B0[torch.isnan(B0)] = 0.0
+        B1[torch.isnan(B1)] = 0.0
+        coil_sens[torch.isnan(coil_sens)] = 0.0
+        
+        # replace maps in the individual VoxelGridPhantoms
+        for tissue in data_list:
+            tissue.B0 = B0
+            tissue.B1 = B1
+            tissue.coil_sens = coil_sens
+        
+        return TissueDict(dict(zip(tissues, data_list)))
+    
+    def plot(self, tissue="all", plot_masks=False, plot_slice="center") -> None:
+        """ 
+        Plots the individual tissues of the PhantomDict 
+        
+        Parameters
+        ----------
+        tissue : str, default="all"
+            Specifies which tissue(s) to plot.
+            - ``"all"`` : Plot all tissues stored in the PhantomDict, one after another.
+            - ``"combined"`` : Plot a combined phantom created from all tissues using :meth:`combine`.
+            - any other string is interpreted as a key identifying a single tissue stored in the PhantomDict.
+        plot_masks : bool
+            Plot tissue masks (assumes they exist)
+        slice : str | int
+            If int, the specified slice is plotted. "center" plots the center
+            slice and "all" plots all slices as a grid.
+        """
+        
+        if tissue == "all":
+            print("Plot combined phatom")
+            self.combine().plot(plot_masks, plot_slice)
+            
+            tissues = self.keys()              
+            for tissue in tissues:
+                print("Plot tissue: ", tissue)                
+                self[tissue].plot(plot_masks, plot_slice)
+            
+        elif tissue == "combined":
+            print("Plot combined tissue phantom")
+            self.combine().plot(plot_masks, plot_slice)
+            
+        else:            
+            print("Plot tissue: ", tissue) 
+            self[tissue].plot(plot_masks, plot_slice)
 
 
 # ============================
