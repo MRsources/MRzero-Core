@@ -1,3 +1,6 @@
+- 0.4.6
+  - Small bugfixes
+  - restrict pypulseq dependency to < 1.5.0
 - 0.4.5
   - Fix: NIfTI loader supports `int` constants
   - Fix: Empty tissue masks in `VoxelGridPhantom`

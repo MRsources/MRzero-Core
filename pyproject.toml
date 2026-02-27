@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "mrzerocore"
-version = "0.4.5"
+version = "0.4.6"
 description = "Core functionality of MRzero"
 authors = [
     {name = "Jonathan Endres", email = "jonathan.endres@uk-erlangen.de"},
@@ -21,7 +21,7 @@ dependencies = [
     "ismrmrd",
     "matplotlib>=3.5",
     "pydisseqt>=0.1.13",
-    "pypulseq",
+    "pypulseq<1.5.0",
     "requests>=2.20",
     "scikit-image",
     "scipy>=1.7",
