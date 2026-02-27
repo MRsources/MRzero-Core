@@ -170,11 +170,11 @@ class CustomVoxelPhantom:
 
         kspaces = [torch.zeros(128, 128, dtype=torch.cfloat) for _ in range(len(props))]
         # Iterate over all voxels and render them into the kspaces
-        for pos in self.voxel_pos:
+        for j, pos in enumerate(self.voxel_pos):
             rot = torch.exp(-2j*pi * (trajectory @ pos))
             
             for i in range(len(props)):
-                kspaces[i] += props[i] * (rot * dephasing).view(128, 128)
+                kspaces[i] += props[i][j] * (rot * dephasing).view(128, 128)
         
         # FFT the rendered k-spaces to get the maps
         norm = self.voxel_size[0] * self.voxel_size[1] # 2D plot, ignore thickness
