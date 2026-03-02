@@ -310,7 +310,7 @@ class DynamicVoxelPhantom(VoxelGridPhantom):
             time_points=time_points,
         )
     
-    def build(self, repetition_times, PD_threshold: float = 1e-6,
+    def build(self, repetition_times, start_time: float = 0., PD_threshold: float = 1e-6,
               voxel_shape: Literal["sinc", "box", "point"] = "sinc"
               ) -> DynamicSimData:
         """Build a :class:`DynamicSimData` instance for simulation.
@@ -319,12 +319,14 @@ class DynamicVoxelPhantom(VoxelGridPhantom):
         ---------
         repetition_times: torch.Tensor
             1D tensor containing the times for each repetition in the sequence.
+        start_time: float
+            The start time of the sequence in seconds.
         PD_threshold : float
             All voxels with a proton density below this value are ignored.
         voxel_shape: str
             shape of the voxel used for simulation. Default to sinc shape.
         """
-        T1_rep, T2_rep, T2dash_rep, D_rep, B0_rep = self.compute_param_at_repetition(repetition_times)
+        T1_rep, T2_rep, T2dash_rep, D_rep, B0_rep = self.compute_param_at_repetition(repetition_times, start_time=start_time)
         mask = self.PD > PD_threshold
 
         shape = torch.tensor(mask.shape)
@@ -374,29 +376,51 @@ class DynamicVoxelPhantom(VoxelGridPhantom):
             voxel_motion=self.voxel_motion,
             tissue_masks=self.tissue_masks
         )
-    
-    def compute_param_at_repetition(self, repetition_times: torch.Tensor):
-        """Computes the T1, T2, T2', D and B0 based on the provided repetition times.
 
+    def compute_param_at_repetition(self, repetition_times: torch.Tensor, start_time: float = 0.) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Computes the T1, T2, T2', D, and B0 based on the provided repetition times using linear interpolation.
+        
         Arguments
         ---------
         repetition_times: torch.Tensor
-            1D tensor containing the times for each repetition in the sequence.
+            1D tensor containing the times in seconds for each repetition in the sequence.
+        start_time: float
+            Time in seconds at which the first repetition occurs. Default to 0, can be used to simulate a delay between phantom initialization and the start of the sequence.
         """
         # Find the indices where repetition_times would fit in time_points (sorted).
+        repetition_times += start_time
         indices = torch.searchsorted(self.time_points, repetition_times, side='left')
-
-        # Calculate differences to the left and right to determine the closest point.
-        left_diff = repetition_times - self.time_points[indices - 1]
-        right_diff = self.time_points[indices] - repetition_times
         
-        # Choose the closest index by comparing left and right differences.
-        closest_indices = torch.where(left_diff <= right_diff, indices - 1, indices)
-        T1_rep = self.T1[closest_indices]
-        T2_rep = self.T2[closest_indices]
-        T2dash_rep = self.T2dash[closest_indices]
-        D_rep = self.D[closest_indices]
-        B0_rep = self.B0[closest_indices]
+        # Clip the indices to ensure we don't go out of bounds.
+        indices = indices.clamp(min=1, max=len(self.time_points) - 1)
+        
+        # Get the left and right points for interpolation.
+        left_time_points = self.time_points[indices - 1]
+        right_time_points = self.time_points[indices]
+        
+        left_T1 = self.T1[indices - 1]
+        right_T1 = self.T1[indices]
+        left_T2 = self.T2[indices - 1]
+        right_T2 = self.T2[indices]
+        left_T2dash = self.T2dash[indices - 1]
+        right_T2dash = self.T2dash[indices]
+        left_D = self.D[indices - 1]
+        right_D = self.D[indices]
+        left_B0 = self.B0[indices - 1]
+        right_B0 = self.B0[indices]
+
+        # Apply linear interpolation: f(x) = (x-a)/(b-a)*f(b) + (b-x)/(b-a)*f(a)
+        left_diff = repetition_times - left_time_points
+        right_diff = right_time_points - repetition_times
+        total_diff = right_time_points - left_time_points
+        
+        # Linear interpolation for T1, T2, T2dash, D, and B0
+        T1_rep = (left_diff / total_diff) * right_T1 + (right_diff / total_diff) * left_T1
+        T2_rep = (left_diff / total_diff) * right_T2 + (right_diff / total_diff) * left_T2
+        T2dash_rep = (left_diff / total_diff) * right_T2dash + (right_diff / total_diff) * left_T2dash
+        D_rep = (left_diff / total_diff) * right_D + (right_diff / total_diff) * left_D
+        B0_rep = (left_diff / total_diff) * right_B0 + (right_diff / total_diff) * left_B0
+
         return T1_rep, T2_rep, T2dash_rep, D_rep, B0_rep
     
     def slices(self, slices: list[int]) -> DynamicVoxelPhantom:
@@ -565,7 +589,7 @@ class DynamicVoxelPhantom(VoxelGridPhantom):
         plt.show()
     
     def plot_dynamic(self, plot_masks=False, plot_slice="center", time_unit="s", display_units=False,
-                     delay_frame=0.1, repeat=True, save_gif=False, gif_filename='dynamic_Phantom.gif') -> None:
+                     delay_frame=0.1, repeat=True, save_gif=False, gif_filename='dynamic_Phantom.gif', dpi=100) -> None:
         """
         Print and plot all data stored in this phantom.
 
@@ -588,6 +612,8 @@ class DynamicVoxelPhantom(VoxelGridPhantom):
             If True, the animation is saved as a GIF file instead of being displayed. Default is False
         gif_filename : str
             Filename (including extension) used when saving the animation as a GIF. Default is "dynamic_Phantom.gif"
+        dpi : int
+            Dots per inch used when saving the GIF. Higher values lead to larger files. Default is 100.
         """
         assert time_unit in ["ms", "s"], "time_unit should be either 's' or 'ms'"
         time_factor = 1e3 if time_unit=="ms" else 1
@@ -726,7 +752,7 @@ class DynamicVoxelPhantom(VoxelGridPhantom):
         
         if save_gif:
             print(f"Saving animation to {gif_filename}...")
-            ani.save(gif_filename, writer=PillowWriter(fps=5))
+            ani.save(gif_filename, writer=PillowWriter(fps=5), dpi=dpi)
             print("Saved.")
         
         plt.show()
