@@ -21,7 +21,7 @@ dependencies = [
     "ismrmrd",
     "matplotlib>=3.5",
     "pydisseqt>=0.1.13",
-    "pypulseq",           
+    "pypulseq<1.5",           
     "requests>=2.20",
     "scikit-image",
     "scipy>=1.7",
@@ -34,7 +34,7 @@ dependencies = [
 # --- OPTIONAL INSTALLS ---
 [project.optional-dependencies]
 # to select pypulseq 1.4 or <1.5 use pip install mrzerocore[pp14]
-pp14 = ["pypulseq<1.5.0"]
+pp15 = ["pypulseq"]
 
 [project.urls]
 Repository = "https://github.com/MRsources/MRzero-Core"
@@ -46,3 +46,4 @@ profile = "release"
 strip = true
 module-name = "MRzeroCore._prepass"
 python-source = "python"
+
