@@ -442,7 +442,9 @@ class Sequence(list):
             The shim_array used for pulses that do not specify it themselves.
         ref_voltage : float
             If a .dsv file is imported, this is used to convert pulses from
-            volts to angles. A 1 ms block pulse of ref_voltage is a 180 ° flip
+            volts to angles. Make sure to use 1Tx systems for dsv simulation, 
+            otherwise the ref_voltage will not match to the concerted flip angle!!
+            A 1 ms block pulse of ref_voltage is a 180 ° flip
         resolution : int | None
             .dsv files do not contain data for the number of ADC samples.
             This is used to specify the number of samples per ADC block.
