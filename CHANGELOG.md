@@ -1,3 +1,19 @@
+- 0.4.6
+  - Small bugfixes
+  - restrict pypulseq dependency to < 1.5.0
+- 0.4.5
+  - Fix: NIfTI loader supports `int` constants
+  - Fix: Empty tissue masks in `VoxelGridPhantom`
+- 0.4.4
+  - Fix: support for empty tissue masks in NIfTI phantom
+  - Fix: support for int - constants in NIfTI phantom
+  - Remove unsupported platforms from build (32bit windows, intel mac)
+- 0.4.3
+  - Fix python package normalization
+- 0.4.2
+  - Add NIfTI phantom support
+  - Fix custom voxel phantom plot
+  - Make isochromat sim GPU compatible
 - 0.4.0
   - Integrate ISMRMD exporter
   - Update documentation

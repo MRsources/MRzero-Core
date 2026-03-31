@@ -79,7 +79,7 @@ class NiftiRef:
         if not m:
             raise ValueError("Invalid file_ref", m)
         return cls(file_name=Path(m.group("file")), tissue_index=int(m.group("idx")))
-    
+
     def to_str(self) -> str:
         return f"{self.file_name}[{self.tissue_index}]"
 
@@ -94,10 +94,7 @@ class NiftiMapping:
         return cls(file=NiftiRef.parse(config["file"]), func=config["func"])
 
     def to_dict(self) -> dict[str, Any]:
-        return {
-            "file": self.file.to_str(),
-            "func": self.func
-        }
+        return {"file": self.file.to_str(), "func": self.func}
 
 
 @dataclass
@@ -118,7 +115,7 @@ class NiftiTissue:
     @classmethod
     def from_dict(cls, config: dict[str, Any]):
         def parse_prop(prop):
-            if isinstance(prop, float):
+            if isinstance(prop, (float, int)):
                 return float(prop)
             elif isinstance(prop, str):
                 return NiftiRef.parse(prop)
@@ -131,14 +128,14 @@ class NiftiTissue:
             T2=parse_prop(config.get("T2", float("inf"))),
             T2dash=parse_prop(config.get("T2'", float("inf"))),
             ADC=parse_prop(config.get("ADC", 0.0)),
-            dB0=parse_prop(config.get("dB0", 1.0)),
+            dB0=parse_prop(config.get("dB0", 0.0)),
             B1_tx=[parse_prop(ch) for ch in config.get("B1+", [1.0])],
             B1_rx=[parse_prop(ch) for ch in config.get("B1-", [1.0])],
         )
 
     def to_dict(self) -> dict:
         def serialize_prop(prop):
-            if isinstance(prop, float):
+            if isinstance(prop, (float, int)):
                 return prop
             elif isinstance(prop, NiftiRef):
                 return prop.to_str()
@@ -181,6 +178,7 @@ class NiftiPhantom:
     def save(self, path: Path | str):
         import json
         import os
+
         path = Path(path)
 
         os.makedirs(path.parent, exist_ok=True)

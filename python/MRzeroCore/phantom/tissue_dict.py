@@ -173,21 +173,27 @@ class TissueDict(dict[str, VoxelGridPhantom]):
               ) -> SimData:
         data_list = [self[tissue].build(PD_threshold, voxel_shape) for tissue in self]
 
-        return SimData(
-            PD=torch.cat([obj.PD for obj in data_list]),
-            T1=torch.cat([obj.T1 for obj in data_list]),
-            T2=torch.cat([obj.T2 for obj in data_list]),
-            T2dash=torch.cat([obj.T2dash for obj in data_list]),
-            D=torch.cat([obj.D for obj in data_list]),
-            B0=torch.cat([obj.B0 for obj in data_list]),
-            B1=torch.cat([obj.B1 for obj in data_list], 1),
-            coil_sens=torch.cat([obj.coil_sens for obj in data_list], 1),
-            voxel_pos=torch.cat([obj.voxel_pos for obj in data_list], 0),
-            tissue_masks=torch.stack([obj.tissue_masks for obj in data_list]),
-            size=data_list[0].size,
-            nyquist=data_list[0].nyquist,
-            dephasing_func=data_list[0].dephasing_func,
-        )
+        kwargs = {
+            "PD": torch.cat([obj.PD for obj in data_list]),
+            "T1": torch.cat([obj.T1 for obj in data_list]),
+            "T2": torch.cat([obj.T2 for obj in data_list]),
+            "T2dash": torch.cat([obj.T2dash for obj in data_list]),
+            "D": torch.cat([obj.D for obj in data_list]),
+            "B0": torch.cat([obj.B0 for obj in data_list]),
+            "B1": torch.cat([obj.B1 for obj in data_list], 1),
+            "coil_sens": torch.cat([obj.coil_sens for obj in data_list], 1),
+            "voxel_pos": torch.cat([obj.voxel_pos for obj in data_list], 0),
+            "size": data_list[0].size,
+            "nyquist": data_list[0].nyquist,
+            "dephasing_func": data_list[0].dephasing_func,
+        }
+
+        # Only add tissue_masks if any object has it non-empty
+        if any(obj.tissue_masks for obj in data_list):
+            kwargs["tissue_masks"] = torch.stack([obj.tissue_masks for obj in data_list])
+
+        return SimData(**kwargs)
+
 
 # ============================
 # Helpers for importing NIfTIs
