@@ -422,6 +422,7 @@ class Sequence(list):
                     default_shim: torch.Tensor = torch.asarray([[1, 0]], dtype=torch.float32),
                     ref_voltage: float = 300.0,
                     resolution: Optional[int] = None,
+                    output_dir: Optional[str] = None,
                     ) -> Sequence:
         """Import a pulseq .seq file or a bundle of .dsv files.
 
@@ -456,7 +457,23 @@ class Sequence(list):
         if file_name.endswith(".seq"):
             parser = pydisseqt.load_pulseq(file_name)
         else:
-            parser = pydisseqt.load_dsv(file_name, ref_voltage, resolution)
+            #try import of from dsv2pulseq import read_dsv
+            try:
+                from dsv2pulseq import read_dsv
+                import os
+            except ImportError:
+                raise ImportError(
+                    "To import .dsv files, please install the dsv2pulseq package"
+                )
+            seq_temp = read_dsv(file_name, ref_volt=ref_voltage)
+            os.makedirs(output_dir, exist_ok=True)
+            seq_name = os.path.basename(file_name) + '_dsv2seq.seq'
+            seq_dsv_path = os.path.join(output_dir, seq_name)
+            seq_pulseq_dsv = seq_temp.make_pulseq_sequence(seq_dsv_path)
+            print(f"Saved .seq file to: {seq_dsv_path}")
+            parser = pydisseqt.load_pulseq(seq_dsv_path)
+            #parser = pydisseqt.load_dsv(file_name, ref_voltage, resolution)
+
         if print_stats:
             print(f"Importing the .seq file took {time() - start} s")
         start = time()
