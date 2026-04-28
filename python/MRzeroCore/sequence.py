@@ -62,7 +62,7 @@ class Pulse:
 	duration: torch.Tensor
 		pulse duration in seconds
 	grad: torch.Tensor (dim=3)
-		gradient during the pulse in T/m per channel (x,y,z)
+		gradient during the pulse in Hz/m per channel (x,y,z)
     off_ress: bool
         Specifies if the pulse should be simulated with the off-resonance treatment        
     shim_array : torch.Tensor
