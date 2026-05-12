@@ -191,6 +191,11 @@ class Repetition:
         self.gradm = gradm
         self.adc_phase = adc_phase
         self.adc_usage = adc_usage
+        # Per-event integer labels (pulseq LABELSET/LABELINC state at the time
+        # each ADC fires). Populated by the pulseq_rs importer; empty otherwise.
+        # Each tensor has shape (event_count,); values at non-ADC events are
+        # meaningless and should be masked by adc_usage > 0.
+        self.adc_labels: dict[str, torch.Tensor] = {}
 
     def cuda(self, device: int | None = None) -> Repetition:
         """Move this repetition to the specified CUDA device and return it."""
@@ -415,6 +420,96 @@ class Sequence(list):
     def get_duration(self) -> float:
         """Calculate the total duration of self in seconds."""
         return sum(rep.event_time.sum().item() for rep in self)
+
+    def get_adc_labels(self, name: str) -> torch.Tensor:
+        """Return the values of a pulseq label for every measured ADC sample.
+
+        The label is read from each event with ``adc_usage > 0`` and the
+        result is concatenated across all repetitions, giving a 1-D
+        ``int32`` tensor whose length equals the total number of measured
+        samples in the sequence. Useful for reconstruction code that needs
+        the per-sample ``lin`` / ``par`` / ``slc`` / … indices.
+
+        Parameters
+        ----------
+        name : str
+            Label name as used by pulseq: one of ``"slc"``, ``"seg"``,
+            ``"rep"``, ``"avg"``, ``"set"``, ``"eco"``, ``"phs"``, ``"lin"``,
+            ``"par"``, ``"acq"`` (counters), or ``"nav"``, ``"rev"``,
+            ``"sms"``, ``"ref"``, ``"ima"``, ``"off"``, ``"noise"`` (flags,
+            returned as ``0`` / ``1``).
+
+        Raises
+        ------
+        KeyError
+            If the sequence has no labels (i.e. it wasn't imported with the
+            ``pulseq_rs`` backend) or the requested name doesn't exist.
+        """
+        chunks: list[torch.Tensor] = []
+        for rep in self:
+            if name not in rep.adc_labels:
+                raise KeyError(
+                    f"label {name!r} not available on this sequence; ensure "
+                    f"it was imported with backend='pulseq_rs'"
+                )
+            mask = rep.adc_usage > 0
+            chunks.append(rep.adc_labels[name][mask])
+        if not chunks:
+            return torch.zeros(0, dtype=torch.int32)
+        return torch.cat(chunks)
+
+    def get_label_changes(self, name: str) -> list[tuple[int, int]]:
+        """Return repetition-wise changes of a pulseq label.
+
+        Walks the sequence in order, collapses each repetition to the single
+        value of ``name`` across all of its ADC samples, and emits a
+        ``(rep_index, new_value)`` pair whenever that value differs from the
+        previous one. The first repetition that carries an ADC is always
+        emitted as the baseline.
+
+        Repetitions without any ADC are skipped (they have no opinion on
+        the label state). If a single repetition contains ADCs with
+        different values for ``name``, this is treated as illegal — the
+        intended use case is splitting the sequence on label changes, which
+        requires one value per repetition.
+
+        Parameters
+        ----------
+        name : str
+            See :meth:`get_adc_labels`.
+
+        Raises
+        ------
+        ValueError
+            If any repetition contains multiple distinct values for ``name``
+            among its ADC samples.
+        KeyError
+            If the label is not available on this sequence.
+        """
+        changes: list[tuple[int, int]] = []
+        prev: Optional[int] = None
+        for i, rep in enumerate(self):
+            if name not in rep.adc_labels:
+                raise KeyError(
+                    f"label {name!r} not available on this sequence; ensure "
+                    f"it was imported with backend='pulseq_rs'"
+                )
+            mask = rep.adc_usage > 0
+            if not mask.any():
+                continue
+            vals = rep.adc_labels[name][mask]
+            uniq = torch.unique(vals)
+            if uniq.numel() != 1:
+                raise ValueError(
+                    f"label {name!r} has multiple values "
+                    f"{uniq.tolist()} within repetition {i}; cannot collapse "
+                    f"to a single per-rep value"
+                )
+            v = int(uniq.item())
+            if v != prev:
+                changes.append((i, v))
+                prev = v
+        return changes
 
     @classmethod
     def import_file(cls, file_name: str,
@@ -670,11 +765,21 @@ class Sequence(list):
 
         adc_times_per_block = [None] * len(blocks)
         adc_phases_per_block = [None] * len(blocks)
+        # Labels live at the block (ADC) level, so one dict per ADC block is
+        # enough — every sample inside that block shares the same snapshot.
+        adc_labels_per_block: list[Optional[dict[str, int]]] = [None] * len(blocks)
         for j, b in enumerate(blocks):
             if b.adc is None:
                 continue
             adc_times_per_block[j] = [b.start + t for t in b.adc.sample_times()]
             adc_phases_per_block[j] = list(b.adc.sample_phases())
+            adc_labels_per_block[j] = b.adc.labels()
+
+        label_names: list[str] = []
+        for lbl in adc_labels_per_block:
+            if lbl is not None:
+                label_names = list(lbl.keys())
+                break
 
         def pulse_usage(angle: float) -> PulseUsage:
             if abs(angle) < 100 * np.pi / 180:
@@ -696,9 +801,12 @@ class Sequence(list):
                         out.append(t)
             return out
 
-        def adcs_in(t0: float, t1: float) -> tuple[list[float], list[float]]:
+        def adcs_in(t0: float, t1: float) -> tuple[
+            list[float], list[float], list[dict[str, int]]
+        ]:
             times_out: list[float] = []
             phases_out: list[float] = []
+            labels_out: list[dict[str, int]] = []
             for j in range(len(blocks)):
                 if block_starts[j] >= t1 or block_ends[j] <= t0:
                     continue
@@ -706,11 +814,14 @@ class Sequence(list):
                 if ts is None:
                     continue
                 ph = adc_phases_per_block[j]
+                lbl = adc_labels_per_block[j]
+                assert ph is not None and lbl is not None
                 for k, t in enumerate(ts):
                     if t0 <= t <= t1:
                         times_out.append(t)
                         phases_out.append(ph[k])
-            return times_out, phases_out
+                        labels_out.append(lbl)
+            return times_out, phases_out, labels_out
 
         def integrate_axis(axis: str, t0: float, t1: float) -> float:
             if t1 <= t0:
@@ -760,7 +871,7 @@ class Sequence(list):
             else:
                 shim_arr = torch.as_tensor(shims, dtype=torch.float32)
 
-            adcs, adc_phases = adcs_in(rep_start, rep_end)
+            adcs, adc_phases, adc_label_snapshots = adcs_in(rep_start, rep_end)
 
             if exact_trajectories:
                 first = pe
@@ -833,6 +944,13 @@ class Sequence(list):
                 phases_t = np.pi / 2 - torch.as_tensor(adc_phases)
                 rep.adc_usage[adc_start:adc_start + len(adcs)] = 1
                 rep.adc_phase[adc_start:adc_start + len(adcs)] = phases_t
+
+            if label_names and adc_label_snapshots and adc_start is not None:
+                for name in label_names:
+                    t = torch.zeros(event_count, dtype=torch.int32)
+                    for k, snap in enumerate(adc_label_snapshots):
+                        t[adc_start + k] = snap[name]
+                    rep.adc_labels[name] = t
 
         if print_stats:
             print(f"Converting the sequence to mr0 took {time() - start} s")

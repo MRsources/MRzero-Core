@@ -229,6 +229,7 @@ pub struct PyAdc {
     #[pyo3(get)]
     phase: f64,
     phase_shape: Option<Arc<int::Shape<f64>>>,
+    labels: int::Labels,
 }
 
 #[pymethods]
@@ -252,6 +253,33 @@ impl PyAdc {
             }
         }
         out
+    }
+
+    /// Snapshot of the pulseq label state at the time this ADC fires.
+    /// Counters (slc, seg, rep, …) come back as `i32`; boolean flags
+    /// (nav, rev, …) are returned as `0` / `1` so callers can pack them
+    /// into a single tensor type.
+    fn labels(&self) -> HashMap<&'static str, i32> {
+        let l = self.labels;
+        let mut m = HashMap::with_capacity(17);
+        m.insert("slc", l.slc);
+        m.insert("seg", l.seg);
+        m.insert("rep", l.rep);
+        m.insert("avg", l.avg);
+        m.insert("set", l.set);
+        m.insert("eco", l.eco);
+        m.insert("phs", l.phs);
+        m.insert("lin", l.lin);
+        m.insert("par", l.par);
+        m.insert("acq", l.acq);
+        m.insert("nav", l.nav as i32);
+        m.insert("rev", l.rev as i32);
+        m.insert("sms", l.sms as i32);
+        m.insert("ref", l.ref_ as i32);
+        m.insert("ima", l.ima as i32);
+        m.insert("off", l.off as i32);
+        m.insert("noise", l.noise as i32);
+        m
     }
 
     fn __repr__(&self) -> String {
@@ -388,6 +416,7 @@ fn adc_to_py(py: Python, adc: &int::Adc) -> PyResult<Py<PyAdc>> {
             freq: adc.freq,
             phase: adc.phase,
             phase_shape: adc.phase_shape.clone(),
+            labels: adc.labels,
         },
     )
 }
