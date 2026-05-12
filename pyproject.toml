@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "mrzerocore"
-version = "0.4.6"
+version = "0.4.7"
 description = "Core functionality of MRzero"
 authors = [
     {name = "Jonathan Endres", email = "jonathan.endres@uk-erlangen.de"},
@@ -16,12 +16,12 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: PyPy",
     "License :: OSI Approved :: GNU Affero General Public License v3",
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
     "ismrmrd",
     "matplotlib>=3.5",
     "pydisseqt>=0.1.13",
-    "pypulseq<1.5.0",
+    "pypulseq<1.5",           
     "requests>=2.20",
     "scikit-image",
     "scipy>=1.7",
@@ -30,6 +30,11 @@ dependencies = [
     "tqdm",
     "nibabel",
 ]
+
+# --- OPTIONAL INSTALLS ---
+[project.optional-dependencies]
+# to select pypulseq 1.4 or <1.5 use pip install mrzerocore[pp14]
+pp15 = ["pypulseq"]
 
 [project.urls]
 Repository = "https://github.com/MRsources/MRzero-Core"
@@ -41,3 +46,4 @@ profile = "release"
 strip = true
 module-name = "MRzeroCore._prepass"
 python-source = "python"
+
