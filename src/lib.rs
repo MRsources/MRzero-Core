@@ -3,6 +3,7 @@ use pyo3::prelude::*;
 use pyo3::types::*;
 use pyo3::{wrap_pyfunction, PyTraverseError};
 mod pre_pass;
+mod seq_import;
 use pre_pass::{comp_graph, Repetition};
 use std::{collections::HashMap, slice::from_raw_parts, time::Instant};
 
@@ -287,6 +288,13 @@ fn compute_graph<'p>(
 fn _prepass(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(compute_graph, m)?)?;
     m.add_class::<PyDistribution>()?;
+
+    m.add_function(wrap_pyfunction!(seq_import::load_pulseq_rs, m)?)?;
+    m.add_class::<seq_import::PyInterpSeq>()?;
+    m.add_class::<seq_import::PyBlock>()?;
+    m.add_class::<seq_import::PyRf>()?;
+    m.add_class::<seq_import::PyGradient>()?;
+    m.add_class::<seq_import::PyAdc>()?;
 
     Ok(())
 }

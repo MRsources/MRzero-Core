@@ -1,9 +1,10 @@
 from __future__ import annotations
 from time import time
+import warnings
 import torch
 import numpy as np
 from enum import Enum
-from typing import Iterable, Optional
+from typing import Iterable, Literal, Optional
 import matplotlib.pyplot as plt
 
 # TODO: if everything is working, deprecate old pulseq loader
@@ -422,6 +423,12 @@ class Sequence(list):
                     default_shim: torch.Tensor = torch.asarray([[1, 0]], dtype=torch.float32),
                     ref_voltage: float = 300.0,
                     resolution: Optional[int] = None,
+                    backend: Literal["pydisseqt", "pulseq_rs"] = "pydisseqt",
+                    larmor_hz: Optional[float] = None,
+                    fov_scale: Optional[float] = None,
+                    fov_pos: Optional[tuple[float, float, float]] = None,
+                    fov_rot: Optional[tuple[float, float, float, float]] = None,
+                    soft_delays: Optional[dict[str, float]] = None,
                     ) -> Sequence:
         """Import a pulseq .seq file or a bundle of .dsv files.
 
@@ -446,12 +453,51 @@ class Sequence(list):
             .dsv files do not contain data for the number of ADC samples.
             This is used to specify the number of samples per ADC block.
             If false, uses the .dsv time step as ADC dwell time
+        backend : "pydisseqt" | "pulseq_rs"
+            Parser used to read the .seq file. ``"pydisseqt"`` (default) is the
+            legacy path. ``"pulseq_rs"`` uses the Rust pulseq-rs parser via the
+            bundled extension; .dsv files always fall back to pydisseqt.
+        larmor_hz, fov_scale, fov_pos, fov_rot, soft_delays
+            Forwarded to the pulseq-rs interpreter when ``backend="pulseq_rs"``;
+            ignored for the pydisseqt backend.
 
         Returns
         -------
         mr0.Sequence
             The imported file as mr0 Sequence
         """
+        if not file_name.endswith(".seq") and backend == "pulseq_rs":
+            warnings.warn(
+                "pulseq_rs backend only supports .seq files; falling back "
+                "to pydisseqt for DSV input.",
+                stacklevel=2,
+            )
+            backend = "pydisseqt"
+
+        if backend == "pulseq_rs":
+            return cls._import_pulseq_rs(
+                file_name, exact_trajectories, print_stats, default_shim,
+                larmor_hz=larmor_hz, fov_scale=fov_scale,
+                fov_pos=fov_pos, fov_rot=fov_rot, soft_delays=soft_delays,
+            )
+        elif backend == "pydisseqt":
+            return cls._import_pydisseqt(
+                file_name, exact_trajectories, print_stats, default_shim,
+                ref_voltage, resolution,
+            )
+        else:
+            raise ValueError(
+                f"unknown backend {backend!r}; expected 'pydisseqt' or 'pulseq_rs'"
+            )
+
+    @classmethod
+    def _import_pydisseqt(cls, file_name: str,
+                          exact_trajectories: bool,
+                          print_stats: bool,
+                          default_shim: torch.Tensor,
+                          ref_voltage: float,
+                          resolution: Optional[int],
+                          ) -> Sequence:
         start = time()
         if file_name.endswith(".seq"):
             parser = pydisseqt.load_pulseq(file_name)
@@ -569,6 +615,224 @@ class Sequence(list):
                 phases = np.pi / 2 - torch.as_tensor(samples.adc.phase)
                 rep.adc_usage[adc_start:adc_start + len(adcs)] = 1
                 rep.adc_phase[adc_start:adc_start + len(adcs)] = phases
+
+        if print_stats:
+            print(f"Converting the sequence to mr0 took {time() - start} s")
+        return seq
+
+    """credits @ Claude"""
+    @classmethod
+    def _import_pulseq_rs(cls, file_name: str,
+                          exact_trajectories: bool,
+                          print_stats: bool,
+                          default_shim: torch.Tensor,
+                          *,
+                          larmor_hz: Optional[float] = None,
+                          fov_scale: Optional[float] = None,
+                          fov_pos: Optional[tuple[float, float, float]] = None,
+                          fov_rot: Optional[tuple[float, float, float, float]] = None,
+                          soft_delays: Optional[dict[str, float]] = None,
+                          ) -> Sequence:
+        from . import _prepass  # local import to avoid touching module init order
+
+        start = time()
+        interp = _prepass.load_pulseq_rs(
+            file_name,
+            larmor_hz=larmor_hz,
+            fov_scale=fov_scale,
+            fov_pos=fov_pos,
+            fov_rot=fov_rot,
+            soft_delays=soft_delays,
+        )
+        if print_stats:
+            print(f"Importing the .seq file took {time() - start} s")
+        start = time()
+
+        blocks = list(interp.blocks)
+        duration = interp.duration
+
+        # Cache shape-times arrays per block so events_axis_in() doesn't keep
+        # rebuilding them through the FFI.
+        block_starts = [b.start for b in blocks]
+        block_ends = [b.start + b.duration for b in blocks]
+        grad_breakpoints = {  # absolute times of every breakpoint per (block, axis)
+            "x": [None] * len(blocks),
+            "y": [None] * len(blocks),
+            "z": [None] * len(blocks),
+        }
+        for j, b in enumerate(blocks):
+            for axis in ("x", "y", "z"):
+                g = getattr(b, "g" + axis)
+                if g is None:
+                    continue
+                t_off = b.start + g.delay
+                grad_breakpoints[axis][j] = [t_off + t for t in g.shape_times()]
+
+        adc_times_per_block = [None] * len(blocks)
+        adc_phases_per_block = [None] * len(blocks)
+        for j, b in enumerate(blocks):
+            if b.adc is None:
+                continue
+            adc_times_per_block[j] = [b.start + t for t in b.adc.sample_times()]
+            adc_phases_per_block[j] = list(b.adc.sample_phases())
+
+        def pulse_usage(angle: float) -> PulseUsage:
+            if abs(angle) < 100 * np.pi / 180:
+                return PulseUsage.EXCIT
+            else:
+                return PulseUsage.REFOC
+
+        def events_axis_in(t0: float, t1: float, axis: str) -> list[float]:
+            out: list[float] = []
+            bp = grad_breakpoints[axis]
+            for j in range(len(blocks)):
+                if block_starts[j] >= t1 or block_ends[j] <= t0:
+                    continue
+                times = bp[j]
+                if times is None:
+                    continue
+                for t in times:
+                    if t0 <= t <= t1:
+                        out.append(t)
+            return out
+
+        def adcs_in(t0: float, t1: float) -> tuple[list[float], list[float]]:
+            times_out: list[float] = []
+            phases_out: list[float] = []
+            for j in range(len(blocks)):
+                if block_starts[j] >= t1 or block_ends[j] <= t0:
+                    continue
+                ts = adc_times_per_block[j]
+                if ts is None:
+                    continue
+                ph = adc_phases_per_block[j]
+                for k, t in enumerate(ts):
+                    if t0 <= t <= t1:
+                        times_out.append(t)
+                        phases_out.append(ph[k])
+            return times_out, phases_out
+
+        def integrate_axis(axis: str, t0: float, t1: float) -> float:
+            if t1 <= t0:
+                return 0.0
+            moment = 0.0
+            for j in range(len(blocks)):
+                if block_starts[j] >= t1 or block_ends[j] <= t0:
+                    continue
+                g = getattr(blocks[j], "g" + axis)
+                if g is None:
+                    continue
+                lo = max(t0, block_starts[j]) - block_starts[j]
+                hi = min(t1, block_ends[j]) - block_starts[j]
+                if hi > lo:
+                    moment += g.integrate(lo, hi)
+            return moment
+
+        seq = cls(normalized_grads=False)
+
+        # Discover RF pulses: each RF-bearing block produces one (start, end).
+        pulses: list[tuple[float, float, int]] = []  # (pulse_start, pulse_end, block_idx)
+        for j, b in enumerate(blocks):
+            if b.rf is None:
+                continue
+            ps = b.start + b.rf.delay
+            pe = ps + b.rf.shape_duration
+            pulses.append((ps, pe, j))
+
+        for i in range(len(pulses)):
+            ps, pe, b_idx = pulses[i]
+            rep_start = 0.5 * (ps + pe)
+            if i + 1 < len(pulses):
+                rep_end = 0.5 * (pulses[i + 1][0] + pulses[i + 1][1])
+            else:
+                rep_end = duration
+
+            rf = blocks[b_idx].rf
+            angle, phase = rf.integrate(0.0, rf.shape_duration)
+
+            # Shim handling: pulseq-rs always returns a list, with [(1.0, 0.0)]
+            # meaning "no shim" - in that case fall back to the default.
+            shims = rf.shims
+            if (len(shims) == 1
+                    and abs(shims[0][0] - 1.0) < 1e-12
+                    and abs(shims[0][1]) < 1e-12):
+                shim_arr = default_shim.clone()
+            else:
+                shim_arr = torch.as_tensor(shims, dtype=torch.float32)
+
+            adcs, adc_phases = adcs_in(rep_start, rep_end)
+
+            if exact_trajectories:
+                first = pe
+                last = pulses[i + 1][0] if i + 1 < len(pulses) else rep_end
+                eps = 1e-6
+                precision = 6
+
+                if len(adcs) > 0:
+                    grad_before = sorted({round(t, precision) for t in (
+                        events_axis_in(first + eps, adcs[0] - eps, "x") +
+                        events_axis_in(first + eps, adcs[0] - eps, "y") +
+                        events_axis_in(first + eps, adcs[0] - eps, "z")
+                    )})
+                    grad_after = sorted({round(t, precision) for t in (
+                        events_axis_in(adcs[-1] + eps, last - eps, "x") +
+                        events_axis_in(adcs[-1] + eps, last - eps, "y") +
+                        events_axis_in(adcs[-1] + eps, last - eps, "z")
+                    )})
+                    if i == len(pulses) - 1:
+                        abs_times = [rep_start, first] + grad_before + adcs
+                    else:
+                        abs_times = ([rep_start, first] + grad_before + adcs +
+                                     grad_after + [last, rep_end])
+                    adc_start = 2 + len(grad_before) - 1
+                else:
+                    grad = sorted({round(t, precision) for t in (
+                        events_axis_in(first + eps, last - eps, "x") +
+                        events_axis_in(first + eps, last - eps, "y") +
+                        events_axis_in(first + eps, last - eps, "z")
+                    )})
+                    if i == len(pulses) - 1:
+                        abs_times = [rep_start, first] + grad
+                    else:
+                        abs_times = [rep_start, first] + grad + [last, rep_end]
+                    adc_start = None
+            else:
+                abs_times = [rep_start] + adcs + [rep_end]
+                adc_start = 0
+
+            event_count = len(abs_times) - 1
+
+            if print_stats:
+                print(
+                    f"Rep. {i + 1}: {event_count} samples, of which "
+                    f"{len(adcs)} are ADC (starting at {adc_start})"
+                )
+
+            mom_x = np.empty(event_count, dtype=np.float64)
+            mom_y = np.empty(event_count, dtype=np.float64)
+            mom_z = np.empty(event_count, dtype=np.float64)
+            for k in range(event_count):
+                t0 = abs_times[k]
+                t1 = abs_times[k + 1]
+                mom_x[k] = integrate_axis("x", t0, t1)
+                mom_y[k] = integrate_axis("y", t0, t1)
+                mom_z[k] = integrate_axis("z", t0, t1)
+
+            rep = seq.new_rep(event_count)
+            rep.pulse.angle = torch.as_tensor(angle)
+            rep.pulse.phase = torch.as_tensor(phase)
+            rep.pulse.usage = pulse_usage(angle)
+            rep.pulse.shim_array = shim_arr
+
+            rep.event_time[:] = torch.as_tensor(np.diff(abs_times))
+            rep.gradm[:, 0] = torch.as_tensor(mom_x)
+            rep.gradm[:, 1] = torch.as_tensor(mom_y)
+            rep.gradm[:, 2] = torch.as_tensor(mom_z)
+
+            if adc_start is not None:
+                phases_t = np.pi / 2 - torch.as_tensor(adc_phases)
+                rep.adc_usage[adc_start:adc_start + len(adcs)] = 1
+                rep.adc_phase[adc_start:adc_start + len(adcs)] = phases_t
 
         if print_stats:
             print(f"Converting the sequence to mr0 took {time() - start} s")

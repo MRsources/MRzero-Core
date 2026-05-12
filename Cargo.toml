@@ -10,3 +10,4 @@ crate-type = ["cdylib"]
 [dependencies]
 pyo3 = { version = "0.21.2", features = ["abi3-py37", "extension-module", "num-complex"] }
 num-complex = "0.4.6"
+pulseq-rs = { git = "https://github.com/pulseq-frame/pulseq-rs.git" }
