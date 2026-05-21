@@ -142,27 +142,22 @@ class VoxelGridPhantom:
 
         shape = torch.tensor(mask.shape)
         pos_x, pos_y, pos_z = torch.meshgrid(
-            self.size[0] *
-            torch.fft.fftshift(torch.fft.fftfreq(
-                int(shape[0]), device=self.PD.device)),
-            self.size[1] *
-            torch.fft.fftshift(torch.fft.fftfreq(
-                int(shape[1]), device=self.PD.device)),
-            self.size[2] *
-            torch.fft.fftshift(torch.fft.fftfreq(
-                int(shape[2]), device=self.PD.device)),
+            torch.arange(
+                int(shape[0]), dtype=torch.float32, device=self.PD.device),
+            torch.arange(
+                int(shape[1]), dtype=torch.float32, device=self.PD.device),
+            torch.arange(
+                int(shape[2]), dtype=torch.float32, device=self.PD.device),
             indexing="ij"
         )
         
-        pos = torch.stack([pos_x, pos_y, pos_z], dim=-1)
-        U, _, Vh = torch.linalg.svd(self.affine[:3,:3])
-        R = U @ Vh
+        pos = torch.stack([pos_x, pos_y, pos_z], dim=-1)  
         
         pos_rot = torch.einsum(
             'ij,xyzj->xyzi',
-            R,
+            self.affine[:3,:3] / 1000,
             pos
-        )     
+        ) + self.affine[None, None, None, :3,3] / 1000
         
         voxel_pos = pos_rot[mask]
 
@@ -190,7 +185,7 @@ class VoxelGridPhantom:
             self.size,
             self.affine,
             voxel_pos,
-            R @ (torch.as_tensor(shape, device=self.PD.device) / 2 / self.size).T,
+            500 / torch.linalg.norm(self.affine[:3,:3], dim=0),
             dephasing_func,
             recover_func=lambda data: recover(mask, data),
             phantom_motion=self.phantom_motion,
