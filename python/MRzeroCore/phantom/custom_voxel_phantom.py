@@ -129,6 +129,8 @@ class CustomVoxelPhantom:
         # TODO: until the dephasing func fix is here, this only works on the
         # device self.voxel_size happens to be on
         size = self.voxel_pos.max(0).values - self.voxel_pos.min(0).values
+        
+        affine = torch.eye(3,4)
 
         return SimData(
             self.PD,
@@ -140,6 +142,7 @@ class CustomVoxelPhantom:
             self.B1[None, :],
             torch.ones(1, self.PD.numel()),
             size,
+            affine,
             self.voxel_pos,
             torch.tensor([float('inf'), float('inf'), float('inf')]),
             build_dephasing_func(self.voxel_shape, self.voxel_size),
