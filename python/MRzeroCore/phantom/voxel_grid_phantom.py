@@ -84,6 +84,8 @@ class VoxelGridPhantom:
         (coil_count, sx, sy, sz) tensor of coil sensitivities
     size : torch.Tensor
         Size of the data, in meters.
+    affine : torch.Tensor
+        Affine matrix of the phantom data, in millimeters.
     tissue_masks : Dict[str, torch.Tensor] | None
         Segmentation masks for different tissues. The keys are the tissue names
     """
@@ -99,6 +101,7 @@ class VoxelGridPhantom:
         B1: torch.Tensor,
         coil_sens: torch.Tensor,
         size: torch.Tensor,
+        affine: torch.Tensor,
         phantom_motion=None,
         voxel_motion=None,
         tissue_masks: Optional[Dict[str,torch.Tensor]] = None,
@@ -120,6 +123,7 @@ class VoxelGridPhantom:
             self.tissue_masks = {}
         self.coil_sens = torch.as_tensor(coil_sens, dtype=torch.complex64)
         self.size = torch.as_tensor(size, dtype=torch.float32)
+        self.affine = torch.as_tensor(affine, dtype=torch.float32)
 
         self.phantom_motion = phantom_motion
         self.voxel_motion = voxel_motion
@@ -149,12 +153,18 @@ class VoxelGridPhantom:
                 int(shape[2]), device=self.PD.device)),
             indexing="ij"
         )
-
-        voxel_pos = torch.stack([
-            pos_x[mask].flatten(),
-            pos_y[mask].flatten(),
-            pos_z[mask].flatten()
-        ], dim=1)
+        
+        pos = torch.stack([pos_x, pos_y, pos_z], dim=-1)
+        U, _, Vh = torch.linalg.svd(self.affine[:3,:3])
+        R = U @ Vh
+        
+        pos_rot = torch.einsum(
+            'ij,xyzj->xyzi',
+            R,
+            pos
+        )     
+        
+        voxel_pos = pos_rot[mask]
 
         if voxel_shape == "box":
             def dephasing_func(t, n): return sinc(t, 0.5 / n)
@@ -178,8 +188,9 @@ class VoxelGridPhantom:
             self.B1[:, mask],
             self.coil_sens[:, mask],
             self.size,
+            self.affine,
             voxel_pos,
-            torch.as_tensor(shape, device=self.PD.device) / 2 / self.size,
+            R @ (torch.as_tensor(shape, device=self.PD.device) / 2 / self.size).T,
             dephasing_func,
             recover_func=lambda data: recover(mask, data),
             phantom_motion=self.phantom_motion,
@@ -210,7 +221,13 @@ class VoxelGridPhantom:
                 size = torch.tensor(data['FOV'], dtype=torch.float)
             except KeyError:
                 size = torch.tensor([0.192, 0.192, 0.192])
-
+            
+            affine = torch.eye(3,4)
+            affine[0, 0] = size[0] / PD.shape[0] * 1000
+            affine[1, 1] = size[1] / PD.shape[1] * 1000
+            affine[2, 2] = size[2] / PD.shape[2] * 1000
+            affine[:, 3] = -size / 2 * 1000
+            
             tissue_masks = {
                 key: torch.tensor(mask)
                 for key, mask in data.items()
@@ -222,7 +239,7 @@ class VoxelGridPhantom:
 
         return cls(
             PD, T1, T2, T2dash, D, B0, B1,
-            torch.ones(1, *PD.shape), size,
+            torch.ones(1, *PD.shape), size, affine,
             tissue_masks=tissue_masks
         )
 
@@ -283,7 +300,13 @@ class VoxelGridPhantom:
             T2dash = torch.full_like(data[..., 0], T2dash)
         if isinstance(D, float):
             D = torch.full_like(data[..., 0], D)
-
+        
+        affine = torch.eye(3,4)
+        affine[0, 0] = size[0] / data[..., 0].shape[0] * 1000
+        affine[1, 1] = size[1] / data[..., 0].shape[1] * 1000
+        affine[2, 2] = size[2] / data[..., 0].shape[2] * 1000
+        affine[:, 3] = -size / 2 * 1000
+        
         return cls(
             data[..., 0],  # PD
             data[..., 1],  # T1
@@ -294,6 +317,7 @@ class VoxelGridPhantom:
             data[..., 4][None, ...],  # B1
             coil_sens=torch.ones(1, *data.shape[:-1]),
             size=torch.as_tensor(size),
+            affine=affine,
         )
 
     def slices(self, slices: list[int]) -> VoxelGridPhantom:
@@ -331,6 +355,7 @@ class VoxelGridPhantom:
             select_multicoil(self.B1),
             select_multicoil(self.coil_sens),
             self.size.clone(),
+            self.affine.clone(),
             tissue_masks={
                 key: mask[..., slices] for key, mask in self.tissue_masks.items()
             },
@@ -373,6 +398,7 @@ class VoxelGridPhantom:
             scale(self.B1.squeeze()).unsqueeze(0),
             scale(self.coil_sens.squeeze()).unsqueeze(0),
             self.size.clone(),
+            self.affine.clone(),
             tissue_masks={
                 key: scale(mask) for key, mask in self.tissue_masks.items()
             }
@@ -438,6 +464,7 @@ class VoxelGridPhantom:
             resample_multicoil(self.B1),
             resample_multicoil(self.coil_sens),
             self.size.clone(),
+            self.affine.clone(),
             tissue_masks=resample_masks(self.tissue_masks)
         )
 
@@ -568,7 +595,8 @@ def recover(mask, sim_data: SimData) -> VoxelGridPhantom:
         to_full(sim_data.B0),
         to_full(sim_data.B1),
         to_full(sim_data.coil_sens),
-        sim_data.size
+        sim_data.size,
+        sim_data.affine,
     )
 
 
