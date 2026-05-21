@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Literal, Any
 from pathlib import Path
 
@@ -63,6 +63,20 @@ class PhantomSystem:
 
     def to_dict(self) -> dict[str, float]:
         return {"gyro": self.gyro, "B0": self.B0}
+
+
+@dataclass
+class ResliceConfig:
+    """Target resampling grid declared inside the phantom JSON."""
+    resolution: list  # [nx, ny, nz] — output voxel count
+    affine: list      # 3×4 NIfTI-style affine in mm (rotation×voxel_size | origin)
+
+    @classmethod
+    def from_dict(cls, config: dict):
+        return cls(resolution=config["resolution"], affine=config["affine"])
+
+    def to_dict(self) -> dict:
+        return {"resolution": self.resolution, "affine": self.affine}
 
 
 @dataclass
@@ -162,6 +176,7 @@ class NiftiPhantom:
     units: PhantomUnits
     system: PhantomSystem
     tissues: dict[str, NiftiTissue]
+    reslice_to: ResliceConfig | None = field(default=None)
 
     @classmethod
     def default(cls, gyro=42.5764, B0=3.0):
@@ -177,13 +192,21 @@ class NiftiPhantom:
 
     def save(self, path: Path | str):
         import json
+        import re
         import os
 
         path = Path(path)
 
         os.makedirs(path.parent, exist_ok=True)
+        text = json.dumps(self.to_dict(), indent=2)
+        # Compact arrays of numbers onto a single line
+        text = re.sub(
+            r'\[(\n\s+[-\d.eE+]+,?)+\n\s*\]',
+            lambda m: '[' + ', '.join(re.findall(r'[-\d.eE+]+', m.group(0))) + ']',
+            text
+        )
         with open(path, "w") as f:
-            json.dump(self.to_dict(), f, indent=2)
+            f.write(text)
 
     @classmethod
     def from_dict(cls, config: dict):
@@ -194,11 +217,13 @@ class NiftiPhantom:
             name: NiftiTissue.from_dict(tissue)
             for name, tissue in config["tissues"].items()
         }
+        reslice_to = (ResliceConfig.from_dict(config["reslice_to"])
+                      if "reslice_to" in config else None)
 
-        return cls(units, system, tissues)
+        return cls(units, system, tissues, reslice_to)
 
     def to_dict(self) -> dict:
-        return {
+        d = {
             "file_type": self.file_type,
             "units": self.units.to_dict(),
             "system": self.system.to_dict(),
@@ -206,3 +231,6 @@ class NiftiPhantom:
                 name: tissue.to_dict() for name, tissue in self.tissues.items()
             },
         }
+        if self.reslice_to is not None:
+            d["reslice_to"] = self.reslice_to.to_dict()
+        return d
