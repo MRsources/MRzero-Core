@@ -1,10 +1,10 @@
 from .voxel_grid_phantom import VoxelGridPhantom
 from .sim_data import SimData
-from .nifti_phantom import NiftiPhantom, NiftiTissue, NiftiRef, NiftiMapping
+from .nifti_phantom import NiftiPhantom, NiftiTissue, NiftiRef, NiftiMapping, ResliceConfig
 from pathlib import Path
 import torch
 import numpy as np
-from typing import Literal
+from typing import Literal, Self
 from functools import lru_cache
 
 
@@ -40,7 +40,7 @@ class TissueDict(dict[str, VoxelGridPhantom]):
         # units are supported (conversion factor 1); this might change in the future
 
         return TissueDict({
-            name: load_tissue(tissue, base_dir)
+            name: load_tissue(tissue, base_dir, reslice=config.reslice_to)
             for name, tissue in config.tissues.items()
         })
     
@@ -106,16 +106,9 @@ class TissueDict(dict[str, VoxelGridPhantom]):
         tissues = {tissue: save_tissue(self[tissue]) for tissue in self.keys()}
 
         # Write the NIfTIs
-        size = np.asarray(next(iter(self.values())).size)
-        vs = 1000 * size / np.asarray(density[0].shape)
-        affine = np.array(
-            [
-                [+vs[0], 0, 0, -size[0] / 2 * 1000],
-                [0, +vs[1], 0, -size[1] / 2 * 1000],
-                [0, 0, +vs[2], -size[2] / 2 * 1000],
-                [0, 0, 0, 0],  # Row ignored
-            ]
-        )
+        affine = np.asarray(next(iter(self.values())).affine)
+        if affine.shape == (3, 4):
+            affine = np.vstack([affine, [0, 0, 0, 1]], dtype=np.float32)
 
         def save_nifti(prop, name):
             if len(prop) > 0:
@@ -135,8 +128,14 @@ class TissueDict(dict[str, VoxelGridPhantom]):
         save_nifti(B1_tx, "B1+")
         save_nifti(B1_rx, "B1-")
 
+        reslice_to = {
+            "resolution": list(next(iter(self.values())).PD.shape),
+            "affine": affine[:3, :4].tolist()
+        }
+
         config = NiftiPhantom.default(gyro, B0)
         config.tissues = tissues
+        config.reslice_to = ResliceConfig.from_dict(reslice_to)
         config.save(path_to_json)
     
     def interpolate(self, x: int, y: int, z: int):
@@ -165,6 +164,7 @@ class TissueDict(dict[str, VoxelGridPhantom]):
         combined.D = sum(seg * p.D for seg, p in zip(segmentation, phantoms))
         combined.B0 = sum(seg * p.B0 for seg, p in zip(segmentation, phantoms))
         combined.B1 = sum(seg[None, ...] * p.B1 for seg, p in zip(segmentation, phantoms))
+        combined.coil_sens = sum(seg[None, ...] * p.coil_sens for seg, p in zip(segmentation, phantoms))
         
         return combined
 
@@ -184,38 +184,159 @@ class TissueDict(dict[str, VoxelGridPhantom]):
             "coil_sens": torch.cat([obj.coil_sens for obj in data_list], 1),
             "voxel_pos": torch.cat([obj.voxel_pos for obj in data_list], 0),
             "size": data_list[0].size,
+            "affine": data_list[0].affine,
             "nyquist": data_list[0].nyquist,
             "dephasing_func": data_list[0].dephasing_func,
+            "recover_func": lambda data: self.recover(data),
+            "tissue_masks": dict(zip(self.keys(), [obj.tissue_masks["combined"] for obj in data_list]))
         }
-
-        # Only add tissue_masks if any object has it non-empty
-        if any(obj.tissue_masks for obj in data_list):
-            kwargs["tissue_masks"] = torch.stack([obj.tissue_masks for obj in data_list])
 
         return SimData(**kwargs)
 
+    def recover(self, sim_data: SimData) -> Self:
+        """Provided to :class:`SimData` to reverse the ``build()``"""
+        
+        assert sim_data.tissue_masks is not None
+        
+        tissues = list(sim_data.tissue_masks.keys())     
+        tissue_begin = 0 # first tissue starts at index 0 in sparse tensors    
+               
+        def to_full(sparse):
+            assert sparse.ndim < 3
+            
+            if sparse.ndim == 2:
+                full = torch.zeros(
+                    [sparse.shape[0], *mask.shape], dtype=sparse.dtype, device=mask.device)
+                full[:, mask] = sparse
+            else:
+                full = torch.zeros(mask.shape, device=mask.device)
+                full[mask] = sparse
+            return full
+        
+        data_list = [] 
+        for tissue in tissues:
+            mask = sim_data.tissue_masks[tissue]     
+            mask = mask.to(sim_data.device)  
+           
+            tissue_end = tissue_begin + torch.sum(mask)  # index of tissue end in sparse tensors         
+            
+            data_list.append(VoxelGridPhantom(
+                                    to_full(sim_data.PD[tissue_begin:tissue_end]),
+                                    to_full(sim_data.T1[tissue_begin:tissue_end]),
+                                    to_full(sim_data.T2[tissue_begin:tissue_end]),
+                                    to_full(sim_data.T2dash[tissue_begin:tissue_end]),
+                                    to_full(sim_data.D[tissue_begin:tissue_end]),
+                                    to_full(sim_data.B0[tissue_begin:tissue_end]),
+                                    to_full(sim_data.B1[:, tissue_begin:tissue_end]),
+                                    to_full(sim_data.coil_sens[:, tissue_begin:tissue_end]),
+                                    sim_data.size,
+                                    sim_data.affine,
+                                )
+                            )
+            
+            
+            tissue_begin = tissue_end # next tissue in sparse tensors starts where last ended
+        
+        # B0, B1 and coil_sens are common maps to all tissues and hence should be the same for all tissues
+        contribution_count = torch.stack([sim_data.tissue_masks[tissue] for tissue in tissues], dim=0).sum(dim=0) # counts how many tissues contribute to a voxel      
+        B0 = torch.stack([phantom.B0 for phantom in data_list], dim=0).sum(dim=0) / contribution_count
+        B1 = torch.stack([phantom.B1 for phantom in data_list], dim=0).sum(dim=0) / contribution_count 
+        coil_sens = torch.stack([phantom.coil_sens for phantom in data_list], dim=0).sum(dim=0) / contribution_count
+        
+        # replace nan values
+        B0[torch.isnan(B0)] = 0.0
+        B1[torch.isnan(B1)] = 0.0
+        coil_sens[torch.isnan(coil_sens)] = 0.0
+        
+        # replace maps in the individual VoxelGridPhantoms
+        for tissue in data_list:
+            tissue.B0 = B0
+            tissue.B1 = B1
+            tissue.coil_sens = coil_sens
+        
+        return TissueDict(dict(zip(tissues, data_list)))
+    
+    def plot(self, tissue="all", plot_masks=False, plot_slice="center", time_unit='s') -> None:
+        """ 
+        Plots the individual tissues of the PhantomDict 
+        
+        Parameters
+        ----------
+        tissue : str, default="all"
+            Specifies which tissue(s) to plot.
+            - ``"all"`` : Plot all tissues stored in the PhantomDict, one after another.
+            - ``"combined"`` : Plot a combined phantom created from all tissues using :meth:`combine`.
+            - any other string is interpreted as a key identifying a single tissue stored in the PhantomDict.
+        plot_masks : bool
+            Plot tissue masks (assumes they exist)
+        slice : str | int
+            If int, the specified slice is plotted. "center" plots the center
+            slice and "all" plots all slices as a grid.
+         time_unit : str
+             Time unit to use for T1, T2, and T2' maps (default: 's'). Supported 's' and 'ms'.
+        """
+        
+        if tissue == "all":
+            print("Plot combined phatom")
+            self.combine().plot(plot_masks, plot_slice, time_unit)
+            
+            tissues = self.keys()              
+            for tissue in tissues:
+                print("Plot tissue: ", tissue)                
+                self[tissue].plot(plot_masks, plot_slice, time_unit)
+            
+        elif tissue == "combined":
+            print("Plot combined tissue phantom")
+            self.combine().plot(plot_masks, plot_slice, time_unit)
+            
+        else:            
+            print("Plot tissue: ", tissue) 
+            self[tissue].plot(plot_masks, plot_slice, time_unit)
 
 # ============================
 # Helpers for importing NIfTIs
 # ============================
 
-def load_tissue(config: NiftiTissue, base_dir: Path) -> VoxelGridPhantom:
-    density, affine = load_file_ref(base_dir, config.density)
-    size = np.abs(density.shape @ affine[:3, :3]) / 1000  # affine is in mm
+def load_tissue(config: NiftiTissue, base_dir: Path,
+                reslice: ResliceConfig | None = None) -> VoxelGridPhantom:
+    density, nifti_affine = load_file_ref(base_dir, config.density)
 
     def lp(cfg):
-        return torch.as_tensor(load_property(cfg, base_dir, density, affine))
+        return load_property(cfg, base_dir, density, nifti_affine)
+
+    T1     = lp(config.T1)
+    T2     = lp(config.T2)
+    T2dash = lp(config.T2dash)
+    ADC      = lp(config.ADC)
+    B0     = lp(config.dB0)
+    B1     = [lp(cfg) for cfg in config.B1_tx]
+    coil   = [lp(cfg) for cfg in config.B1_rx]
+
+    if reslice is None:
+        target_shape = density.shape
+        aff_mm = nifti_affine[:3, :3]
+        
+    target_shape = tuple(reslice.resolution)
+    aff_mm = np.array(reslice.affine, dtype=float)
+    def rs(arr):
+        return _resample_nifti(arr, nifti_affine, target_shape, aff_mm)
+    size = target_shape * np.linalg.norm(aff_mm[:3, :3], axis=0) /1000 # np.abs(target_shape @ aff_mm[:3, :3]) / 1000
+    density = rs(density)
+    T1, T2, T2dash, ADC, B0 = rs(T1), rs(T2), rs(T2dash), rs(ADC), rs(B0)
+    B1   = [rs(b) for b in B1]
+    coil = [rs(c) for c in coil]
 
     return VoxelGridPhantom(
         PD=torch.as_tensor(density),
         size=torch.as_tensor(size),
-        T1=lp(config.T1),
-        T2=lp(config.T2),
-        T2dash=lp(config.T2dash),
-        D=lp(config.ADC),
-        B0=lp(config.dB0),
-        B1=torch.stack([lp(cfg) for cfg in config.B1_tx], 0),
-        coil_sens=torch.stack([lp(cfg) for cfg in config.B1_rx], 0),
+        T1=torch.as_tensor(T1),
+        T2=torch.as_tensor(T2),
+        T2dash=torch.as_tensor(T2dash),
+        D=torch.as_tensor(ADC),
+        B0=torch.as_tensor(B0),
+        B1=torch.stack([torch.as_tensor(b) for b in B1], 0),
+        coil_sens=torch.stack([torch.as_tensor(c) for c in coil], 0),
+        affine=torch.as_tensor(aff_mm),
     )
 
 
@@ -273,3 +394,38 @@ def _load_cached(file_name):
     import nibabel
     img = nibabel.loadsave.load(file_name)
     return np.asarray(img.dataobj), img.get_sform()
+
+
+def _resample_nifti(data: np.ndarray, nifti_affine: np.ndarray,
+                    target_shape: tuple,
+                    target_affine_mm: np.ndarray) -> np.ndarray:
+    """Resample a 3D array onto a target grid via trilinear interpolation.
+
+    Parameters
+    ----------
+    data:
+        Source 3D numpy array (native NIfTI voxel space).
+    nifti_affine:
+        4×4 sform affine of the source NIfTI (mm units).
+    target_shape:
+        Output shape ``(nx, ny, nz)``.
+    target_affine_mm:
+        3×4 or 4×4 NIfTI-style affine of the target grid in mm.
+        Maps target voxel ``[i, j, k]`` to physical coordinates in mm.
+    """
+    from scipy.ndimage import affine_transform
+
+    A = np.array(target_affine_mm, dtype=float)
+    A_rot   = A[:3, :3]
+    A_trans = A[:3, 3]
+
+    A_nifti_inv = np.linalg.inv(nifti_affine[:3, :3])
+    M = A_nifti_inv @ A_rot
+    o = A_nifti_inv @ (A_trans - nifti_affine[:3, 3])
+
+    kwargs = dict(output_shape=tuple(target_shape), order=1,
+                  mode='constant', cval=0.0)
+    if np.iscomplexobj(data):
+        return (affine_transform(data.real, M, offset=o, **kwargs) +
+                1j * affine_transform(data.imag, M, offset=o, **kwargs))
+    return affine_transform(data.astype(float), M, offset=o, **kwargs)
