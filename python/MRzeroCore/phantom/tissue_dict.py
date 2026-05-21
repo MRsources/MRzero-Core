@@ -4,6 +4,7 @@ from .nifti_phantom import NiftiPhantom, NiftiTissue, NiftiRef, NiftiMapping, Re
 from pathlib import Path
 import torch
 import numpy as np
+import matplotlib.pyplot as plt
 from typing import Literal, Self
 from functools import lru_cache
 
@@ -233,26 +234,7 @@ class TissueDict(dict[str, VoxelGridPhantom]):
                                     sim_data.affine,
                                 )
                             )
-            
-            
             tissue_begin = tissue_end # next tissue in sparse tensors starts where last ended
-        
-        # B0, B1 and coil_sens are common maps to all tissues and hence should be the same for all tissues
-        contribution_count = torch.stack([sim_data.tissue_masks[tissue] for tissue in tissues], dim=0).sum(dim=0) # counts how many tissues contribute to a voxel      
-        B0 = torch.stack([phantom.B0 for phantom in data_list], dim=0).sum(dim=0) / contribution_count
-        B1 = torch.stack([phantom.B1 for phantom in data_list], dim=0).sum(dim=0) / contribution_count 
-        coil_sens = torch.stack([phantom.coil_sens for phantom in data_list], dim=0).sum(dim=0) / contribution_count
-        
-        # replace nan values
-        B0[torch.isnan(B0)] = 0.0
-        B1[torch.isnan(B1)] = 0.0
-        coil_sens[torch.isnan(coil_sens)] = 0.0
-        
-        # replace maps in the individual VoxelGridPhantoms
-        for tissue in data_list:
-            tissue.B0 = B0
-            tissue.B1 = B1
-            tissue.coil_sens = coil_sens
         
         return TissueDict(dict(zip(tissues, data_list)))
     
@@ -280,10 +262,11 @@ class TissueDict(dict[str, VoxelGridPhantom]):
             print("Plot combined phatom")
             self.combine().plot(plot_masks, plot_slice, time_unit)
             
-            tissues = self.keys()              
-            for tissue in tissues:
-                print("Plot tissue: ", tissue)                
-                self[tissue].plot(plot_masks, plot_slice, time_unit)
+            fignum = max(plt.get_fignums(), default=1)
+                        
+            for name, t in self.items():
+                print("Plot tissue: ", name)                
+                t.plot(plot_masks, plot_slice, time_unit, f"Figure {fignum} - {name}")
             
         elif tissue == "combined":
             print("Plot combined tissue phantom")

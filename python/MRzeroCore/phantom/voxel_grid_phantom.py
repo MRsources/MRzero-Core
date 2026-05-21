@@ -463,7 +463,7 @@ class VoxelGridPhantom:
             tissue_masks=resample_masks(self.tissue_masks)
         )
 
-    def plot(self, plot_masks=False, plot_slice="center", time_unit='s') -> None:
+    def plot(self, plot_masks=False, plot_slice="center", time_unit='s', title=None) -> None:
         """
         Print and plot all data stored in this phantom.
 
@@ -476,6 +476,8 @@ class VoxelGridPhantom:
             slice and "all" plots all slices as a grid.
         time_unit : str
             Time unit to use for T1, T2, and T2' maps (default: 's'). Supported 's' and 'ms'.
+        title : None | str
+            Title of the plot if given. Default is None.
         """
         print("VoxelGridPhantom")
         print(f"size = {self.size}")
@@ -509,8 +511,10 @@ class VoxelGridPhantom:
         # Calculate the grid size based on the number of plots
         cols = 3
         rows = int(np.ceil(num_plots / cols))
-
-        plt.figure(figsize=(12, rows * 3))
+        
+        plt.figure(figsize=(12, rows * 3), num=title)
+        if title:
+            plt.suptitle(title)
 
         # Plot the basic maps
         plt.subplot(rows, cols, 1)
