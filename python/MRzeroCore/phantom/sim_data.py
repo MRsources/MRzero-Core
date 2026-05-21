@@ -35,6 +35,8 @@ class SimData:
     size : torch.Tensor
         Physical size of the phantom. If a sequence with normalized gradients
         is simulated, size is used to scale them to match the phantom.
+    affine : torch.Tensor
+        Affine matrix of the phantom data, in millimeters.
     avg_B1_trig : torch.Tensor
         (361, 3) values containing the PD-weighted avg of sin/cos/sin²(B1*flip)
     voxel_pos : torch.Tensor
@@ -61,6 +63,7 @@ class SimData:
         B1: torch.Tensor,
         coil_sens: torch.Tensor,
         size: torch.Tensor,
+        affine: torch.Tensor,
         voxel_pos: torch.Tensor,
         nyquist: torch.Tensor,
         dephasing_func: Callable[[torch.Tensor, torch.Tensor], torch.Tensor],
@@ -100,6 +103,7 @@ class SimData:
             self.tissue_masks = {}
         self.coil_sens = coil_sens.clone()
         self.size = size.clone()
+        self.affine = affine.clone()
         self.voxel_pos = voxel_pos.clone()
         self.avg_B1_trig = calc_avg_B1_trig(B1, PD)
         self.nyquist = nyquist.clone()
@@ -125,6 +129,7 @@ class SimData:
             self.B1.cuda(),
             self.coil_sens.cuda(),
             self.size.cuda(),
+            self.affine.cuda(),
             self.voxel_pos.cuda(),
             self.nyquist.cuda(),
             self.dephasing_func,
@@ -152,6 +157,7 @@ class SimData:
             self.B1.cpu(),
             self.coil_sens.cpu(),
             self.size.cpu(),
+            self.affine.cpu(),
             self.voxel_pos.cpu(),
             self.nyquist.cpu(),
             self.dephasing_func,
