@@ -5,6 +5,7 @@ from ..sequence import Sequence
 from ..phantom.sim_data import SimData
 from .pre_pass import Graph
 import numpy as np
+from tqdm.auto import tqdm
 
 
 # NOTE: return encoding and magnetization is currently missing. If we want to
@@ -103,9 +104,10 @@ def execute_graph(graph: Graph,
     graph[0][0].kt_vec = torch.zeros(4, device=data.device)
 
     mag_adc = []
-    for i, (dists, rep) in enumerate(zip(graph[1:], seq)):
+    pbar = tqdm(total=len(seq), desc="Calculating repetitions", disable=not print_progress)
+    for dists, rep in zip(graph[1:], seq):
         if print_progress:
-            print(f"\rCalculating repetition {i+1} / {len(seq)}", end='')
+            pbar.update(1)
 
         angle = torch.as_tensor(rep.pulse.angle)
         phase = torch.as_tensor(rep.pulse.phase)
@@ -278,7 +280,8 @@ def execute_graph(graph: Graph,
                     ancestor[1].mag = None
 
     if print_progress:
-        print(" - done")
+        pbar.close()
+        print('Done.')
 
     if return_mag_adc:
         return torch.cat(signal), mag_adc
