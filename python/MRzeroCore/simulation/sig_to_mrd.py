@@ -264,32 +264,33 @@ def _seq_write_mrd_head(
     seq_fov = [m_to_mm(val) for val in seq.definitions.get("FOV", [1, 1, 1])]
     seq_labels = seq.evaluate_labels(evolution="adc")
 
-    mrd_enc_params = ismrmrd.xsd.encodingType()
-
-    mrd_enc_params.encodedSpace = ismrmrd.xsd.encodingSpaceType(
-        matrixSize=ismrmrd.xsd.matrixSizeType(
-            x=seq_res[0],
-            y=seq_res[1],
-            z=seq_res[2],
+    mrd_enc_params = ismrmrd.xsd.encodingType(
+        encodedSpace=ismrmrd.xsd.encodingSpaceType(
+            matrixSize=ismrmrd.xsd.matrixSizeType(
+                x=seq_res[0],
+                y=seq_res[1],
+                z=seq_res[2],
+            ),
+            fieldOfView_mm=ismrmrd.xsd.fieldOfViewMm(
+                x=seq_fov[0],
+                y=seq_fov[1],
+                z=seq_fov[2],
+            ),
         ),
-        fieldOfView_mm=ismrmrd.xsd.fieldOfViewMm(
-            x=seq_fov[0],
-            y=seq_fov[1],
-            z=seq_fov[2],
+        reconSpace=ismrmrd.xsd.encodingSpaceType(
+            matrixSize=ismrmrd.xsd.matrixSizeType(
+                x=seq_res[0],
+                y=seq_res[1],
+                z=seq_res[2],
+            ),
+            fieldOfView_mm=ismrmrd.xsd.fieldOfViewMm(
+                x=seq_fov[0],
+                y=seq_fov[1],
+                z=seq_fov[2],
+            ),
         ),
-    )
-
-    mrd_enc_params.reconSpace = ismrmrd.xsd.encodingSpaceType(
-        matrixSize=ismrmrd.xsd.matrixSizeType(
-            x=seq_res[0],
-            y=seq_res[1],
-            z=seq_res[2],
-        ),
-        fieldOfView_mm=ismrmrd.xsd.fieldOfViewMm(
-            x=seq_fov[0],
-            y=seq_fov[1],
-            z=seq_fov[2],
-        ),
+        encodingLimits=_labels_to_encodinglimits(seq_labels),
+        trajectory=ismrmrd.xsd.trajectoryType.OTHER
     )
 
     if verbose > 4:
@@ -299,16 +300,17 @@ def _seq_write_mrd_head(
         print(
             f"Wrote encode/recon RES to mrd header with {mrd_enc_params.encodedSpace.fieldOfView_mm}/{mrd_enc_params.reconSpace.fieldOfView_mm}"
         )
-
-    mrd_enc_params.encodingLimits = _labels_to_encodinglimits(seq_labels)
     
     # The Lamour frequency is a required field in the ISMRMRD header
-    exp = ismrmrd.xsd.experimentalConditionsType()
-    exp.H1resonanceFrequency_Hz = int(seq.system.B0 * 42.5764 * 1e6)
+    exp = ismrmrd.xsd.experimentalConditionsType(
+        H1resonanceFrequency_Hz=int(seq.system.B0 * 42.5764 * 1e6)
+    )
 
     mrd_head = ismrmrd.xsd.ismrmrdHeader(
         experimentalConditions=exp,
-        measurementInformation=ismrmrd.xsd.measurementInformationType(),
+        measurementInformation=ismrmrd.xsd.measurementInformationType(
+            patientPosition=ismrmrd.xsd.patientPositionType.HFS
+        ),
         acquisitionSystemInformation=ismrmrd.xsd.acquisitionSystemInformationType(),
         sequenceParameters=mrd_seq_params,
         encoding=[mrd_enc_params],

@@ -1,3 +1,5 @@
+- 0.4.9 & 0.4.10
+  - Fix ismrmrd export
 - 0.4.8
   - New `backend="pulseq_rs"` option on `Sequence.import_file` that parses
     `.seq` files through [pulseq-rs](https://github.com/pulseq-frame/pulseq-rs)
