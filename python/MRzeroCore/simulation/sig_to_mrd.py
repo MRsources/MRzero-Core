@@ -302,12 +302,15 @@ def _seq_write_mrd_head(
         )
     
     # The Lamour frequency is a required field in the ISMRMRD header
-    exp = ismrmrd.xsd.experimentalConditionsType()
-    exp.H1resonanceFrequency_Hz = int(seq.system.B0 * 42.5764 * 1e6)
+    exp = ismrmrd.xsd.experimentalConditionsType(
+        H1resonanceFrequency_Hz=int(seq.system.B0 * 42.5764 * 1e6)
+    )
 
     mrd_head = ismrmrd.xsd.ismrmrdHeader(
         experimentalConditions=exp,
-        measurementInformation=ismrmrd.xsd.measurementInformationType(),
+        measurementInformation=ismrmrd.xsd.measurementInformationType(
+            patientPosition=ismrmrd.xsd.patientPositionType.HFS
+        ),
         acquisitionSystemInformation=ismrmrd.xsd.acquisitionSystemInformationType(),
         sequenceParameters=mrd_seq_params,
         encoding=[mrd_enc_params],
