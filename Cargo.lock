@@ -65,7 +65,7 @@ dependencies = [
 
 [[package]]
 name = "mrzero_core"
-version = "0.4.6"
+version = "0.4.9"
 dependencies = [
  "num-complex",
  "pulseq-rs",
