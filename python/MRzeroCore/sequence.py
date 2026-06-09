@@ -56,6 +56,16 @@ class Pulse:
         Flip angle in radians
     phase : torch.Tensor
         Pulse phase in radians
+    pulse_freq: torch.Tensor, to be removed in the future!
+        pulse frequency omega_1 = angle/duration
+    freq_offset: torch.Tensor
+        Frequency offset in Hz
+	duration: torch.Tensor
+		pulse duration in seconds
+	grad: torch.Tensor (dim=3)
+		gradient during the pulse in Hz/m per channel (x,y,z)
+    off_ress: bool
+        Specifies if the pulse should be simulated with the off-resonance treatment        
     shim_array : torch.Tensor
         Contains B1 mag and phase, used for pTx. 2D tensor([[1, 0]]) for 1Tx.
     selective : bool
@@ -67,6 +77,13 @@ class Pulse:
         usage: PulseUsage,
         angle: torch.Tensor,
         phase: torch.Tensor,
+        
+        pulse_freq: torch.Tensor, # to be removed in the future
+        freq_offset: torch.Tensor,
+        duration: torch.Tensor,
+        grad: torch.Tensor,
+        off_res: bool,
+        
         shim_array: torch.Tensor,
         selective: bool,
     ):
@@ -74,6 +91,13 @@ class Pulse:
         self.usage = usage
         self.angle = angle
         self.phase = phase
+        
+        self.pulse_freq = pulse_freq # to be removed in the future
+        self.freq_offset = freq_offset
+        self.duration = duration
+        self.grad = grad
+        self.off_res = off_res
+        
         self.shim_array = shim_array
         self.selective = selective
 
@@ -83,6 +107,13 @@ class Pulse:
             self.usage,
             torch.as_tensor(self.angle, dtype=torch.float32).cpu(),
             torch.as_tensor(self.phase, dtype=torch.float32).cpu(),
+            
+            torch.as_tensor(self.pulse_freq, dtype=torch.float32).cpu(), # to be removed in the future
+            torch.as_tensor(self.freq_offset, dtype=torch.float32).cpu(),
+            torch.as_tensor(self.duration, dtype=torch.float32).cpu(),
+            torch.as_tensor(self.grad, dtype=torch.float32).cpu(),
+            self.off_res,
+            
             torch.as_tensor(self.shim_array, dtype=torch.float32).cpu(),
             self.selective
         )
@@ -93,6 +124,13 @@ class Pulse:
             self.usage,
             torch.as_tensor(self.angle, dtype=torch.float32).cuda(device),
             torch.as_tensor(self.phase, dtype=torch.float32).cuda(device),
+            
+            torch.as_tensor(self.pulse_freq, dtype=torch.float32).cuda(device), # to be removed in the future
+            torch.as_tensor(self.freq_offset, dtype=torch.float32).cuda(device),
+            torch.as_tensor(self.duration, dtype=torch.float32).cuda(device),
+            torch.as_tensor(self.grad, dtype=torch.float32).cuda(device),
+            self.off_res,
+            
             torch.as_tensor(self.shim_array, dtype=torch.float32).cuda(device),
             self.selective
         )
@@ -109,6 +147,11 @@ class Pulse:
             PulseUsage.UNDEF,
             torch.zeros(1, dtype=torch.float32),
             torch.zeros(1, dtype=torch.float32),
+            torch.zeros(1, dtype=torch.float32), # to be removed in the future
+            torch.zeros(1, dtype=torch.float32),
+            torch.zeros(1, dtype=torch.float32),
+            torch.zeros(3, dtype=torch.float32),
+            False,
             torch.asarray([[1, 0]], dtype=torch.float32),
             True
         )
@@ -119,6 +162,13 @@ class Pulse:
             self.usage,
             self.angle.clone(),
             self.phase.clone(),
+            
+            self.pulse_freq.clone(), # to be removed in the future
+            self.freq_offset.clone(),
+            self.duration.clone(),
+            self.grad.clone(),
+            self.off_res,
+            
             self.shim_array.clone(),
             self.selective
         )
@@ -629,6 +679,10 @@ class Sequence(list):
             # Fetch additional data needed for building the mr0 sequence
             pulse = parser.integrate_one(pulses[i][0], pulses[i][1]).pulse
             shim = parser.sample_one(rep_start).pulse.shim
+            
+            # load pulse frequency-offset needed for potential treatment off off-resonance
+            frequency = parser.sample_one(rep_start).pulse.amplitude # this only works for block pulses! should be removed in the future
+            frequency_offset = parser.sample_one(rep_start).pulse.frequency
 
             adcs = parser.events("adc", rep_start, rep_end)
 
@@ -690,17 +744,25 @@ class Sequence(list):
                 )
 
             # -- Now we build the mr0 Sequence repetition --
-
             rep = seq.new_rep(event_count)
+            rep.event_time[:] = torch.as_tensor(np.diff(abs_times))
+            
             rep.pulse.angle = pulse.angle
-            rep.pulse.phase = pulse.phase
+            rep.pulse.phase = pulse.phase                       
+            
+            # provide frequency and frequency-offset to pulse object needed for potential treatment off off-resonance
+            rep.pulse.pulse_freq = 2*torch.pi * frequency # rad/s # may only work for block-pulses
+            rep.pulse.freq_offset = frequency_offset      # Hz
+            if rep.pulse.freq_offset != 0:
+                 rep.pulse.off_res = True
+            
             rep.pulse.usage = pulse_usage(pulse.angle)
             if shim is None:
                 rep.pulse.shim_array = default_shim.clone()
             else:
                 rep.pulse.shim_array = torch.as_tensor(shim)
 
-            rep.event_time[:] = torch.as_tensor(np.diff(abs_times))
+            #rep.event_time[:] = torch.as_tensor(np.diff(abs_times))
 
             rep.gradm[:, 0] = torch.as_tensor(moments.gradient.x)
             rep.gradm[:, 1] = torch.as_tensor(moments.gradient.y)

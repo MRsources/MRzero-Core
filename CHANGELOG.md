@@ -1,3 +1,5 @@
+- 0.4.11
+  - Add pulse properties for off-resonance
 - 0.4.9 & 0.4.10
   - Fix ismrmrd export
 - 0.4.8
