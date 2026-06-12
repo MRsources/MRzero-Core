@@ -34,7 +34,6 @@ These .seq files could also be measured on any MRI scanner using a Pulseq interp
 
 | Notebook | ![](https://colab.research.google.com/assets/colab-badge.svg) |
 | -------- | ------------------------------------------------------------- |
-| Simulate pypulseq example sequences | [mr0_pypulseq_exmpls_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_pypulseq_exmpls_seq.ipynb) |
 | Simulate own uploaded seq files | [mr0_upload_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_upload_seq.ipynb) |
 
 
