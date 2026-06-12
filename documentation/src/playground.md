@@ -27,6 +27,7 @@ These .seq files could also be measured on any MRI scanner using a Pulseq interp
 | DREAM STE for B0, B1, TxRx mapping | [mr0_DREAM_STE_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_DREAM_STE_seq.ipynb) |
 | DREAM STID for B0, B1, TxRx mapping | [mr0_DREAM_STID_seq.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_DREAM_STID_seq.ipynb) |
 | Pulseq with RF shimming | [pulseq_rf_shim.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/pulseq_rf_shim.ipynb) |
+| Compare runtimes and accuracy settings for MR0 simulation | [mr0_time_vs_acc_bspBSSFP.ipynb](https://colab.research.google.com/github/MRsources/MRzero-Core/blob/main/documentation/playground_mr0/mr0_time_vs_acc_bspBSSFP.ipynb) |
 
 
 ## Plot and simulate predifined .seq files
