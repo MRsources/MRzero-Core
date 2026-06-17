@@ -210,7 +210,6 @@ class NiftiPhantom:
 
     @classmethod
     def from_dict(cls, config: dict):
-        assert config["file_type"] == "nifti_phantom_v1"
         units = PhantomUnits.from_dict(config["units"])
         system = PhantomSystem.from_dict(config["system"])
         tissues = {
