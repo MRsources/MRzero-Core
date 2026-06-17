@@ -297,10 +297,11 @@ def load_tissue(config: NiftiTissue, base_dir: Path,
 
     if reslice is None:
         target_shape = density.shape
-        aff_mm = nifti_affine[:3, :3]
+        aff_mm = nifti_affine[:3, :]
+    else:
+        target_shape = tuple(reslice.resolution)
+        aff_mm = np.array(reslice.affine, dtype=float)
         
-    target_shape = tuple(reslice.resolution)
-    aff_mm = np.array(reslice.affine, dtype=float)
     def rs(arr):
         return _resample_nifti(arr, nifti_affine, target_shape, aff_mm)
     size = target_shape * np.linalg.norm(aff_mm[:3, :3], axis=0) /1000 # np.abs(target_shape @ aff_mm[:3, :3]) / 1000
