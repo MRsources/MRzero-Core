@@ -113,7 +113,7 @@ class TissueDict(dict[str, VoxelGridPhantom]):
 
         def save_nifti(prop, name):
             if len(prop) > 0:
-                ext = f"-{name}" if name != "density" else ""
+                ext = f"_{name}" if name != "density" else ""
                 file_name = base_dir / f"{base_name}{ext}.nii.gz"
                 data = np.stack(prop, -1)
 
