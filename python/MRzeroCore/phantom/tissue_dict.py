@@ -383,7 +383,8 @@ def _load_cached(file_name):
 def _resample_nifti(data: np.ndarray, nifti_affine: np.ndarray,
                     target_shape: tuple,
                     target_affine_mm: np.ndarray) -> np.ndarray:
-    """Resample a 3D array onto a target grid via trilinear interpolation.
+    """Resample a 3D array onto a target grid via trilinear interpolation,
+    integrating over the slice thickness using the source voxel size as step.
 
     Parameters
     ----------
@@ -404,12 +405,45 @@ def _resample_nifti(data: np.ndarray, nifti_affine: np.ndarray,
     A_trans = A[:3, 3]
 
     A_nifti_inv = np.linalg.inv(nifti_affine[:3, :3])
-    M = A_nifti_inv @ A_rot
-    o = A_nifti_inv @ (A_trans - nifti_affine[:3, 3])
+
+    # Voxel size of source phantom (column norms of affine rotation)
+    src_voxel_mm    = np.linalg.norm(nifti_affine[:3, :3], axis=0)
+    # Slice thickness and normal from Z-column of target affine
+    slice_vec_mm    = A_rot[:, 2]
+    slice_thickness = np.linalg.norm(slice_vec_mm)
+    slice_unit      = slice_vec_mm / slice_thickness
+    # Step size = source voxel projected onto slice normal
+    step_mm   = float(np.dot(src_voxel_mm, np.abs(slice_unit)))
+    n_samples = max(int(round(slice_thickness / step_mm)), 1)
+
+    offsets_mm = np.arange(n_samples, dtype=float) * step_mm
+    offsets_mm -= offsets_mm.mean()
+
+    M      = A_nifti_inv @ A_rot
+    o0     = A_nifti_inv @ (A_trans - nifti_affine[:3, 3])
+    o_step = A_nifti_inv @ slice_unit   # offset change per mm along slice normal
 
     kwargs = dict(output_shape=tuple(target_shape), order=1,
-                  mode='constant', cval=0.0)
+                  mode='constant', cval=0.0, prefilter=False)
+
+    # Convert once outside the loop
     if np.iscomplexobj(data):
-        return (affine_transform(data.real, M, offset=o, **kwargs) +
-                1j * affine_transform(data.imag, M, offset=o, **kwargs))
-    return affine_transform(data.astype(float), M, offset=o, **kwargs)
+        data_r = data.real.copy()
+        data_i = data.imag.copy()
+    else:
+        data_r = data.astype(float, copy=False)
+        data_i = None
+
+    accumulator = np.zeros(target_shape,
+                           dtype=np.complex128 if data_i is not None else float)
+
+    for delta_mm in offsets_mm:
+        o = o0 + delta_mm * o_step
+        if data_i is not None:
+            accumulator += (affine_transform(data_r, M, offset=o, **kwargs) +
+                            1j * affine_transform(data_i, M, offset=o, **kwargs))
+        else:
+            accumulator += affine_transform(data_r, M, offset=o, **kwargs)
+
+    return accumulator / n_samples
+
