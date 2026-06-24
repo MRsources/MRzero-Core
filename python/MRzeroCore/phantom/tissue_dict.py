@@ -384,7 +384,7 @@ def _resample_nifti(data: np.ndarray, nifti_affine: np.ndarray,
                     target_shape: tuple,
                     target_affine_mm: np.ndarray) -> np.ndarray:
     """Resample a 3D array onto a target grid via trilinear interpolation,
-    integrating over the slice thickness using the source voxel size as step.
+    averaging over the slice thickness using the source voxel size as step.
 
     Parameters
     ----------
