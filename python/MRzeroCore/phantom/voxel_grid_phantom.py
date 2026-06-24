@@ -38,6 +38,23 @@ def identity(trajectory: torch.Tensor) -> torch.Tensor:
     return torch.ones_like(trajectory[:, 0])
 
 
+def rescale_affine(affine: torch.Tensor,
+                   old_shape, new_shape) -> torch.Tensor:
+    """Rescale a voxel-to-world affine for a changed grid resolution.
+
+    Resampling (e.g. :meth:`VoxelGridPhantom.interpolate`) keeps the same
+    field of view but changes the number of voxels. The affine encodes the
+    per-voxel step (its 3x3 part) and the world origin (its last column). Only
+    the per-voxel step must change: scaling column ``i`` by
+    ``old_shape[i] / new_shape[i]`` keeps the total extent (and the origin)
+    constant while preserving any rotation/shear in the affine.
+    """
+    scaled = affine.clone()
+    for i in range(3):
+        scaled[:3, i] = affine[:3, i] * (old_shape[i] / new_shape[i])
+    return scaled
+
+
 def generate_B0_B1(PD):
     # Generate a somewhat plausible B0 and B1 map.
     # Visually fitted to look similar to the numerical_brain_cropped
@@ -340,6 +357,17 @@ class VoxelGridPhantom:
                 coils, *list(self.PD.shape[:2]), len(slices)
             )
 
+        # Selecting a subset of slices shrinks the z extent: the per-voxel
+        # thickness (affine z-column) is unchanged, but the field of view and
+        # the world origin must reflect the selected slab. The new grid is
+        # reindexed to start at 0, so shift the origin to the first selected
+        # slice's world position (assumes contiguous slices; for a sparse list
+        # slices[0] is used as the reference).
+        new_size = self.size.clone()
+        new_size[2] = self.size[2] * len(slices) / self.PD.shape[2]
+        new_affine = self.affine.clone()
+        new_affine[:3, 3] = self.affine[:3, 3] + self.affine[:3, 2] * slices[0]
+
         return VoxelGridPhantom(
             select(self.PD),
             select(self.T1),
@@ -349,8 +377,8 @@ class VoxelGridPhantom:
             select(self.B0),
             select_multicoil(self.B1),
             select_multicoil(self.coil_sens),
-            self.size.clone(),
-            self.affine.clone(),
+            new_size,
+            new_affine,
             tissue_masks={
                 key: mask[..., slices] for key, mask in self.tissue_masks.items()
             },
@@ -393,7 +421,7 @@ class VoxelGridPhantom:
             scale(self.B1.squeeze()).unsqueeze(0),
             scale(self.coil_sens.squeeze()).unsqueeze(0),
             self.size.clone(),
-            self.affine.clone(),
+            rescale_affine(self.affine, self.PD.shape, (x, y, z)),
             tissue_masks={
                 key: scale(mask) for key, mask in self.tissue_masks.items()
             }
@@ -476,7 +504,7 @@ class VoxelGridPhantom:
             resample_multicoil(self.B1),
             resample_multicoil(self.coil_sens),
             self.size.clone(),
-            self.affine.clone(),
+            rescale_affine(self.affine, self.PD.shape, (x, y, z)),
             tissue_masks=resample_masks(self.tissue_masks)
         )
 
