@@ -328,7 +328,7 @@ class VoxelGridPhantom:
         SimData
             A new instance containing the selected slice(s).
         """
-        assert 0 <= any([slices]) < self.PD.shape[2]
+        assert all(0 <= s < self.PD.shape[2] for s in slices)
 
         def select(tensor: torch.Tensor):
             return tensor[..., slices].view(
@@ -423,9 +423,26 @@ class VoxelGridPhantom:
         """
         def resample(tensor: torch.Tensor) -> torch.Tensor:
             # Introduce additional dimensions: mini-batch and channels
-            return torch.nn.functional.interpolate(
-                tensor[None, None, ...], size=(x, y, z), mode='trilinear'
+            src = tensor[None, None, ...]
+            finite = torch.isfinite(src)
+            if bool(finite.all()):
+                return torch.nn.functional.interpolate(
+                    src, size=(x, y, z), mode='trilinear'
+                )[0, 0, ...]
+            # Infinite entries (e.g. T2 == inf for "no relaxation") would create
+            # 0 * inf == NaN under the trilinear weights. Interpolate only the
+            # finite content, then re-stamp +/-inf wherever an infinite source
+            # voxel contributes with non-zero weight.
+            filled = torch.where(finite, src, torch.zeros_like(src))
+            out = torch.nn.functional.interpolate(
+                filled, size=(x, y, z), mode='trilinear'
             )[0, 0, ...]
+            for sign in (float("inf"), float("-inf")):
+                mass = torch.nn.functional.interpolate(
+                    (src == sign).to(src.dtype), size=(x, y, z), mode='trilinear'
+                )[0, 0, ...]
+                out = torch.where(mass > 0, torch.full_like(out, sign), out)
+            return out
 
         def resample_multicoil(tensor: torch.Tensor) -> torch.Tensor:
             coils = tensor.shape[0]
