@@ -154,19 +154,37 @@ class TissueDict(dict[str, VoxelGridPhantom]):
         phantoms = list(self.values())
 
         PD = sum(p.PD for p in phantoms)
-        segmentation = [p.PD / PD for p in phantoms]
-        
+        # Segmented phantoms have background voxels where every tissue has
+        # PD == 0. A plain ``p.PD / PD`` divides 0 / 0 -> NaN there; guard the
+        # denominator so empty voxels get a weight of 0 instead.
+        denom = torch.where(PD > 0, PD, torch.ones_like(PD))
+        segmentation = [p.PD / denom for p in phantoms]
+
+        def weighted_sum(values: list[torch.Tensor]) -> torch.Tensor:
+            # ``torch.where`` keeps zero-weight voxels at 0 even when the tissue
+            # carries a default (infinite) relaxation value, avoiding the
+            # 0 * inf == NaN that would otherwise reach ``compute_graph``.
+            total = None
+            for seg, value in zip(segmentation, values):
+                weight = seg
+                while weight.ndim < value.ndim:
+                    weight = weight[None, ...]
+                term = torch.where(weight > 0, weight * value,
+                                   torch.zeros_like(value))
+                total = term if total is None else total + term
+            return total
+
         from copy import deepcopy
         combined = deepcopy(phantoms[0])
         combined.PD = PD
-        combined.T1 = sum(seg * p.T1 for seg, p in zip(segmentation, phantoms))
-        combined.T2 = sum(seg * p.T2 for seg, p in zip(segmentation, phantoms))
-        combined.T2dash = sum(seg * p.T2dash for seg, p in zip(segmentation, phantoms))
-        combined.D = sum(seg * p.D for seg, p in zip(segmentation, phantoms))
-        combined.B0 = sum(seg * p.B0 for seg, p in zip(segmentation, phantoms))
-        combined.B1 = sum(seg[None, ...] * p.B1 for seg, p in zip(segmentation, phantoms))
-        combined.coil_sens = sum(seg[None, ...] * p.coil_sens for seg, p in zip(segmentation, phantoms))
-        
+        combined.T1 = weighted_sum([p.T1 for p in phantoms])
+        combined.T2 = weighted_sum([p.T2 for p in phantoms])
+        combined.T2dash = weighted_sum([p.T2dash for p in phantoms])
+        combined.D = weighted_sum([p.D for p in phantoms])
+        combined.B0 = weighted_sum([p.B0 for p in phantoms])
+        combined.B1 = weighted_sum([p.B1 for p in phantoms])
+        combined.coil_sens = weighted_sum([p.coil_sens for p in phantoms])
+
         return combined
 
     def build(self, PD_threshold: float = 1e-6,
@@ -399,6 +417,13 @@ def _resample_nifti(data: np.ndarray, nifti_affine: np.ndarray,
         Maps target voxel ``[i, j, k]`` to physical coordinates in mm.
     """
     from scipy.ndimage import affine_transform
+
+    # A constant field stays constant under any resampling. Short-circuit this
+    # case so that constant defaults (e.g. T2 == inf for "no decay") survive:
+    # feeding non-finite values to ``affine_transform`` would yield NaNs.
+    flat = np.asarray(data).reshape(-1)
+    if flat.size > 0 and np.all(flat == flat[0]):
+        return np.full(tuple(target_shape), flat[0], dtype=float)
 
     A = np.array(target_affine_mm, dtype=float)
     A_rot   = A[:3, :3]
