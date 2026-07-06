@@ -1,3 +1,5 @@
+- 0.4.12
+  - Use off-resonance pulse properties in new 1.5 importer as well
 - 0.4.11
   - Add pulse properties for off-resonance
 - 0.4.9 & 0.4.10

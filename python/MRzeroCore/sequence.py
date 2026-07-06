@@ -762,8 +762,6 @@ class Sequence(list):
             else:
                 rep.pulse.shim_array = torch.as_tensor(shim)
 
-            #rep.event_time[:] = torch.as_tensor(np.diff(abs_times))
-
             rep.gradm[:, 0] = torch.as_tensor(moments.gradient.x)
             rep.gradm[:, 1] = torch.as_tensor(moments.gradient.y)
             rep.gradm[:, 2] = torch.as_tensor(moments.gradient.z)
@@ -843,12 +841,6 @@ class Sequence(list):
                 label_names = list(lbl.keys())
                 break
 
-        def pulse_usage(angle: float) -> PulseUsage:
-            if abs(angle) < 100 * np.pi / 180:
-                return PulseUsage.EXCIT
-            else:
-                return PulseUsage.REFOC
-
         def events_axis_in(t0: float, t1: float, axis: str) -> list[float]:
             out: list[float] = []
             bp = grad_breakpoints[axis]
@@ -922,6 +914,32 @@ class Sequence(list):
 
             rf = blocks[b_idx].rf
             angle, phase = rf.integrate(0.0, rf.shape_duration)
+            if rf.rf_use == "excitation":
+                rf_usage = PulseUsage.EXCIT
+            elif rf.rf_use == "saturation":
+                rf_usage = PulseUsage.FATSAT
+            elif rf.rf_use == "refocusing":
+                rf_usage = PulseUsage.REFOC
+            else:
+                rf_usage = PulseUsage.UNDEF
+            
+            # TODO: I do not know if this is the expected format!
+            rf_grad = torch.zeros(3, dtype=torch.float32)
+            rf_hasgrad = False
+            # BUG: this code is too simple - amp is the amplitude scaling and
+            # ignores the shape. Use the following methods on gx/gy/gz instead:
+            # - .shape_times() and .amp * .shape_amp(): return the full shape
+            # - .sample(t): return the amplitude at one time point
+            # - .integrate(t0, t1): return the gradient moment over the given period
+            if blocks[b_idx].gx is not None:
+                rf_hasgrad = True
+                rf_grad[0] = blocks[b_idx].gx.amp
+            if blocks[b_idx].gy is not None:
+                rf_hasgrad = True
+                rf_grad[1] = blocks[b_idx].gy.amp
+            if blocks[b_idx].gz is not None:
+                rf_hasgrad = True
+                rf_grad[2] = blocks[b_idx].gz.amp
 
             # Shim handling: pulseq-rs always returns a list, with [(1.0, 0.0)]
             # meaning "no shim" - in that case fall back to the default.
@@ -994,8 +1012,13 @@ class Sequence(list):
             rep = seq.new_rep(event_count)
             rep.pulse.angle = torch.as_tensor(angle)
             rep.pulse.phase = torch.as_tensor(phase)
-            rep.pulse.usage = pulse_usage(angle)
+            rep.pulse.usage = rf_usage
             rep.pulse.shim_array = shim_arr
+            rep.pulse.freq_offset = 2*torch.pi * rf.freq
+            rep.pulse.duration = rf.shape_duration
+            rep.pulse.grad = rf_grad
+            if rep.pulse.freq_offset != 0 or rf_hasgrad:
+                 rep.pulse.off_res = True
 
             rep.event_time[:] = torch.as_tensor(np.diff(abs_times))
             rep.gradm[:, 0] = torch.as_tensor(mom_x)
