@@ -1,3 +1,30 @@
+- 0.4.12
+  - Use off-resonance pulse properties in new 1.5 importer as well
+- 0.4.11
+  - Add pulse properties for off-resonance
+- 0.4.9 & 0.4.10
+  - Fix ismrmrd export
+- 0.4.8
+  - New `backend="pulseq_rs"` option on `Sequence.import_file` that parses
+    `.seq` files through [pulseq-rs](https://github.com/pulseq-frame/pulseq-rs)
+    via new PyO3 bindings in the `_prepass` extension; default backend
+    remains `pydisseqt`. Forwards `larmor_hz`, `fov_scale`, `fov_pos`,
+    `fov_rot`, and `soft_delays` to the pulseq-rs interpreter.
+  - New `Sequence.get_adc_labels(name)` returns the pulseq label
+    (`lin`, `par`, `seg`, `slc`, …) for every measured ADC sample as a 1-D
+    `int32` tensor — useful for reconstruction.
+  - New `Sequence.get_label_changes(name)` returns `(rep_index, value)`
+    pairs at each per-repetition label transition, for splitting a
+    sequence on label state. Raises if a single repetition has ADC
+    samples with multiple distinct values for the label.
+  - `Repetition` gained an `adc_labels: dict[str, torch.Tensor]` attribute
+    populated by the pulseq-rs backend; empty for the pydisseqt backend.
+- 0.4.7
+  - Bumped minimum Python to 3.10
+  - Added `pp14` extra (`pip install mrzerocore[pp14]`) that pins
+    `pypulseq < 1.5`
+  - Bugfix: removed a double degrees→radians conversion in the
+    `mr0_TSE_2D_multi_shot_seq` playground notebook
 - 0.4.6
   - Small bugfixes
   - restrict pypulseq dependency to < 1.5.0

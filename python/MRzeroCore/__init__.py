@@ -1,10 +1,18 @@
+from importlib.metadata import version, PackageNotFoundError
+
 import numpy
+
 if not hasattr(numpy, "int"):
     numpy.int = int
 if not hasattr(numpy, "float"):
     numpy.float = float
 if not hasattr(numpy, "complex"):
     numpy.complex = complex
+
+try:
+    __version__ = version("mrzerocore")
+except PackageNotFoundError:
+    __version__ = "0.0.0"
 
 from .sequence import PulseUsage, Pulse, Repetition, Sequence, chain
 from .phantom.voxel_grid_phantom import VoxelGridPhantom
