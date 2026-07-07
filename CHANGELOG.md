@@ -1,6 +1,7 @@
 - 1.0.0
   - pulseq 1.5 support
   - fix sign in simulation phase, adjoint reco and playground notebooks
+  - DSV support via dsv2pulseq (optional dependency)
 - 0.4.12
   - Use off-resonance pulse properties in new 1.5 importer as well
 - 0.4.11

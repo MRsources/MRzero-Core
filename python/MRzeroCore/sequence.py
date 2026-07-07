@@ -631,7 +631,7 @@ class Sequence(list):
         elif backend == "pydisseqt":
             return cls._import_pydisseqt(
                 file_name, exact_trajectories, print_stats, default_shim,
-                ref_voltage, resolution,
+                ref_voltage, resolution, output_dir
             )
         else:
             raise ValueError(
@@ -645,6 +645,7 @@ class Sequence(list):
                           default_shim: torch.Tensor,
                           ref_voltage: float,
                           resolution: Optional[int],
+                          output_dir: Optional[str],
                           ) -> Sequence:
         start = time()
         if file_name.endswith(".seq"):
