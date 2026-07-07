@@ -568,7 +568,7 @@ class Sequence(list):
                     default_shim: torch.Tensor = torch.asarray([[1, 0]], dtype=torch.float32),
                     ref_voltage: float = 300.0,
                     resolution: Optional[int] = None,
-                    backend: Literal["pydisseqt", "pulseq_rs"] = "pydisseqt",
+                    backend: Literal["pydisseqt", "pulseq_rs"] = "pulseq_rs",
                     larmor_hz: Optional[float] = None,
                     fov_scale: Optional[float] = None,
                     fov_pos: Optional[tuple[float, float, float]] = None,
