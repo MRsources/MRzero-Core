@@ -574,6 +574,7 @@ class Sequence(list):
                     fov_pos: Optional[tuple[float, float, float]] = None,
                     fov_rot: Optional[tuple[float, float, float, float]] = None,
                     soft_delays: Optional[dict[str, float]] = None,
+                    output_dir: Optional[str] = None,
                     ) -> Sequence:
         """Import a pulseq .seq file or a bundle of .dsv files.
 
@@ -593,7 +594,9 @@ class Sequence(list):
             The shim_array used for pulses that do not specify it themselves.
         ref_voltage : float
             If a .dsv file is imported, this is used to convert pulses from
-            volts to angles. A 1 ms block pulse of ref_voltage is a 180 ° flip
+            volts to angles. Make sure to use 1Tx systems for dsv simulation, 
+            otherwise the ref_voltage will not match to the concerted flip angle!!
+            A 1 ms block pulse of ref_voltage is a 180 ° flip
         resolution : int | None
             .dsv files do not contain data for the number of ADC samples.
             This is used to specify the number of samples per ADC block.
@@ -647,7 +650,23 @@ class Sequence(list):
         if file_name.endswith(".seq"):
             parser = pydisseqt.load_pulseq(file_name)
         else:
-            parser = pydisseqt.load_dsv(file_name, ref_voltage, resolution)
+            #try import of from dsv2pulseq import read_dsv
+            try:
+                from dsv2pulseq import read_dsv
+                import os
+            except ImportError:
+                raise ImportError(
+                    "To import .dsv files, please install the dsv2pulseq package"
+                )
+            seq_temp = read_dsv(file_name, ref_volt=ref_voltage)
+            os.makedirs(output_dir, exist_ok=True)
+            seq_name = os.path.basename(file_name) + '_dsv2seq.seq'
+            seq_dsv_path = os.path.join(output_dir, seq_name)
+            seq_pulseq_dsv = seq_temp.make_pulseq_sequence(seq_dsv_path)
+            print(f"Saved .seq file to: {seq_dsv_path}")
+            parser = pydisseqt.load_pulseq(seq_dsv_path)
+            #parser = pydisseqt.load_dsv(file_name, ref_voltage, resolution)
+
         if print_stats:
             print(f"Importing the .seq file took {time() - start} s")
         start = time()
