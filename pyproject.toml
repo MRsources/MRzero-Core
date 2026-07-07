@@ -21,7 +21,7 @@ dependencies = [
     "ismrmrd",
     "matplotlib>=3.5",
     "pydisseqt>=0.1.13",
-    "pypulseq<1.5",           
+    "pypulseq",           
     "requests>=2.20",
     "scikit-image",
     "scipy>=1.7",
