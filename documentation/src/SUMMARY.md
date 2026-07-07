@@ -32,6 +32,12 @@
     - [Reconstruction methods](api-reconstruction.md)
     - [util module](api-util.md)
     - [Other methods](api-unsorted.md)
+  
+
+# 📊 Pulseq-zero
+
+- [Math methods for differentiability](pulseqzero-math.md)
+
 
 ---
 

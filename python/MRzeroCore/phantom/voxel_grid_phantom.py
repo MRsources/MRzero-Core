@@ -164,6 +164,9 @@ class VoxelGridPhantom:
             def dephasing_func(t, _): return identity(t)
         else:
             raise ValueError(f"Unsupported voxel shape '{voxel_shape}'")
+        
+        if not self.tissue_masks:
+            self.tissue_masks = {"combined": mask}
 
         return SimData(
             self.PD[mask],
@@ -180,8 +183,8 @@ class VoxelGridPhantom:
             dephasing_func,
             recover_func=lambda data: recover(mask, data),
             phantom_motion=self.phantom_motion,
-            voxel_motion=self.voxel_motion,
-            tissue_masks=self.tissue_masks
+            voxel_motion=self.voxel_motion,            
+            tissue_masks = self.tissue_masks
         )
     
     @classmethod
@@ -537,28 +540,6 @@ class VoxelGridPhantom:
                 plt.colorbar()
 
         plt.tight_layout()
-        plt.show()
-
-    def plot3D(self, data2print: int = 0) -> None:
-        """Print and plot all slices of one selected data stored in this phantom."""
-        print("VoxelGridPhantom")
-        print(f"size = {self.size}")
-        print()
-
-        label = ['PD', 'T1', 'T2', "T2'", "D", "B0", "B1", "coil sens"]
-
-        tensors = [
-            self.PD, self.T1, self.T2, self.T2dash, self.D, self.B0,
-            self.B1.squeeze(0), self.coil_sens
-        ]
-
-        # Warn if we only print a part of all data
-        print(f"Plotting {label[data2print]}")
-
-        tensor = tensors[data2print].squeeze(0)
-
-        util.plot3D(tensor, figsize=(20, 5))
-        plt.title(label[data2print])
         plt.show()
 
 

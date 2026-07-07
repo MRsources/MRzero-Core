@@ -12,7 +12,7 @@ All classes are [dataclasses](https://docs.python.org/3/library/dataclasses.html
 
 Stores the physical units used by the phantom.
 These are currently fixed to the values used by MR-zero (default values) and are stored for documentation (no conversion is implemented).
-However, different units and automatic converstion might be implemented in the future.
+However, different units and automatic conversion might be implemented in the future.
 
 ```python
 PhantomUnits(gyro, B0, T1, T2, T2dash, ADC, dB0, B1_tx, B1_rx)
@@ -20,7 +20,7 @@ PhantomUnits(gyro, B0, T1, T2, T2dash, ADC, dB0, B1_tx, B1_rx)
 
 | Parameter | Description | Default unit |
 | --------- | ----------- | ------------ |
-| `gyro` | Gyromagnetic ratio | `MHz / T` |
+| `gyro` | Gyromagnetic ratio | `MHz/T` |
 | `B0` | Strength of the main magnetic field | `T` |
 | `T1` | Exponential T1 relaxation | `s` |
 | `T2` | Exponential T2 relaxation | `s` |
@@ -28,7 +28,7 @@ PhantomUnits(gyro, B0, T1, T2, T2dash, ADC, dB0, B1_tx, B1_rx)
 | `ADC` | Apparent Diffusion Coefficient | `10^-3 mm^2/s` |
 | `dB0` | Offresonance through `B0` fluctuations | `Hz` |
 | `B1_tx` | Fluctuations in B1+ (transmit) field | `rel` |
-| `B1_rx` | Fluctuations in B1- (recieve) field | `rel` |
+| `B1_rx` | Fluctuations in B1- (receive) field | `rel` |
 
 - `PhantomUnits.default()`: return `PhantomUnits` with the default units given above
 - `PhantomUnits.from_dict(config)`: load from a dictionary and check if units are valid
@@ -42,10 +42,10 @@ Describes the physical properties of the MRI experiment.
 PhantomSystem(gyro, B0)
 ```
 
-| Parameter | Description |
-| --------- | ----------- |
-| `gyro` | Gyromagnetic ratio, given in units of `PhantomUnits.gyro` |
-| `B0` | Strength of the main magnetic field, given in units of `PhantomUnits.B0` |
+| Parameter | Description | Default |
+| --------- | ----------- | ------- |
+| `gyro` | Gyromagnetic ratio, given in units of `PhantomUnits.gyro` | `42.5764` |
+| `B0` | Strength of the main magnetic field, given in units of `PhantomUnits.B0` | `3.0` |
 
 - `PhantomSystem.from_dict(config)`: load from a dictionary
 - `PhantomSystem.to_dict()`: convert to a dictionary
@@ -54,7 +54,7 @@ PhantomSystem(gyro, B0)
 
 Reference to a NIfTI file, including the index to the tissue.
 NIfTIs can contain multiple 3D volumes, stacked in the 4th dimension.
-For a description look at the [specification](nifti-spec.md#tissue-properties).
+For a description look at the [specification](nifti-spec.md#tissue-property-values).
 
 ```python
 NiftiRef(file_name, tissue_index)
@@ -72,7 +72,7 @@ As given by the spec, `NiftiRef`s are stored as `"path/to/nifti.nii.gz[<index>]"
 ## `NiftiMapping`
 
 Combination of `NiftiRef` and a mapping function for simple modifications.
-For a description look at the [specification](nifti-spec.md#tissue-properties).
+For a description look at the [specification](nifti-spec.md#tissue-property-values).
 
 ```python
 NiftiMapping(file, func)
@@ -83,28 +83,31 @@ NiftiMapping(file, func)
 | `file` | A [`NiftiRef`](#niftiref) |
 | `func` | A mapping function as `str` - see [spec](nifti-spec.md#mapping_func) |
 
-- `NiftiRef.parse(config)`: parse from a dictionary (calling `NiftiRef.parse`)
-- `NiftiRef.to_str()`: convert to a dictionary
+- `NiftiMapping.parse(config)`: parse from a dictionary (calling `NiftiRef.parse`)
+- `NiftiMapping.to_dict()`: convert to a dictionary
 
 ## `NiftiTissue`
 
-Definition of a single tissue, given by a `float`, [`NiftiRef`](#niftiref) or [`NiftiMapping`](#niftimapping) for every property.
+Definition of a single tissue. Each scalar property is given by a `float`, [`NiftiRef`](#niftiref) or [`NiftiMapping`](#niftimapping).
+`B1_tx` and `B1_rx` are lists to support multi-channel data.
 Units are given by [`PhantomUnits`](#phantomunits).
 
 ```python
 NiftiTissue(density, T1, T2, T2dash, ADC, dB0, B1_tx, B1_rx)
 ```
 
-| Parameter | Description | Default value |
-| --------- | ----------- | ------------- |
-| `density` | Proton density - arbitrary units (convention: 0-1 range) | *must be specified* |
-| `T1` | Exponential T1 relaxation | `inf` |
-| `T2` | Exponential T2 relaxation | `inf` |
-| `T2dash` | Exponential T2 dephasing | `inf` |
-| `ADC` | Apparent Diffusion Coefficient | `0.0` |
-| `dB0` | Offresonance through `B0` fluctuations | `1.0` |
-| `B1_tx` | Fluctuations in B1+ (transmit) field | `1.0` |
-| `B1_rx` | Fluctuations in B1- (recieve) field | `1.0` |
+| Parameter | Type | Description | Default value |
+| --------- | ---- | ----------- | ------------- |
+| `density` | `NiftiRef`   | Proton density (convention: 0-1)  | *required* |
+| `T1`      | `Prop`       | Exponential T1 relaxation         | `inf`      |
+| `T2`      | `Prop`       | Exponential T2 relaxation         | `inf`      |
+| `T2dash`  | `Prop`       | Exponential T2 dephasing          | `inf`      |
+| `ADC`     | `Prop`       | Apparent Diffusion Coefficient    | `0.0`      |
+| `dB0`     | `Prop`       | `B0` fluctuations / offresonance  | `0.0`      |
+| `B1_tx`   | `list[Prop]` | B1+ (transmit) field, per channel | `[1.0]`    |
+| `B1_rx`   | `list[Prop]` | B1- (receive) field, per channel  | `[1.0]`    |
+
+where `Prop = float | NiftiRef | NiftiMapping`
 
 - `NiftiTissue.default()`: return a `NiftiTissue` with the default units given above - density must be passed
 - `NiftiTissue.from_dict(config)`: load from a dictionary
@@ -115,15 +118,16 @@ NiftiTissue(density, T1, T2, T2dash, ADC, dB0, B1_tx, B1_rx)
 Represents the configuration given by a phantom `.json` file.
 
 ```python
-NiftiPhantom(file_type, units, system, tissues)
+NiftiPhantom(units, system, tissues)
 ```
 
 | Parameter | Description |
 | --------- | ----------- |
-| `file_type` | Specifies the version of the specification used by the config file. Currently *must* be `"nifti_phantom_v1"` |
 | `units` | [`PhantomUnits`](#phantomunits) object |
 | `system` | [`PhantomSystem`](#phantomsystem) object |
 | `tissues` | Dictionary of tissues; key specifies name, values are [`NiftiTissue`](#niftitissue) objects |
+
+The class attribute `file_type` is always `"nifti_phantom_v1"` and is not a constructor parameter.
 
 - `NiftiPhantom.default(gyro=42.5764, B0=3)`: return a `NiftiPhantom` without tissues
 - `NiftiPhantom.load(path)`: load from `.json` file, given by the path
