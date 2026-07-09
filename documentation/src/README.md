@@ -1,7 +1,7 @@
 ![logo](logo.png)
 
 ```bash
-# Requires Python 3.9 or higher
+# Requires Python 3.10 or higher
 pip install MRzeroCore
 ```
 
@@ -19,7 +19,7 @@ These notebooks run on Google Colab - directly in your browser, no installation 
 
 Alternatively, install MR-zero Core locally:
 ```bash
-# Requires Python 3.9 or higher
+# Requires Python 3.10 or higher
 pip install MRzeroCore
 ```
 

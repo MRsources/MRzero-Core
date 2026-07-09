@@ -1,9 +1,13 @@
-[![Documentation Status](https://readthedocs.org/projects/mrzero-core/badge/?version=latest)](https://mrzero-core.readthedocs.io/en/latest/?badge=latest)
 ![PyPI - Version](https://img.shields.io/pypi/v/MRzeroCore)
 
 # MRzero Core
 
 The MRzero Core contains the core functionality of [MRzero](https://arxiv.org/abs/2002.04265) like MRI sequence building, simulation and reconstruction. MRzero Core does not force you to take any particular approach to e.g., reconstruction, as it targets easy integration in existing projects. Nevertheless, more tools can be added in the future if they helpful for the general application space.
+
+> ### 🎉 1.0 release
+> Version 1.0 adds Pulseq 1.5 support and flips the sign convention of the simulated signal, so that it is now the complex conjugate of what previous versions returned. Reconstruction accordingly switches from `fft` to `ifft`.
+> 
+> See the [FFT sign conventions](https://mrsources.github.io/MRzero-Core/fft_sign_conventions.html) page for details, and the [CHANGELOG](CHANGELOG.md) for the full list of changes. If anything else broke, please [open an issue](https://github.com/MRsources/MRzero-Core/issues).
 
 ## Usage
 
