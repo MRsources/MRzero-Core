@@ -87,12 +87,11 @@ def reco_adjoint(signal: torch.Tensor,
     ], dim=1).t()
 
     NCoils = signal.shape[1]
-    # assert NCoils == 1, "reconstruct currently does not support multicoil"
 
     # (Samples, 3) x (3, Voxels)
     phase = kspace[:, :3] @ voxel_pos
     # (Samples, Voxels): Rotation of all voxels at every event
-    rot = torch.exp(-2j*pi * phase)  # Matches definition of forward DFT
+    rot = torch.exp(2j*pi * phase)  # Matches definition of backward DFT
 
     NCoils = signal.shape[1]
 
