@@ -1,3 +1,5 @@
+- 1.0.1
+  - better handling of pulses with undefined usage in get_kspace: guess based on flip angle
 - 1.0.0
   - pulseq 1.5 support: `backend="pulseq_rs"` is now the default for `Sequence.import_file`
   - removed pypulseq version restriction (previously pinned to < 1.5)
