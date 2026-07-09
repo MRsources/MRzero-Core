@@ -211,7 +211,7 @@ def flip(spins: torch.Tensor, angle: torch.Tensor, phase: torch.Tensor,
 def grad_precess(spins: torch.Tensor, gradm: torch.Tensor,
                  voxel_pos: torch.Tensor) -> torch.Tensor:
     """Rotate individual voxels as given by their position and ```gradm``."""
-    angle = 2 * pi * voxel_pos @ gradm  # shape: voxels
+    angle = -2 * pi * voxel_pos @ gradm  # shape: voxels
     rot_mat = torch.zeros((angle.numel(), 3, 3), device=spins.device)
     rot_mat[:, 0, 0] = torch.cos(angle)
     rot_mat[:, 0, 1] = -torch.sin(angle)
@@ -225,7 +225,7 @@ def grad_precess(spins: torch.Tensor, gradm: torch.Tensor,
 def B0_precess(spins: torch.Tensor, B0: torch.Tensor,
                dt: float) -> torch.Tensor:
     """Rotate voxels as given by ``B0`` and the elapsed time ``dt``."""
-    angle = 2 * pi * B0 * dt  # shape: voxels
+    angle = -2 * pi * B0 * dt  # shape: voxels
     rot_mat = torch.zeros((angle.numel(), 3, 3), device=spins.device)
     rot_mat[:, 0, 0] = torch.cos(angle)
     rot_mat[:, 0, 1] = -torch.sin(angle)
@@ -243,7 +243,7 @@ def intravoxel_precess(spins: torch.Tensor, gradm: torch.Tensor,
     ``grad_precess`` and ``intravoxel_precess`` are both needed to correctly
     simulate the effect gradients have on the magnetisation.
     """
-    angle = spin_pos @ gradm  # shape: spins
+    angle = -spin_pos @ gradm  # shape: spins
     rot_mat = torch.zeros((angle.numel(), 3, 3), device=spins.device)
     rot_mat[:, 0, 0] = torch.cos(angle)
     rot_mat[:, 0, 1] = -torch.sin(angle)

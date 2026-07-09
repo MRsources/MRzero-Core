@@ -79,7 +79,6 @@ class NiftiRef:
         if not m:
             raise ValueError("Invalid file_ref", m)
         return cls(file_name=Path(m.group("file")), tissue_index=int(m.group("idx")))
-
     def to_str(self) -> str:
         return f"{self.file_name}[{self.tissue_index}]"
 
@@ -178,7 +177,6 @@ class NiftiPhantom:
     def save(self, path: Path | str):
         import json
         import os
-
         path = Path(path)
 
         os.makedirs(path.parent, exist_ok=True)
