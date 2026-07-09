@@ -1,7 +1,12 @@
 - 1.0.0
-  - pulseq 1.5 support
+  - pulseq 1.5 support: `backend="pulseq_rs"` is now the default for `Sequence.import_file`
+  - removed pypulseq version restriction (previously pinned to < 1.5)
   - fix sign in simulation phase, adjoint reco and playground notebooks
+  - switched FFT to IFFT in all playground/documentation notebooks
   - DSV support via dsv2pulseq (optional dependency)
+  - NIfTI phantom support: new `TissueDict` and NIfTI phantom classes for
+    loading/saving phantoms in NIfTI format (#154)
+  - added `__version__` attribute to the package (#178)
 - 0.4.12
   - Use off-resonance pulse properties in new 1.5 importer as well
 - 0.4.11
