@@ -392,6 +392,11 @@ class Sequence(list):
                 k_pos = -k_pos
             elif rep.pulse.usage == PulseUsage.STORE:
                 stored = k_pos
+            else: # undef or fatsat
+                if abs(rep.pulse.angle) < 100 * np.pi / 180:
+                    k_pos = stored  # excit
+                else:
+                    k_pos = -k_pos  # refoc
 
             rep_traj = k_pos + torch.cumsum(
                 torch.cat([rep.gradm, rep.event_time[:, None]], 1),
