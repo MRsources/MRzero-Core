@@ -32,6 +32,7 @@
     - [Reconstruction methods](api-reconstruction.md)
     - [util module](api-util.md)
     - [Other methods](api-unsorted.md)
+- [MR-zero FFT/sign conventions](fft_sign_conventions.md)
   
 
 # 📊 Pulseq-zero
