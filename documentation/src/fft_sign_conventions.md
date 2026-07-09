@@ -11,7 +11,7 @@ $$
 M_{xy}(t) = M_x(t) + iM_y(t)
 $$
 
-For a proton with positive gyromagnetic ratio in a positive $B_0$ field, the transverse magnetization rotates clockwise when viewed along $+B_0$. In this convention, free precession is written as:
+For a proton with positive gyromagnetic ratio in a positive \\(B_0\\) field, the transverse magnetization rotates clockwise when viewed along \\(+B_0\\). In this convention, free precession is written as:
 
 $$
 M_{xy}(t)=M_{xy}(0)e^{-i\omega_0 t},
@@ -51,9 +51,9 @@ $$
 
 In this note:
 
-- **FFT-type kernel** means an $e^{-i(\cdot)}$ kernel.
-- **iFFT-type kernel** means an $e^{+i(\cdot)}$ kernel.
-- Scaling factors such as $1/N$, $2\pi$, `fftshift`, and `ifftshift` are treated separately.
+- **FFT-type kernel** means an \\(e^{-i(\cdot)}\\) kernel.
+- **iFFT-type kernel** means an \\(e^{+i(\cdot)}\\) kernel.
+- Scaling factors such as \\(1/N\\), \\(2\pi\\), `fftshift`, and `ifftshift` are treated separately.
 
 Therefore, with the MR-zero physical convention,
 
@@ -61,7 +61,7 @@ $$
 s(t)\sim e^{-i\omega t},
 $$
 
-a spectrum with a peak at $+\omega$ is obtained using:
+a spectrum with a peak at \\(+\omega\\) is obtained using:
 
 $$
 \rho(\omega)=\int s(t)e^{+i\omega t}\,dt .
@@ -106,7 +106,7 @@ $$
 
 ### 3.2 Spectroscopy
 
-For spectroscopy, a spin ensemble with frequency distribution $\rho(\omega)$ gives an FID:
+For spectroscopy, a spin ensemble with frequency distribution \\(\rho(\omega)\\) gives an FID:
 
 $$ 
 s(t) = \int \rho(\omega) \exp(-i\omega t)\,d\omega .
@@ -147,7 +147,7 @@ spec *= fid.shape[time_axis]   # optional: remove NumPy's 1/N ifft scaling
 
 ---
 
-## 4. Fat, water, and $B_0$ phase signs
+## 4. Fat, water, and \\(B_0\\) phase signs
 
 Assume water is the reference frequency.
 
@@ -171,7 +171,7 @@ $$
 
 So fat accumulates **positive phase** relative to water.
 
-For a general $B_0$ perturbation,
+For a general \\(B_0\\) perturbation,
 
 $$
 \Delta f(\mathbf r)=\frac{\gamma}{2\pi}\Delta B_0(\mathbf r),
@@ -191,7 +191,7 @@ $$
 }
 $$
 
-Positive $\Delta B_0$ gives negative phase accumulation.
+Positive \\(\Delta B_0\\) gives negative phase accumulation.
 
 Negative frequency offsets, such as fat relative to water, give positive phase accumulation.
 
@@ -209,7 +209,7 @@ $$
 \omega_0=-\gamma B_0 .
 $$
 
-For nuclei with positive gyromagnetic ratio, such as protons, this means the Larmor frequency is negative under that coordinate convention. The transverse magnetization rotates clockwise when viewed along $+B_0$.
+For nuclei with positive gyromagnetic ratio, such as protons, this means the Larmor frequency is negative under that coordinate convention. The transverse magnetization rotates clockwise when viewed along \\(+B_0\\).
 
 With:
 
@@ -223,7 +223,7 @@ $$
 M_{xy}(t)=M_{xy}(0)e^{-i\omega t}
 $$
 
-for a positive physical precession magnitude $\omega>0$.
+for a positive physical precession magnitude \\(\omega>0\\).
 
 However, in Fourier-processing discussions of NMR spectroscopy, the complex FID is often written differently. The two receiver channels may be defined as:
 
@@ -328,7 +328,7 @@ $$
 s(t)=e^{-i\omega t}.
 $$
 
-Therefore, a peak at $+\omega$ is obtained using:
+Therefore, a peak at \\(+\omega\\) is obtained using:
 
 $$
 \rho(\omega) = \int s(t)e^{+i\omega t}dt,
@@ -463,7 +463,7 @@ This should be treated as a vendor-, sequence-, and file-format-dependent issue 
 
 ## 11. Spectroscopy consequence
 
-For an MR-zero FID simulation with water at $0$ Hz and fat at, for example,
+For an MR-zero FID simulation with water at \\(0\\) Hz and fat at, for example,
 
 $$
 \Delta f_{\text{fat}}=-420\ \mathrm{Hz},
@@ -482,9 +482,9 @@ spec = np.fft.fftshift(np.fft.ifft(fid))
 spec *= len(fid)
 ```
 
-This gives fat at $-420$ Hz relative to water.
+This gives fat at \\(-420\\) Hz relative to water.
 
-Using `fft` directly would mirror the spectral axis and place fat at $+420$ Hz unless the frequency axis is also reversed or the FID is conjugated.
+Using `fft` directly would mirror the spectral axis and place fat at \\(+420\\) Hz unless the frequency axis is also reversed or the FID is conjugated.
 
 Equivalent options are:
 
@@ -523,10 +523,10 @@ Then the consistent reconstruction rules are:
 
 | Data | Signal formation | Reconstruction |
 |---|---|---|
-| Imaging | $s(\mathbf k)=\int\rho(\mathbf r)e^{-i\mathbf k\cdot\mathbf r}d\mathbf r$ | iFFT |
-| Spectroscopy | $s(t)=\int\rho(\omega)e^{-i\omega t}d\omega$ | iFFT |
-| Positive $B_0$ offset | $e^{-i\gamma\Delta B_0t}$ | negative phase |
-| Fat relative to water | $\Delta f_{\text{fat}}<0$ | positive phase |
+| Imaging | \\(s(\mathbf k)=\int\rho(\mathbf r)e^{-i\mathbf k\cdot\mathbf r}d\mathbf r\\) | iFFT |
+| Spectroscopy | \\(s(t)=\int\rho(\omega)e^{-i\omega t}d\omega\\) | iFFT |
+| Positive \\(B_0\\) offset | \\(e^{-i\gamma\Delta B_0t}\\) | negative phase |
+| Fat relative to water | \\(\Delta f_{\text{fat}}<0\\) | positive phase |
 | MRS receiver/software convention | optional conjugation | `sig = conj(sig)` |
 | Standard MRS “FFT” convention | storage/receiver convention | not MR-zero physics |
 
@@ -565,13 +565,13 @@ $$
 
 Expected MR-zero result:
 
-- `ifft(fid)` gives fat at $-420$ Hz.
-- `fft(fid)` gives fat at $+420$ Hz unless the frequency axis is reversed.
+- `ifft(fid)` gives fat at \\(-420\\) Hz.
+- `fft(fid)` gives fat at \\(+420\\) Hz unless the frequency axis is reversed.
 - `fft(conj(fid))` gives the same frequency placement as `ifft(fid)` up to scaling and shift conventions.
 
-### 13.2 $B_0$ phase test
+### 13.2 \\(B_0\\) phase test
 
-Simulate a positive $B_0$ offset:
+Simulate a positive \\(B_0\\) offset:
 
 $$
 \Delta B_0>0.
@@ -583,7 +583,7 @@ $$
 \phi(t)=-\gamma\Delta B_0t.
 $$
 
-So positive $\Delta B_0$ should produce negative phase.
+So positive \\(\Delta B_0\\) should produce negative phase.
 
 ### 13.3 Fat/water GRE test
 
