@@ -127,7 +127,7 @@ NiftiPhantom(units, system, tissues)
 | `system` | [`PhantomSystem`](#phantomsystem) object |
 | `tissues` | Dictionary of tissues; key specifies name, values are [`NiftiTissue`](#niftitissue) objects |
 
-The class attribute `file_type` is always `"nifti_phantom_v1"` and is not a constructor parameter.
+The class attribute `schema_uri` is always `"https://github.com/mrx-org/bifti-phantoms/bifti-phantom-v1"` and is not a constructor parameter.
 
 - `NiftiPhantom.default(gyro=42.5764, B0=3)`: return a `NiftiPhantom` without tissues
 - `NiftiPhantom.load(path)`: load from `.json` file, given by the path

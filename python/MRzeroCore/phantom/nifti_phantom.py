@@ -172,7 +172,7 @@ class NiftiTissue:
 
 @dataclass
 class NiftiPhantom:
-    file_type = "nifti_phantom_v1"
+    schema_uri = "https://github.com/mrx-org/bifti-phantoms/bifti-phantom-v1"
     units: PhantomUnits
     system: PhantomSystem
     tissues: dict[str, NiftiTissue]
@@ -223,7 +223,7 @@ class NiftiPhantom:
 
     def to_dict(self) -> dict:
         d = {
-            "file_type": self.file_type,
+            "$schema": self.schema_uri,
             "units": self.units.to_dict(),
             "system": self.system.to_dict(),
             "tissues": {
