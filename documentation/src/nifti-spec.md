@@ -86,7 +86,7 @@ The phantom is defined in a [`.json` file](https://www.json.org/json-en.html) wi
 
 ```json
 {
-  "file_type": "nifti_phantom_v1",
+  "$schema": "https://github.com/mrx-org/bifti-phantoms/bifti-phantom-v1",
   "units": {
     "gyro": "MHz/T",
     "B0": "T",
@@ -137,7 +137,7 @@ The phantom is defined in a [`.json` file](https://www.json.org/json-en.html) wi
 }
 ```
 
-- `file_type`: must be `"nifti_phantom_v1"`.
+- `$schema`: identifies the format, must end in `nifti-phantom-v1` or `bifti-phantom-v1` (optionally followed by a file extension).
 - `units`: units for all properties (see [Units](#units)).
 - `system`: physical system parameters (see [System](#system)).
 - `tissues`: keys are arbitrary tissue names; values define [tissue properties](#tissue-properties).
