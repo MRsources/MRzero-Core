@@ -1,3 +1,6 @@
+- 1.0.2
+  - `VoxelGridPhantom.interpolate`/`.slices()` now update the affine matrix
+    (and object size) to stay consistent with the new affine standard (#176)
 - 1.0.1
   - better handling of pulses with undefined usage in get_kspace: guess based on flip angle
 - 1.0.0
