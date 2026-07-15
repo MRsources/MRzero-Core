@@ -317,7 +317,7 @@ class VoxelGridPhantom:
         affine[0, 0] = size[0] / data[..., 0].shape[0] * 1000
         affine[1, 1] = size[1] / data[..., 0].shape[1] * 1000
         affine[2, 2] = size[2] / data[..., 0].shape[2] * 1000
-        affine[:, 3] = -size / 2 * 1000
+        affine[:, 3] = -torch.as_tensor(size) / 2 * 1000
         
         return cls(
             data[..., 0],  # PD
