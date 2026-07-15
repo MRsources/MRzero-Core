@@ -1,3 +1,5 @@
+- 1.0.3
+  - Bugfix: convert phantom size to torch tensor
 - 1.0.2
   - `VoxelGridPhantom.interpolate`/`.slices()` now update the affine matrix
     (and object size) to stay consistent with the new affine standard (#176)
