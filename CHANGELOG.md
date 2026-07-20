@@ -1,3 +1,5 @@
+- 1.0.4
+  - speed up new pulseq importer by bisecting time ranges instead of linear search
 - 1.0.3
   - Bugfix: convert phantom size to torch tensor
 - 1.0.2

@@ -1,4 +1,5 @@
 from __future__ import annotations
+import bisect
 from time import time
 import warnings
 import torch
@@ -831,84 +832,59 @@ class Sequence(list):
         blocks = list(interp.blocks)
         duration = interp.duration
 
-        # Cache shape-times arrays per block so events_axis_in() doesn't keep
-        # rebuilding them through the FFI.
+        # Sorted list of times - can use bisect to find blocks faster
         block_starts = [b.start for b in blocks]
         block_ends = [b.start + b.duration for b in blocks]
-        grad_breakpoints = {  # absolute times of every breakpoint per (block, axis)
-            "x": [None] * len(blocks),
-            "y": [None] * len(blocks),
-            "z": [None] * len(blocks),
-        }
-        for j, b in enumerate(blocks):
+
+        # Per-axis sorted breakpoint times for fast lookups
+        flat_grad_times: dict[str, list[float]] = {"x": [], "y": [], "z": []}
+        for b in blocks:
             for axis in ("x", "y", "z"):
                 g = getattr(b, "g" + axis)
                 if g is None:
                     continue
                 t_off = b.start + g.delay
-                grad_breakpoints[axis][j] = [t_off + t for t in g.shape_times()]
+                flat_grad_times[axis].extend(t_off + t for t in g.shape_times())
 
-        adc_times_per_block = [None] * len(blocks)
-        adc_phases_per_block = [None] * len(blocks)
-        # Labels live at the block (ADC) level, so one dict per ADC block is
-        # enough — every sample inside that block shares the same snapshot.
-        adc_labels_per_block: list[Optional[dict[str, int]]] = [None] * len(blocks)
-        for j, b in enumerate(blocks):
+        # Precomputed ADC lists for faster lookup
+        flat_adc_times: list[float] = []
+        flat_adc_phases: list[float] = []
+        flat_adc_labels: list[dict[str, int]] = []
+        label_names: list[str] = []
+        for b in blocks:
             if b.adc is None:
                 continue
-            adc_times_per_block[j] = [b.start + t for t in b.adc.sample_times()]
-            adc_phases_per_block[j] = list(b.adc.sample_phases())
-            adc_labels_per_block[j] = b.adc.labels()
-
-        label_names: list[str] = []
-        for lbl in adc_labels_per_block:
-            if lbl is not None:
+            lbl = b.adc.labels()
+            if not label_names and lbl is not None:
                 label_names = list(lbl.keys())
-                break
+            ts = b.adc.sample_times()
+            ph = b.adc.sample_phases()
+            flat_adc_times.extend(b.start + t for t in ts)
+            flat_adc_phases.extend(ph)
+            flat_adc_labels.extend(lbl for _ in ts)
 
         def events_axis_in(t0: float, t1: float, axis: str) -> list[float]:
-            out: list[float] = []
-            bp = grad_breakpoints[axis]
-            for j in range(len(blocks)):
-                if block_starts[j] >= t1 or block_ends[j] <= t0:
-                    continue
-                times = bp[j]
-                if times is None:
-                    continue
-                for t in times:
-                    if t0 <= t <= t1:
-                        out.append(t)
-            return out
+            times = flat_grad_times[axis]
+            lo = bisect.bisect_left(times, t0)
+            hi = bisect.bisect_right(times, t1)
+            return times[lo:hi]
 
         def adcs_in(t0: float, t1: float) -> tuple[
             list[float], list[float], list[dict[str, int]]
         ]:
-            times_out: list[float] = []
-            phases_out: list[float] = []
-            labels_out: list[dict[str, int]] = []
-            for j in range(len(blocks)):
-                if block_starts[j] >= t1 or block_ends[j] <= t0:
-                    continue
-                ts = adc_times_per_block[j]
-                if ts is None:
-                    continue
-                ph = adc_phases_per_block[j]
-                lbl = adc_labels_per_block[j]
-                assert ph is not None and lbl is not None
-                for k, t in enumerate(ts):
-                    if t0 <= t <= t1:
-                        times_out.append(t)
-                        phases_out.append(ph[k])
-                        labels_out.append(lbl)
-            return times_out, phases_out, labels_out
+            lo = bisect.bisect_left(flat_adc_times, t0)
+            hi = bisect.bisect_right(flat_adc_times, t1)
+            return flat_adc_times[lo:hi], flat_adc_phases[lo:hi], flat_adc_labels[lo:hi]
 
         def integrate_axis(axis: str, t0: float, t1: float) -> float:
             if t1 <= t0:
                 return 0.0
             moment = 0.0
-            for j in range(len(blocks)):
-                if block_starts[j] >= t1 or block_ends[j] <= t0:
-                    continue
+            # First block with end > t0, up to (excluding) first block with
+            # start >= t1 - can use bisect to narrow down relevant range
+            lo_idx = bisect.bisect_right(block_ends, t0)
+            hi_idx = bisect.bisect_left(block_starts, t1)
+            for j in range(lo_idx, hi_idx):
                 g = getattr(blocks[j], "g" + axis)
                 if g is None:
                     continue
