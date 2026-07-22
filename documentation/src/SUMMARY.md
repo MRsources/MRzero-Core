@@ -37,6 +37,7 @@
 
 # 📊 Pulseq-zero
 
+- [Introduction](pulseqzero-intro.md)
 - [Math methods for differentiability](pulseqzero-math.md)
 
 
