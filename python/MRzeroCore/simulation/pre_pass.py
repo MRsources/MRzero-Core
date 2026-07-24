@@ -17,10 +17,10 @@ def compute_graph(
     """Like :func:`pre_pass.compute_graph_ext`, but computes some args from :attr:`data`."""
     return compute_graph_ext(
         seq,
-        float(torch.mean(data.T1)),
-        float(torch.mean(data.T2)),
-        float(torch.mean(data.T2dash)),
-        float(torch.mean(data.D)),
+        [data.get_params(r)["T1"].mean() for r in range(len(data.interp_left))],
+        [data.get_params(r)["T2"].mean() for r in range(len(data.interp_left))],
+        [data.get_params(r)["T2dash"].mean() for r in range(len(data.interp_left))],
+        [data.get_params(r)["D"].mean() for r in range(len(data.interp_left))],
         max_state_count,
         min_state_mag,
         data.nyquist.tolist(),

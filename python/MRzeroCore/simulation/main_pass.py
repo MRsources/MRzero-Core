@@ -102,35 +102,15 @@ def execute_graph(graph: Graph,
     # Calculate kt_vec ourselves for autograd
     graph[0][0].kt_vec = torch.zeros(4, device=data.device)
 
-    # compute the T1 and T2 values for each repetition
-    if data.T1.ndim==2:
-        assert data.T1.shape[0] == len(seq)
-        list_T1 = data.T1.clone()
-    elif data.T1.ndim==1:
-        list_T1 = data.T1.clone().expand(len(seq),-1)
-    if data.T2.ndim==2:
-        assert data.T2.shape[0] == len(seq)
-        list_T2 = data.T2.clone()
-    elif data.T2.ndim==1:
-        list_T2 = data.T2.clone().expand(len(seq),-1)
-    if data.T2dash.ndim==2:
-        assert data.T2dash.shape[0] == len(seq)
-        list_T2dash = data.T2dash.clone()
-    elif data.T2dash.ndim==1:
-        list_T2dash = data.T2dash.clone().expand(len(seq),-1)
-    if data.D.ndim==2:
-        assert data.D.shape[0] == len(seq)
-        list_D = data.D.clone()
-    elif data.D.ndim==1:
-        list_D = data.D.clone().expand(len(seq),-1)
-    if data.B0.ndim==2:
-        assert data.B0.shape[0] == len(seq)
-        list_B0 = data.B0.clone()
-    elif data.B0.ndim==1:
-        list_B0 = data.B0.clone().expand(len(seq),-1)
+    params_per_rep = [data.get_params(r) for r in range(len(seq))]
     
     mag_adc = []
-    for i, (dists, rep, current_T1, current_T2, current_T2dash, current_D, current_B0) in enumerate(zip(graph[1:], seq, list_T1, list_T2, list_T2dash, list_D, list_B0)):
+    for i, (dists, rep, params) in enumerate(zip(graph[1:], seq, params_per_rep)):
+        current_T1 = params["T1"]
+        current_T2 = params["T2"]
+        current_T2dash = params["T2dash"]
+        current_D = params["D"]
+        current_B0 = params["B0"]
         if print_progress:
             print(f"\rCalculating repetition {i+1} / {len(seq)}", end='')
 
