@@ -50,8 +50,8 @@ Try it now: [![Open In Colab](https://colab.research.google.com/assets/colab-bad
 
 ## Links
 
-- Documentation: https://mrzero-core.readthedocs.io/
-- Examples: [Playground](https://mrzero-core.readthedocs.io/en/latest/playground_mr0/overview.html)
+- Documentation: https://mrsources.github.io/MRzero-Core
+- Examples: [Playground](https://mrsources.github.io/MRzero-Core/playground.html)
 - PyPI: https://pypi.org/project/mrzerocore/
 - Original MRzero Paper: https://arxiv.org/abs/2002.04265
 
@@ -61,7 +61,7 @@ This assumes windows as host operating system. For building the python wheel, yo
 - the Rust toolchain: [rustup](https://rustup.rs/)
 - the rust-python build tool tool: [pip install maturin](https://github.com/PyO3/maturin)
 - for Linux crosscompilation: [docker](https://www.docker.com/)
-- to build the documentation: [pip install jupyter-book](https://jupyterbook.org/en/stable/intro.html)
+- to build the documentation: [mdBook](https://rust-lang.github.io/mdBook/guide/installation.html)
 
 **Building for Windows**
 ```
@@ -88,10 +88,4 @@ mdbook serve documentation
 
 ## Official builds
 
-The [python wheels](https://pypi.org/project/mrzerocore/) hosted by [PyPI](https://pypi.org/) is built as described above, and uploaded as following:
-
-```
-maturin upload target/wheels/MRzeroCore-{ version }-cp37-abi3-win_amd64.whl target/wheels/MRzeroCore-{ version }-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl -u <pypi-user> -p <pypi-pwd>
-```
-
-The [documentation](https://mrzero-core.readthedocs.io/en/latest/intro.html) is built using [readthedocs](https://readthedocs.org/), which works the same as described above.
+The [python wheels](https://pypi.org/project/mrzerocore/) hosted by [PyPI](https://pypi.org/) is built as described above. It is deployed as GitHub action (see [pypi_publish.yml](/.github/workflows/pypi_publish.yml))
