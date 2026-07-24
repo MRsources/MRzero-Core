@@ -33,15 +33,21 @@ class DynamicSimData(SimData):
     PD : torch.Tensor
         Per voxel proton density
     T1 : torch.Tensor
-        Per voxel T1 relaxation time (seconds) for each repetition time.
+        Per voxel T1 relaxation time (seconds) for each time step.
     T2 : torch.Tensor
-        Per voxel T2 relaxation time (seconds) for each repetition time.
+        Per voxel T2 relaxation time (seconds) for each time step.
     T2dash : torch.Tensor
-        Per voxel T2' dephasing time (seconds) for each repetition time.
+        Per voxel T2' dephasing time (seconds) for each time step.
     D: torch.Tensor
-        Isometric diffusion coefficients [10^-3 mm^2/s] for each repetition time.
+        Isometric diffusion coefficients [10^-3 mm^2/s] for each time step.
     B0 : torch.Tensor
-        Per voxel B0 inhomogentity (Hertz) for each repetition time.
+        Per voxel B0 inhomogentity (Hertz) for each time step.
+    interp_left: torch.Tensor,
+        (repetition_count, ) tensor containing the left index of the interpolation
+    interp_right: torch.Tensor,
+        (repetition_count, ) tensor containing the right index of the interpolation
+    interp_alpha: torch.Tensor,
+        (repetition_count, ) tensor containing the interpolation factor between left and right index
     B1 : torch.Tensor
         (coil_count, voxel_count) Per coil and per voxel B1 inhomogenity
     coil_sens : torch.Tensor
@@ -71,6 +77,9 @@ class DynamicSimData(SimData):
     T2dash: torch.Tensor,
     D: torch.Tensor,
     B0: torch.Tensor,
+    interp_left: torch.Tensor,
+    interp_right: torch.Tensor,
+    interp_alpha: torch.Tensor,
     B1: torch.Tensor,
     coil_sens: torch.Tensor,
     size: torch.Tensor,
@@ -92,7 +101,7 @@ class DynamicSimData(SimData):
         normalize : bool
             If true, applies B0 -= B0.mean(), B1 /= B1.mean(), PD /= PD.sum()
         """
-        if not (PD.shape == T1.shape[1:] == T2.shape[1:] == T2dash.shape[1:] == B0.shape[1:]):
+        if not (PD.shape == T1.shape[1:] == T2.shape[1:] == T2dash.shape[1:] == D.shape[1:] == B0.shape[1:]):
             raise Exception("Mismatch of voxel-data shapes")
         if not PD.ndim == 1:
             raise Exception("Data must be 1D (flattened)")
@@ -107,6 +116,9 @@ class DynamicSimData(SimData):
         self.T2dash = T2dash.clamp(min=1e-6)
         self.D = D.clamp(min=1e-6)
         self.B0 = B0.clone()
+        self.interp_left = interp_left.clone()
+        self.interp_right = interp_right.clone()
+        self.interp_alpha = interp_alpha.clone()
         self.B1 = B1.clone()
         self.tissue_masks = tissue_masks
         if self.tissue_masks is None:
@@ -135,6 +147,9 @@ class DynamicSimData(SimData):
             self.T2dash.cuda(),
             self.D.cuda(),
             self.B0.cuda(),
+            self.interp_left.cuda(),
+            self.interp_right.cuda(),
+            self.interp_alpha.cuda(),
             self.B1.cuda(),
             self.coil_sens.cuda(),
             self.size.cuda(),
@@ -162,6 +177,9 @@ class DynamicSimData(SimData):
             self.T2dash.cpu(),
             self.D.cpu(),
             self.B0.cpu(),
+            self.interp_left.cpu(),
+            self.interp_right.cpu(),
+            self.interp_alpha.cpu(),
             self.B1.cpu(),
             self.coil_sens.cpu(),
             self.size.cpu(),
@@ -175,6 +193,20 @@ class DynamicSimData(SimData):
                 k: v.cpu() for k, v in self.tissue_masks.items()
             },
         )
+        
+    def get_params(self, rep_index):
+
+        l = self.interp_left[rep_index]
+        r = self.interp_right[rep_index]
+        a = self.interp_alpha[rep_index]
+
+        return {
+            "T1": torch.lerp(self.T1[l], self.T1[r], a),
+            "T2": torch.lerp(self.T2[l], self.T2[r], a),
+            "T2dash": torch.lerp(self.T2dash[l], self.T2dash[r], a),
+            "D": torch.lerp(self.D[l], self.D[r], a),
+            "B0": torch.lerp(self.B0[l], self.B0[r], a),
+        }
 
 
 class DynamicVoxelPhantom(VoxelGridPhantom):
@@ -326,7 +358,6 @@ class DynamicVoxelPhantom(VoxelGridPhantom):
         voxel_shape: str
             shape of the voxel used for simulation. Default to sinc shape.
         """
-        T1_rep, T2_rep, T2dash_rep, D_rep, B0_rep = self.compute_param_at_repetition(repetition_times, start_time=start_time)
         mask = self.PD > PD_threshold
 
         shape = torch.tensor(mask.shape)
@@ -357,14 +388,41 @@ class DynamicVoxelPhantom(VoxelGridPhantom):
             def dephasing_func(t, _): return identity(t)
         else:
             raise ValueError(f"Unsupported voxel shape '{voxel_shape}'")
+        
+        # Only compute interpolation metadata
+        times = repetition_times + start_time
+
+        indices = torch.searchsorted(
+            self.time_points,
+            times,
+            side="left"
+        )
+
+        indices = indices.clamp(1, len(self.time_points)-1)
+
+        left = indices - 1
+        right = indices
+
+        alpha = (
+            (times - self.time_points[left]) /
+            (self.time_points[right] - self.time_points[left])
+        )
 
         return DynamicSimData(
             self.PD[mask],
-            T1_rep[:,mask],
-            T2_rep[:,mask],
-            T2dash_rep[:,mask],
-            D_rep[:,mask],
-            B0_rep[:,mask],
+            
+            # dynamic frames, NOT repetitions
+            self.T1[:, mask],
+            self.T2[:, mask],
+            self.T2dash[:, mask],
+            self.D[:, mask],
+            self.B0[:, mask],
+            
+            # interpolation
+            left,
+            right,
+            alpha,            
+            
             self.B1[:, mask],
             self.coil_sens[:, mask],
             self.size,
@@ -376,52 +434,6 @@ class DynamicVoxelPhantom(VoxelGridPhantom):
             voxel_motion=self.voxel_motion,
             tissue_masks=self.tissue_masks
         )
-
-    def compute_param_at_repetition(self, repetition_times: torch.Tensor, start_time: float = 0.) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-        """Computes the T1, T2, T2', D, and B0 based on the provided repetition times using linear interpolation.
-        
-        Arguments
-        ---------
-        repetition_times: torch.Tensor
-            1D tensor containing the times in seconds for each repetition in the sequence.
-        start_time: float
-            Time in seconds at which the first repetition occurs. Default to 0, can be used to simulate a delay between phantom initialization and the start of the sequence.
-        """
-        # Find the indices where repetition_times would fit in time_points (sorted).
-        repetition_times += start_time
-        indices = torch.searchsorted(self.time_points, repetition_times, side='left')
-        
-        # Clip the indices to ensure we don't go out of bounds.
-        indices = indices.clamp(min=1, max=len(self.time_points) - 1)
-        
-        # Get the left and right points for interpolation.
-        left_time_points = self.time_points[indices - 1]
-        right_time_points = self.time_points[indices]
-        
-        left_T1 = self.T1[indices - 1]
-        right_T1 = self.T1[indices]
-        left_T2 = self.T2[indices - 1]
-        right_T2 = self.T2[indices]
-        left_T2dash = self.T2dash[indices - 1]
-        right_T2dash = self.T2dash[indices]
-        left_D = self.D[indices - 1]
-        right_D = self.D[indices]
-        left_B0 = self.B0[indices - 1]
-        right_B0 = self.B0[indices]
-
-        # Apply linear interpolation: f(x) = (x-a)/(b-a)*f(b) + (b-x)/(b-a)*f(a)
-        left_diff = repetition_times - left_time_points
-        right_diff = right_time_points - repetition_times
-        total_diff = right_time_points - left_time_points
-        
-        # Linear interpolation for T1, T2, T2dash, D, and B0
-        T1_rep = (left_diff / total_diff) * right_T1 + (right_diff / total_diff) * left_T1
-        T2_rep = (left_diff / total_diff) * right_T2 + (right_diff / total_diff) * left_T2
-        T2dash_rep = (left_diff / total_diff) * right_T2dash + (right_diff / total_diff) * left_T2dash
-        D_rep = (left_diff / total_diff) * right_D + (right_diff / total_diff) * left_D
-        B0_rep = (left_diff / total_diff) * right_B0 + (right_diff / total_diff) * left_B0
-
-        return T1_rep, T2_rep, T2dash_rep, D_rep, B0_rep
     
     def slices(self, slices: list[int]) -> DynamicVoxelPhantom:
         """Generate a copy that only contains the selected slice(s).
