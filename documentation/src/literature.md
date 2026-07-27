@@ -57,6 +57,10 @@ _Weinmüller S, Dang HN, Endres J, Glang F, Loktyushin A, Zaiss M._\
 **A blurring-free 3D snapshot readout for fast CEST- or relaxation-prepared MRI**\
 In: 24. Jahrestagung Der Deutschen Sektion Der ISMRM. ; 2022:6-7.
 
+*Dang H, Endres J, Weinmüller S, Glang F, Loktyushin A, Dörfler A, Maier A, Zaiss M.*\
+**Joint optimization of flip angle design and DenseNet parameters for reduced T2 blurring in TSE sequences**\
+In: 24. Jahrestagung Der Deutschen Sektion Der ISMRM. Aachen, Germany; 2022:14-15.
+
 
 ### ISMRM
 
@@ -83,6 +87,14 @@ ISMRM 2021, abstract 1761; <https://archive.ismrm.org/2021/1761.html>
 **Advances in MRzero: supervised learning of parallel imaging sequences including joint non-Cartesian trajectory and flip angle optimization.**\
 _Glang F, Loktyushin A, Herz K, Dang HN, Deshmane A, Weinmüller S, Zaiss M et al._\
 ISMRM 2021, abstract 4200; <https://archive.ismrm.org/2021/4200.html>
+
+**MRzero – Automated invention of MRI sequences using supervised learning**\
+*Loktyushin A, Herz K, Glang F, Schölkopf B, Scheffler K, Zaiss M.*\
+ISMRM 2021, abstract 4199; <https://archive.ismrm.org/2021/4199.html>
+
+**MRzero with dAUTOMAP reconstruction: automated invention of MR acquisition and neural network reconstruction**\
+*Dang H, Weinmüller S, Loktyushin A, Glang F, Dörfler A, Maier A, Schölkopf B, Scheffler K, Zaiss M.*\
+ISMRM 2021, abstract 0333; <https://archive.ismrm.org/2021/0333.html>
 
 
 ### ESMRMB 2025
@@ -174,3 +186,17 @@ LT68
 **DREAM-zero – Optimized variable flip angles for decreased image blurring in magnetization-prepared DREAM sequences**\
 _Simon Weinmüller, Tim Baum, Hoai Nam Dang, Jonathan Endres, Moritz Zaiss_\
 P198
+
+
+### ESMRMB 2019
+
+**MRI zero: Fully automated invention of MRI sequences using supervised learning**\
+*Loktyushin A, Herz K, Glang F, Schölkopf B, Scheffler K, Zaiss M.*\
+Magn Reson Mater Phy. 2019;32(Suppl 1):S119-S120. <https://doi.org/10.1007/s10334-019-00754-2>
+
+
+### ESMRMB 2020
+
+**Autoencoding T1 using MRzero for simultaneous sequence optimization and neural network training**\
+*Dang H, Loktyushin A, Glang F, Herz K, Dörfler A, Schölkopf B, Scheffler K, Maier A, Zaiss M.*\
+Magn Reson Mater Phy. 2020;33(Suppl 1):S27-S28. <https://doi.org/10.1007/s10334-020-00874-0>
