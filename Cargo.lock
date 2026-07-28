@@ -65,7 +65,7 @@ dependencies = [
 
 [[package]]
 name = "mrzero_core"
-version = "1.0.4"
+version = "1.0.5"
 dependencies = [
  "num-complex",
  "pulseq-rs",
@@ -136,8 +136,8 @@ dependencies = [
 
 [[package]]
 name = "pulseq-rs"
-version = "0.2.1"
-source = "git+https://github.com/pulseq-frame/pulseq-rs.git#6de92ee341b9fcc69f8e50b43ef88b62b351cde8"
+version = "0.2.2"
+source = "git+https://github.com/pulseq-frame/pulseq-rs.git#5e81c1ba3f7a099d4aa26a80f903d07435d75fa7"
 dependencies = [
  "num-complex",
  "thiserror",

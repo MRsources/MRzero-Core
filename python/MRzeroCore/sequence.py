@@ -10,7 +10,6 @@ import matplotlib.pyplot as plt
 
 # TODO: if everything is working, deprecate old pulseq loader
 from .pulseq.pulseq_loader import intermediate, PulseqFile, Adc, Spoiler
-import pydisseqt
 
 
 class PulseUsage(Enum):
@@ -611,9 +610,20 @@ class Sequence(list):
             Parser used to read the .seq file. ``"pydisseqt"`` (default) is the
             legacy path. ``"pulseq_rs"`` uses the Rust pulseq-rs parser via the
             bundled extension; .dsv files always fall back to pydisseqt.
-        larmor_hz, fov_scale, fov_pos, fov_rot, soft_delays
-            Forwarded to the pulseq-rs interpreter when ``backend="pulseq_rs"``;
-            ignored for the pydisseqt backend.
+        larmor_hz : float | None
+            Larmor frequency in Hz used by the pulseq-rs interpreter. If None,
+            uses the interpreter's default (Water @ 3T). Used for ppm units.
+        fov_scale : float | None
+            Uniform scale factor applied to the FOV. Defaults to 1.0.
+        fov_pos : tuple[float, float, float] | None
+            FOV offset (x, y, z), applied after scaling. Defaults to (0, 0, 0).
+        fov_rot : tuple[float, float, float, float] | None
+            FOV rotation as a quaternion (w, x, y, z). Defaults identity rot.
+        soft_delays : dict[str, float] | None
+            Mapping of soft delay names to duration overrides in seconds.
+        output_dir : str | None
+            Directory the converted .seq file is written to when importing a
+            .dsv file. Only used for ``backend="pydisseqt"`` with .dsv input.
 
         Returns
         -------
@@ -653,6 +663,8 @@ class Sequence(list):
                           resolution: Optional[int],
                           output_dir: Optional[str],
                           ) -> Sequence:
+        import pydisseqt
+
         start = time()
         if file_name.endswith(".seq"):
             parser = pydisseqt.load_pulseq(file_name)
@@ -669,10 +681,9 @@ class Sequence(list):
             os.makedirs(output_dir, exist_ok=True)
             seq_name = os.path.basename(file_name) + '_dsv2seq.seq'
             seq_dsv_path = os.path.join(output_dir, seq_name)
-            seq_pulseq_dsv = seq_temp.make_pulseq_sequence(seq_dsv_path)
+            _ = seq_temp.make_pulseq_sequence(seq_dsv_path)
             print(f"Saved .seq file to: {seq_dsv_path}")
             parser = pydisseqt.load_pulseq(seq_dsv_path)
-            #parser = pydisseqt.load_dsv(file_name, ref_voltage, resolution)
 
         if print_stats:
             print(f"Importing the .seq file took {time() - start} s")
