@@ -174,6 +174,34 @@ class SimData:
             raise Exception("No recover function was provided")
         else:
             return self.recover_func(self)
+    
+    def get_params(self, rep_index):
+        """Return the tissue parameter maps for a given sequence repetition.
+
+        For a static phantom, the returned parameter maps are independent of
+        ``rep_index`` and correspond to the stored maps. Dynamic phantom
+        implementations may interpolate or otherwise update the parameter maps
+        based on ``rep_index``.
+
+        Parameters
+        ----------
+        rep_index : int
+            Index of the sequence repetition.
+
+        Returns
+        -------
+        dict[str, torch.Tensor]
+            Dictionary containing the parameter maps with keys
+            ``"T1"``, ``"T2"``, ``"T2dash"``, ``"D"``, and ``"B0"``.
+        """
+        return {
+            "T1": self.T1,
+            "T2": self.T2,
+            "T2dash": self.T2dash,
+            "D": self.D,
+            "B0": self.B0,
+        }
+
 
 
 def calc_avg_B1_trig(B1: torch.Tensor, PD: torch.Tensor) -> torch.Tensor:
@@ -198,30 +226,3 @@ def calc_avg_B1_trig(B1: torch.Tensor, PD: torch.Tensor) -> torch.Tensor:
         (torch.cos(B1 * angle) * PD).sum(0),
         (torch.sin(B1 * angle/2)**2 * PD).sum(0)
     ], dim=1).type(torch.float32)
-    
-def get_params(self, rep_index):
-    """Return the tissue parameter maps for a given sequence repetition.
-
-    For a static phantom, the returned parameter maps are independent of
-    ``rep_index`` and correspond to the stored maps. Dynamic phantom
-    implementations may interpolate or otherwise update the parameter maps
-    based on ``rep_index``.
-
-    Parameters
-    ----------
-    rep_index : int
-        Index of the sequence repetition.
-
-    Returns
-    -------
-    dict[str, torch.Tensor]
-        Dictionary containing the parameter maps with keys
-        ``"T1"``, ``"T2"``, ``"T2dash"``, ``"D"``, and ``"B0"``.
-    """
-    return {
-        "T1": self.T1,
-        "T2": self.T2,
-        "T2dash": self.T2dash,
-        "D": self.D,
-        "B0": self.B0,
-    }
