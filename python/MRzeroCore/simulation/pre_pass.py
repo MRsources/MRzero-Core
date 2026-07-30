@@ -15,12 +15,13 @@ def compute_graph(
     min_state_mag: float = 1e-4
 ) -> Graph:
     """Like :func:`pre_pass.compute_graph_ext`, but computes some args from :attr:`data`."""
+    rep_times = torch.tensor(np.cumsum([r.event_time.sum() for r in seq]))
     return compute_graph_ext(
         seq,
-        [data.get_params(r)["T1"].mean() for r in range(len(data.interp_left))],
-        [data.get_params(r)["T2"].mean() for r in range(len(data.interp_left))],
-        [data.get_params(r)["T2dash"].mean() for r in range(len(data.interp_left))],
-        [data.get_params(r)["D"].mean() for r in range(len(data.interp_left))],
+        [data.get_params(r)["T1"].mean() for r in range(len(rep_times))],
+        [data.get_params(r)["T2"].mean() for r in range(len(rep_times))],
+        [data.get_params(r)["T2dash"].mean() for r in range(len(rep_times))],
+        [data.get_params(r)["D"].mean() for r in range(len(rep_times))],
         max_state_count,
         min_state_mag,
         data.nyquist.tolist(),
