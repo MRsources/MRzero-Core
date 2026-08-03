@@ -391,23 +391,30 @@ class DynamicVoxelPhantom(VoxelGridPhantom):
         
         # Only compute interpolation metadata
         times = repetition_times + start_time
+        n_frames = len(self.time_points)
 
-        indices = torch.searchsorted(
-            self.time_points,
-            times,
-            side="left"
-        )
+        indices = torch.searchsorted(self.time_points, times, side="left")
 
-        indices = indices.clamp(1, len(self.time_points)-1)
+        before = indices == 0
+        after = indices == n_frames
+
+        indices = indices.clamp(1, n_frames - 1)
 
         left = indices - 1
         right = indices
 
         alpha = (
-            (times - self.time_points[left]) /
-            (self.time_points[right] - self.time_points[left])
+            (times - self.time_points[left])
+            / (self.time_points[right] - self.time_points[left])
         )
 
+        # Clamp to nearest frame outside the available time range
+        left[before] = right[before] = 0
+        alpha[before] = 0.0
+
+        left[after] = right[after] = n_frames - 1
+        alpha[after] = 0.0
+        
         return DynamicSimData(
             self.PD[mask],
             
