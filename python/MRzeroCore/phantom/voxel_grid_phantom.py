@@ -103,6 +103,8 @@ class VoxelGridPhantom:
         Size of the data, in meters.
     affine : torch.Tensor
         Affine matrix of the phantom data, in millimeters.
+    patient_pos : str
+        Patient orientation. Possible option: "hfs", "ffs".
     tissue_masks : Dict[str, torch.Tensor] | None
         Segmentation masks for different tissues. The keys are the tissue names
     """
@@ -119,6 +121,7 @@ class VoxelGridPhantom:
         coil_sens: torch.Tensor,
         size: torch.Tensor,
         affine: torch.Tensor,
+        patient_pos: str,
         phantom_motion=None,
         voxel_motion=None,
         tissue_masks: Optional[Dict[str,torch.Tensor]] = None,
@@ -141,6 +144,7 @@ class VoxelGridPhantom:
         self.coil_sens = torch.as_tensor(coil_sens, dtype=torch.complex64)
         self.size = torch.as_tensor(size, dtype=torch.float32)
         self.affine = torch.as_tensor(affine, dtype=torch.float32)
+        self.patient_pos = patient_pos
 
         self.phantom_motion = phantom_motion
         self.voxel_motion = voxel_motion
@@ -175,7 +179,7 @@ class VoxelGridPhantom:
             self.affine[:3,:3] / 1000,
             pos
         ) + self.affine[None, None, None, :3,3] / 1000
-        
+                               
         voxel_pos = pos_rot[mask]
 
         if voxel_shape == "box":
@@ -201,6 +205,7 @@ class VoxelGridPhantom:
             self.coil_sens[:, mask],
             self.size,
             self.affine,
+            self.patient_pos,
             voxel_pos,
             500 / torch.linalg.norm(self.affine[:3,:3], dim=0),
             dephasing_func,
@@ -239,7 +244,7 @@ class VoxelGridPhantom:
             affine[1, 1] = size[1] / PD.shape[1] * 1000
             affine[2, 2] = size[2] / PD.shape[2] * 1000
             affine[:, 3] = -size / 2 * 1000
-            
+                        
             tissue_masks = {
                 key: torch.tensor(mask)
                 for key, mask in data.items()
@@ -251,7 +256,7 @@ class VoxelGridPhantom:
 
         return cls(
             PD, T1, T2, T2dash, D, B0, B1,
-            torch.ones(1, *PD.shape), size, affine,
+            torch.ones(1, *PD.shape), size, affine, patient_pos="ffs",
             tissue_masks=tissue_masks
         )
 
@@ -330,6 +335,7 @@ class VoxelGridPhantom:
             coil_sens=torch.ones(1, *data.shape[:-1]),
             size=torch.as_tensor(size),
             affine=affine,
+            patient_pos="ffs"
         )
 
     def slices(self, slices: list[int]) -> VoxelGridPhantom:
@@ -379,6 +385,7 @@ class VoxelGridPhantom:
             select_multicoil(self.coil_sens),
             new_size,
             new_affine,
+            self.patient_pos,
             tissue_masks={
                 key: mask[..., slices] for key, mask in self.tissue_masks.items()
             },
@@ -422,6 +429,7 @@ class VoxelGridPhantom:
             scale(self.coil_sens.squeeze()).unsqueeze(0),
             self.size.clone(),
             rescale_affine(self.affine, self.PD.shape, (x, y, z)),
+            self.patient_pos,
             tissue_masks={
                 key: scale(mask) for key, mask in self.tissue_masks.items()
             }
@@ -505,6 +513,7 @@ class VoxelGridPhantom:
             resample_multicoil(self.coil_sens),
             self.size.clone(),
             rescale_affine(self.affine, self.PD.shape, (x, y, z)),
+            self.patient_pos,
             tissue_masks=resample_masks(self.tissue_masks)
         )
 
@@ -641,6 +650,7 @@ def recover(mask, sim_data: SimData) -> VoxelGridPhantom:
         to_full(sim_data.coil_sens),
         sim_data.size,
         sim_data.affine,
+        sim_data.patient_pos
     )
 
 

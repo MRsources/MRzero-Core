@@ -80,6 +80,19 @@ class ResliceConfig:
 
 
 @dataclass
+class PatientConfig:
+    """Target resampling grid declared inside the phantom JSON."""
+    patient_pos: str  # patient position, e.g. "ffs" or "hfs"
+
+    @classmethod
+    def from_dict(cls, config: dict):
+        return cls(patient_pos=config["patient_pos"])
+
+    def to_dict(self) -> dict:
+        return {"patient_pos": self.patient_pos}
+
+
+@dataclass
 class NiftiRef:
     file_name: Path
     tissue_index: int
@@ -176,6 +189,7 @@ class NiftiPhantom:
     system: PhantomSystem
     tissues: dict[str, NiftiTissue]
     reslice_to: ResliceConfig | None = field(default=None)
+    patient: PatientConfig | None = field(default=None)
 
     @classmethod
     def default(cls, gyro=42.5764, B0=3.0):
@@ -216,8 +230,10 @@ class NiftiPhantom:
         }
         reslice_to = (ResliceConfig.from_dict(config["reslice_to"])
                       if "reslice_to" in config else None)
+        patient = (PatientConfig.from_dict(config["patient"])
+                      if "patient" in config else None)
 
-        return cls(units, system, tissues, reslice_to)
+        return cls(units, system, tissues, reslice_to, patient)
 
     def to_dict(self) -> dict:
         d = {
@@ -230,4 +246,6 @@ class NiftiPhantom:
         }
         if self.reslice_to is not None:
             d["reslice_to"] = self.reslice_to.to_dict()
+        if self.patient is not None:
+            d["patient"] = self.patient.to_dict()        
         return d

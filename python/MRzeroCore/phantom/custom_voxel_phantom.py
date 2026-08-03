@@ -131,6 +131,8 @@ class CustomVoxelPhantom:
         size = self.voxel_pos.max(0).values - self.voxel_pos.min(0).values
         
         affine = torch.eye(3,4)
+        
+        patient_pos = "ffs"
 
         return SimData(
             self.PD,
@@ -143,6 +145,7 @@ class CustomVoxelPhantom:
             torch.ones(1, self.PD.numel()),
             size,
             affine,
+            patient_pos,
             self.voxel_pos,
             torch.tensor([float('inf'), float('inf'), float('inf')]),
             build_dephasing_func(self.voxel_shape, self.voxel_size),
@@ -220,7 +223,7 @@ def build_dephasing_func(shape: str, size: torch.Tensor,
     elif shape == "gauss":
         return lambda t, _: gauss(t, size)
     else:
-        raise ValueError("shape not implemented:", self.voxel_shape)
+        raise ValueError("shape not implemented:", shape)
 
 
 def recover(voxel_size: torch.Tensor, voxel_shape: str, sim_data: SimData

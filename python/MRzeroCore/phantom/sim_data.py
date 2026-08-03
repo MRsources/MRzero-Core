@@ -37,6 +37,8 @@ class SimData:
         is simulated, size is used to scale them to match the phantom.
     affine : torch.Tensor
         Affine matrix of the phantom data, in millimeters.
+    patient_pos : str
+        Patient orientation. Possible option: "hfs", "ffs".
     avg_B1_trig : torch.Tensor
         (361, 3) values containing the PD-weighted avg of sin/cos/sin²(B1*flip)
     voxel_pos : torch.Tensor
@@ -64,6 +66,7 @@ class SimData:
         coil_sens: torch.Tensor,
         size: torch.Tensor,
         affine: torch.Tensor,
+        patient_pos: str,
         voxel_pos: torch.Tensor,
         nyquist: torch.Tensor,
         dephasing_func: Callable[[torch.Tensor, torch.Tensor], torch.Tensor],
@@ -104,6 +107,7 @@ class SimData:
         self.coil_sens = coil_sens.clone()
         self.size = size.clone()
         self.affine = affine.clone()
+        self.patient_pos = patient_pos
         self.voxel_pos = voxel_pos.clone()
         self.avg_B1_trig = calc_avg_B1_trig(B1, PD)
         self.nyquist = nyquist.clone()
@@ -130,6 +134,7 @@ class SimData:
             self.coil_sens.cuda(),
             self.size.cuda(),
             self.affine.cuda(),
+            self.patient_pos,
             self.voxel_pos.cuda(),
             self.nyquist.cuda(),
             self.dephasing_func,
@@ -158,6 +163,7 @@ class SimData:
             self.coil_sens.cpu(),
             self.size.cpu(),
             self.affine.cpu(),
+            self.patient_pos,
             self.voxel_pos.cpu(),
             self.nyquist.cpu(),
             self.dephasing_func,
