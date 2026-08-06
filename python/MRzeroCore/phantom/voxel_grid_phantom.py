@@ -318,11 +318,11 @@ class VoxelGridPhantom:
         if isinstance(D, float):
             D = torch.full_like(data[..., 0], D)
         
+        size_t = torch.as_tensor(data[..., 0].shape)
+        scale = torch.as_tensor(size) / size_t * 1000
         affine = torch.eye(3,4)
-        affine[0, 0] = size[0] / data[..., 0].shape[0] * 1000
-        affine[1, 1] = size[1] / data[..., 0].shape[1] * 1000
-        affine[2, 2] = size[2] / data[..., 0].shape[2] * 1000
-        affine[:, 3] = -torch.as_tensor(size) / 2 * 1000
+        affine.diagonal()[:] = scale
+        affine[:, 3] = torch.where(size_t == 1, torch.zeros_like(size_t),  -torch.as_tensor(size) / 2 * 1000)
         
         return cls(
             data[..., 0],  # PD
@@ -463,7 +463,7 @@ class VoxelGridPhantom:
             finite = torch.isfinite(src)
             if bool(finite.all()):
                 return torch.nn.functional.interpolate(
-                    src, size=(x, y, z), mode='trilinear'
+                    src, size=(x, y, z), mode='area'
                 )[0, 0, ...]
             # Infinite entries (e.g. T2 == inf for "no relaxation") would create
             # 0 * inf == NaN under the trilinear weights. Interpolate only the
@@ -471,11 +471,11 @@ class VoxelGridPhantom:
             # voxel contributes with non-zero weight.
             filled = torch.where(finite, src, torch.zeros_like(src))
             out = torch.nn.functional.interpolate(
-                filled, size=(x, y, z), mode='trilinear'
+                filled, size=(x, y, z), mode='area'
             )[0, 0, ...]
             for sign in (float("inf"), float("-inf")):
                 mass = torch.nn.functional.interpolate(
-                    (src == sign).to(src.dtype), size=(x, y, z), mode='trilinear'
+                    (src == sign).to(src.dtype), size=(x, y, z), mode='area'
                 )[0, 0, ...]
                 out = torch.where(mass > 0, torch.full_like(out, sign), out)
             return out
