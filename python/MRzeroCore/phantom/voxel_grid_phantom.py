@@ -239,11 +239,11 @@ class VoxelGridPhantom:
             except KeyError:
                 size = torch.tensor([0.192, 0.192, 0.192])
             
+            size_t = torch.as_tensor(PD.shape)
+            scale = torch.as_tensor(size) / size_t * 1000
             affine = torch.eye(3,4)
-            affine[0, 0] = size[0] / PD.shape[0] * 1000
-            affine[1, 1] = size[1] / PD.shape[1] * 1000
-            affine[2, 2] = size[2] / PD.shape[2] * 1000
-            affine[:, 3] = -size / 2 * 1000
+            affine.diagonal()[:] = scale
+            affine[:, 3] = torch.where(size_t == 1, torch.zeros_like(size_t),  -torch.as_tensor(size) / 2 * 1000)
                         
             tissue_masks = {
                 key: torch.tensor(mask)
@@ -372,7 +372,7 @@ class VoxelGridPhantom:
         new_size = self.size.clone()
         new_size[2] = self.size[2] * len(slices) / self.PD.shape[2]
         new_affine = self.affine.clone()
-        new_affine[:3, 3] = self.affine[:3, 3] + self.affine[:3, 2] * slices[0]
+        new_affine[2, 3] = torch.tensor(0) if len(slices) == 1 else new_size[2]/2
 
         return VoxelGridPhantom(
             select(self.PD),
