@@ -1,6 +1,7 @@
 from .voxel_grid_phantom import VoxelGridPhantom
 from .sim_data import SimData
 from .nifti_phantom import NiftiPhantom, NiftiTissue, NiftiRef, NiftiMapping, ResliceConfig, PatientConfig
+from .resample_nifti import resample_nifti, apply_patient_orientation
 from pathlib import Path
 import torch
 import numpy as np
@@ -329,15 +330,15 @@ def load_tissue(config: NiftiTissue, base_dir: Path,
         patient_pos = patient.patient_pos
     
     def rs(arr):
-        return _resample_nifti(arr, nifti_affine, target_shape, aff_mm)
-    size = target_shape * np.linalg.norm(aff_mm[:3, :3], axis=0) /1000 # np.abs(target_shape @ aff_mm[:3, :3]) / 1000
+        return resample_nifti(arr, nifti_affine, target_shape, aff_mm)
     density = rs(density)
     T1, T2, T2dash, ADC, B0 = rs(T1), rs(T2), rs(T2dash), rs(ADC), rs(B0)
     B1   = [rs(b) for b in B1]
     coil = [rs(c) for c in coil]
     
-    aff_mm = _apply_patient_orientation(aff_mm, patient_pos, target_shape)
-    
+    size = target_shape * np.linalg.norm(aff_mm[:3, :3], axis=0) / 1000 # np.abs(target_shape @ aff_mm[:3, :3]) / 1000
+    aff_mm = apply_patient_orientation(aff_mm, patient_pos, target_shape)
+
     return VoxelGridPhantom(
         PD=torch.as_tensor(density),
         size=torch.as_tensor(size),
@@ -407,133 +408,3 @@ def _load_cached(file_name):
     import nibabel
     img = nibabel.loadsave.load(file_name)
     return np.asarray(img.dataobj), img.get_sform()
-
-
-def _resample_nifti(
-    data: np.ndarray | torch.Tensor,
-    nifti_affine: np.ndarray | torch.Tensor,
-    target_shape: tuple,
-    target_affine_mm: np.ndarray | torch.Tensor,
-    device: torch.device = torch.device("cpu")
-) -> np.ndarray:
-    """Resample a 3D array onto a target grid via trilinear interpolation,
-    averaging over the slice thickness using the source voxel size as step.
-
-    Parameters
-    ----------
-    data:
-        Source 3D numpy array (native NIfTI voxel space).
-    nifti_affine:
-        4×4 sform affine of the source NIfTI (mm units).
-    target_shape:
-        Output shape ``(nx, ny, nz)``.
-    target_affine_mm:
-        3×4 or 4×4 NIfTI-style affine of the target grid in mm.
-        Maps target voxel ``[i, j, k]`` to physical coordinates in mm.
-    """
-    
-    data = torch.as_tensor(data, device=device)
-    nifti_affine = torch.as_tensor(nifti_affine, device=device, dtype=torch.float32)
-    target_affine_mm = torch.as_tensor(target_affine_mm, device=device, dtype=torch.float32)
-
-    # A constant field stays constant under any resampling. Short-circuit this
-    # case so that constant defaults (e.g. T2 == inf for "no decay") survive:
-    # feeding non-finite values to ``affine_transform`` would yield NaNs.
-    flat = data.reshape(-1)
-    if flat.numel() > 0 and torch.all(flat == flat[0]):
-        const = torch.full(
-            tuple(target_shape), flat[0], dtype=torch.float32, device=device
-        )
-        return const
-
-    A_rot   = target_affine_mm[:3, :3]
-    A_trans = target_affine_mm[:3, 3]
-    A_nifti_inv = torch.linalg.inv(nifti_affine[:3, :3])
-
-    # Voxelgröße der Quelle (Spaltennormen der Quell-Rotation)
-    src_voxel_mm = torch.linalg.norm(nifti_affine[:3, :3], axis=0)
-
-    # --- Substeps PRO ACHSE bestimmen (statt nur für die Slice-Normale) ---
-    substeps: list[int] = []
-    for a in range(3):
-        axis_vec_mm = A_rot[:, a]
-        axis_len_mm = torch.linalg.norm(axis_vec_mm)
-        axis_unit = axis_vec_mm / axis_len_mm
-        step_mm = torch.dot(src_voxel_mm, torch.abs(axis_unit))
-        n_samples = max(int(round((axis_len_mm / step_mm).item())), 1)
-        substeps.append(n_samples)
-    
-    print(f"Use substeps: {substeps}")
-    # --- vox_to_vox (Target-Voxel -> Source-Voxel), analog M / o0 oben ---
-    M  = A_nifti_inv @ A_rot
-    o0 = A_nifti_inv @ (A_trans - nifti_affine[:3, 3])
-    vox_to_vox = torch.cat([M, o0.unsqueeze(1)], dim=1)
-    
-    from .fov_resample_torch import resample_footprint_torch
-    def _run(arr: torch.Tensor) -> torch.Tensor:
-        return resample_footprint_torch(
-            arr,
-            vox_to_vox,
-            tuple(target_shape),
-            tuple(substeps),
-            device=device,
-            grid=None,
-        )
-    
-    if torch.is_complex(data):
-        out_r = _run(data.real.contiguous())
-        out_i = _run(data.imag.contiguous())
-        return out_r + 1j * out_i
-
-    return _run(data)
-
-def _apply_patient_orientation(
-    affine: torch.Tensor | np.ndarray,
-    patient_pos: str,
-    shape: tuple[int, int, int],  # (nx, ny, nz)
-) -> torch.Tensor:
-    """Adjust a NIfTI-style affine (voxel-center convention) to reflect
-    a patient-orientation flip (e.g. FFS -> HFS), without touching the
-    underlying voxel data.
-
-    Parameters
-    ----------
-    affine:
-        4x4 affine, maps voxel index [i, j, k] to the physical mm
-        coordinate of the voxel CENTER.
-    patient_pos:
-        "ffs" or "hfs".
-    shape:
-        (nx, ny, nz) of the voxel array the affine belongs to.
-    """
-
-    if patient_pos == "ffs":
-        sign = torch.tensor([1., 1., 1.])
-    elif patient_pos == "hfs":
-        sign = torch.tensor([-1., 1., -1.])
-    else:
-        raise ValueError(f"Unsupported patient position '{patient_pos}'")
-    
-    affine = torch.as_tensor(affine, dtype=torch.float32)
-    
-    new_affine = affine.clone()
-
-    # 1) Flip direction columns
-    new_affine[:3, :3] = affine[:3, :3] * sign
-
-    # 2) Correct translation: voxel-center convention needs (N-1),
-    #    NOT N, since index 0 must map to the OLD position of the
-    #    last voxel center (index N-1), not to the FOV edge.
-    shape_t = torch.tensor(shape, dtype=torch.float32)
-    mask = (sign == -1).float()
-    shift = affine[:3, :3] @ ((shape_t - 1) * mask)
-    new_affine[:3, 3] = affine[:3, 3] + shift
-    
-    # 3) Re-center: shift translation so the grid's true center
-    #    maps to physical (0, 0, 0).
-    center_idx = shape_t / 2 + mask * sign
-    center = new_affine[:3, :3] @ center_idx + new_affine[:3, 3]
-    new_affine[:3,3] -= center
-
-    return new_affine
-
