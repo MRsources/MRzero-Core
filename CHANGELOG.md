@@ -1,3 +1,5 @@
+- 1.0.7
+  - `util.pulseq_plot` now wraps native pypulseq 1.5 plot (figure handles, `clear`, `t_adc`)
 - 1.0.6
   - Replace `VoxelGridPhantom.size` attribute with a property that sets `affine` correctly
 - 1.0.5

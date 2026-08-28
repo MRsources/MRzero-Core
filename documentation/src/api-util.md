@@ -38,11 +38,12 @@ plt.show()
 | --------- | ----------- |
 | `seq` | pulseq sequence, needed to align the signal with the ADC samples |
 | `signal` | signal to insert into the ADC plot |
+| `ax` | optional ADC axes; defaults to the first axes of figure 1 |
 
 
 ## `pulseq_plot`
 
-Wrapper around [`insert_signal_plot`](#insert_signal_plot), [`pulseq_plot_142`](#pulseq_plot_142) and [`pulseq_plot_pre14`](#pulseq_plot_pre14) which selects the appropriate plotting function based on the installed pulseq version.
+Wrapper around [`insert_signal_plot`](#insert_signal_plot), [`pulseq_plot_15`](#pulseq_plot_15), [`pulseq_plot_142`](#pulseq_plot_142) and [`pulseq_plot_pre14`](#pulseq_plot_pre14) which selects the appropriate plotting function based on the installed pulseq version.
 
 | Parameter | Description |
 | --------- | ----------- |
@@ -51,9 +52,27 @@ Wrapper around [`insert_signal_plot`](#insert_signal_plot), [`pulseq_plot_142`](
 | `time_range` | _same as for pulseq `plot()`_ |
 | `time_disp` | _same as for pulseq `plot()`_ |
 | `show_blocks` | _same as for pulseq `plot()`_ |
-| `clear` | _ignored_ |
+| `clear` | clear / reuse figures (used by pulseq 1.5) |
 | `signal` | insert simulated signal into the ADC plot |
-| `figid` | _ignored_ |
+| `figid` | figure IDs to plot into (used by pulseq 1.5) |
+
+
+## `pulseq_plot_15`
+
+Use with **pypulseq versions 1.5.x**
+
+Thin wrapper around native pulseq `plot()`. pypulseq 1.5 already returns figure / axes handles and supports `clear` (replot / overlay), so this does not copy the plotter. ADC sample times come from `seq.adc_times()`.
+
+| Parameter | Description |
+| --------- | ----------- |
+| `seq` | sequence object |
+| `time_range` | _same as for pulseq `plot()`_ |
+| `time_disp` | _same as for pulseq `plot()`_ |
+| `show_blocks` | _same as for pulseq `plot()`_ |
+| `clear` | _same as for pulseq `plot()`_ |
+| `signal` | insert simulated signal into the ADC plot |
+| `figid` | matplotlib figure IDs `(fig1, fig2)` |
+| `plot_now` | show the figures immediately |
 
 
 ## `pulseq_plot_142`

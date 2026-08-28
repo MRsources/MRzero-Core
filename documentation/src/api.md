@@ -39,6 +39,7 @@ import MRzeroCore as mr0
     - [`mr0.util.get_signal_from_real_system`](api-util.md#get_signal_from_real_system)
     - [`mr0.util.insert_signal_plot`](api-util.md#insert_signal_plot)
     - [`mr0.util.pulseq_plot`](api-util.md#pulseq_plot)
+    - [`mr0.util.pulseq_plot_15`](api-util.md#pulseq_plot_15)
     - [`mr0.util.pulseq_plot_142`](api-util.md#pulseq_plot_142)
     - [`mr0.util.pulseq_plot_pre14`](api-util.md#pulseq_plot_pre14)
     - [`mr0.util.imshow`](api-util.md#imshow)

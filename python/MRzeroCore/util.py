@@ -1,3 +1,4 @@
+import inspect
 import os
 import time
 from typing import Literal, Union, Optional
@@ -62,7 +63,7 @@ def get_signal_from_real_system(path: str, NRep: int, NRead: int,ncoils = 20, he
     return torch.tensor(raw, dtype=torch.complex64)
 
 
-def insert_signal_plot(seq: pp.Sequence, signal: np.ndarray):
+def insert_signal_plot(seq: pp.Sequence, signal: np.ndarray, ax=None):
     """Insert a measured signal into a currently open pypulseq plot.
 
     Usage:
@@ -79,6 +80,8 @@ def insert_signal_plot(seq: pp.Sequence, signal: np.ndarray):
     signal : np.ndarray
         The signal that should be inserted into the ADC plot.
         Has to have the same amount of samples as the sequence itself.
+    ax : matplotlib.axes.Axes | None
+        ADC axes to draw on. Defaults to the first axes of figure 1.
     """
     remaining_signal = signal.flatten().tolist()
     t0 = 0
@@ -99,7 +102,7 @@ def insert_signal_plot(seq: pp.Sequence, signal: np.ndarray):
         print("Can't insert signal into pulseq plot:")
         print("Signal and sequence have different amount of ADC samples.")
     else:
-        sp11 = plt.figure(1).get_axes()[0]
+        sp11 = ax if ax is not None else plt.figure(1).get_axes()[0]
 
         sp11.plot(time, np.abs(samples),  label='abs')
         sp11.plot(time, np.real(samples), label='real', linewidth=0.5)
@@ -128,8 +131,16 @@ def pulseq_plot(seq: pp.Sequence,
             version=pp.__version__ # forgot in which version this worked, but here it is if everything else fails
 
     version=float(version[:3]) # to float major.minor
-        
-    if version>=1.4:
+
+    if version >= 1.5:
+        # Native 1.5 plot already returns figure handles and supports clear/replot
+        print("plotting with pulseq 1.5")
+        sp_adc, t_adc = pulseq_plot_15(
+            seq=seq, time_range=time_range, time_disp=time_disp,
+            show_blocks=show_blocks, clear=clear, signal=signal, figid=figid,
+            plot_now=(signal is None),
+        )
+    elif version>=1.4:
         # This works since pypulseq 1.4, which introduced the plot_now argument
         print("plotting with pulseq 1.4")
         if signal is None:
@@ -143,6 +154,87 @@ def pulseq_plot(seq: pp.Sequence,
         print("plotting with pulseq <=1.3")
         sp_adc, t_adc = pulseq_plot_pre14(seq=seq,time_range=time_range,time_disp=time_disp,signal=signal)
     
+    return sp_adc, t_adc
+
+
+def pulseq_plot_15(seq: pp.Sequence,
+                   time_range=(0, np.inf),
+                   time_disp: str = "s",
+                   show_blocks: bool = False,
+                   clear: bool = False,
+                   signal=None,
+                   figid=(1, 2),
+                   plot_now: bool = True):
+    """Thin wrapper around native pypulseq >= 1.5 `Sequence.plot()`.
+
+    pypulseq 1.5 already supports figure reuse (`clear`, `fig1` / `fig2`) and
+    ADC sample times via `Sequence.adc_times()`, so this does not reimplement
+    the plotter. Returns the ADC axes and `t_adc` for compatibility with
+    `pulseq_plot`.
+    """
+    if signal is not None:
+        plot_now = False
+
+    plot_kwargs = dict(
+        time_range=time_range,
+        time_disp=time_disp,
+        show_blocks=show_blocks,
+        plot_now=False,
+        clear=clear,
+    )
+
+    fig1 = plt.figure(figid[0])
+    fig2 = plt.figure(figid[1])
+
+    # Forward figure handles when the installed plot() accepts them (1.4.2.post / some 1.5)
+    plot_params = inspect.signature(seq.plot).parameters
+    if "fig1" in plot_params:
+        plot_kwargs["fig1"] = fig1
+        if "fig2" in plot_params:
+            plot_kwargs["fig2"] = fig2
+        result = seq.plot(**plot_kwargs)
+    else:
+        # Official 1.5 SeqPlot API has no fig1/fig2; reuse pypulseq's own plot helper
+        try:
+            from pypulseq.utils.seq_plot import _seq_plot
+            result = _seq_plot(
+                seq,
+                label="",
+                save=False,
+                show_blocks=show_blocks,
+                time_range=time_range,
+                time_disp=time_disp,
+                grad_disp="kHz/m",
+                clear=clear,
+                fig1=fig1,
+                fig2=fig2,
+                stacked=False,
+            )
+        except (ImportError, TypeError):
+            result = seq.plot(**plot_kwargs)
+
+    if hasattr(result, "ax1"):
+        sp_adc = result.ax1[0]
+    elif isinstance(result, (tuple, list)) and len(result) >= 2:
+        axes1 = result[1]
+        sp_adc = axes1[0] if isinstance(axes1, (tuple, list)) else axes1
+    else:
+        sp_adc = plt.figure(figid[0]).get_axes()[0]
+
+    if hasattr(seq, "adc_times"):
+        if time_range == (0, np.inf):
+            t_adc, _ = seq.adc_times()
+        else:
+            t_adc, _ = seq.adc_times(time_range=list(time_range))
+    else:
+        t_adc = np.array([])
+
+    if signal is not None:
+        insert_signal_plot(seq, signal, ax=sp_adc)
+
+    if plot_now:
+        plt.show()
+
     return sp_adc, t_adc
 
 # This plot function is a modified version from the one provided by
