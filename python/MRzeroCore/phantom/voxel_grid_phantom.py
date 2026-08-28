@@ -139,12 +139,40 @@ class VoxelGridPhantom:
         if self.tissue_masks is None:
             self.tissue_masks = {}
         self.coil_sens = torch.as_tensor(coil_sens, dtype=torch.complex64)
-        self.size = torch.as_tensor(size, dtype=torch.float32)
+        self._size = torch.as_tensor(size, dtype=torch.float32)
         self.affine = torch.as_tensor(affine, dtype=torch.float32)
 
         self.phantom_motion = phantom_motion
         self.voxel_motion = voxel_motion
+    
+    @property
+    def size(self):
+        shape = torch.tensor(self.PD.shape, dtype=torch.float32)
+        return shape * torch.linalg.norm(self.affine[:3, :3], dim=0) / 1000
+    
+    @size.setter
+    def size(self, value):
+        value = torch.as_tensor(value, dtype=torch.float32)
+        shape = torch.tensor(self.PD.shape, dtype=torch.float32)
+    
+        old_affine = self.affine
+        directions = old_affine[:3, :3]
+        old_norms = torch.linalg.norm(directions, dim=0)
+        unit_dirs = directions / old_norms
+    
+        voxel_size = value / shape * 1000
+        new_affine = old_affine.clone()
+        new_affine[:3, :3] = unit_dirs * voxel_size
+        
+        # Corner-referenced translation: for even resolutions the shift is exactly
+        # FOV/2, for odd resolutions it's FOV/2 - voxel_size/2
+        half_index = torch.floor(shape / 2)
+        shift = half_index * voxel_size
+        new_affine[:3, 3] = -unit_dirs @ shift
+    
+        self.affine = new_affine
 
+    
     def build(self, PD_threshold: float = 1e-6,
               voxel_shape: Literal["sinc", "box", "point"] = "sinc"
               ) -> SimData:
