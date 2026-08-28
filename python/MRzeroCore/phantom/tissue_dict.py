@@ -248,7 +248,6 @@ class TissueDict(dict[str, VoxelGridPhantom]):
                                     to_full(sim_data.B0[tissue_begin:tissue_end]),
                                     to_full(sim_data.B1[:, tissue_begin:tissue_end]),
                                     to_full(sim_data.coil_sens[:, tissue_begin:tissue_end]),
-                                    sim_data.size,
                                     sim_data.affine,
                                 )
                             )
@@ -322,7 +321,6 @@ def load_tissue(config: NiftiTissue, base_dir: Path,
         
     def rs(arr):
         return _resample_nifti(arr, nifti_affine, target_shape, aff_mm)
-    size = target_shape * np.linalg.norm(aff_mm[:3, :3], axis=0) /1000 # np.abs(target_shape @ aff_mm[:3, :3]) / 1000
     density = rs(density)
     T1, T2, T2dash, ADC, B0 = rs(T1), rs(T2), rs(T2dash), rs(ADC), rs(B0)
     B1   = [rs(b) for b in B1]
@@ -330,7 +328,6 @@ def load_tissue(config: NiftiTissue, base_dir: Path,
 
     return VoxelGridPhantom(
         PD=torch.as_tensor(density),
-        size=torch.as_tensor(size),
         T1=torch.as_tensor(T1),
         T2=torch.as_tensor(T2),
         T2dash=torch.as_tensor(T2dash),
