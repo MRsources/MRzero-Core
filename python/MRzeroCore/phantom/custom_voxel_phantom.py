@@ -220,7 +220,7 @@ def build_dephasing_func(shape: str, size: torch.Tensor,
     elif shape == "gauss":
         return lambda t, _: gauss(t, size)
     else:
-        raise ValueError("shape not implemented:", self.voxel_shape)
+        raise ValueError("shape not implemented:", shape)
 
 
 def recover(voxel_size: torch.Tensor, voxel_shape: str, sim_data: SimData

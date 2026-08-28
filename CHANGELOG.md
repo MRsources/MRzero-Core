@@ -1,3 +1,5 @@
+- 1.0.6
+  - Replace `VoxelGridPhantom.size` attribute with a property that sets `affine` correctly
 - 1.0.5
   - fix .seq soft-delays: default to 0.0 for missing values, add documentation
 - 1.0.4
