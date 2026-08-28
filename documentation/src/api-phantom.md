@@ -42,7 +42,7 @@ Contains the data used for simulation (together with the [`Sequence`](api-sequen
 
 ```python
 # Usually not constructed directly but via the `.build()` function on a phantom
-SimData(PD, T1, T2, T2dash, D, B0, B1, coil_sens, size, voxel_pos, nyquist, dephasing_func, recover_func=None, phantom_motion=None, voxel_motion=None, tissue_masks=None)
+SimData(PD, T1, T2, T2dash, D, B0, B1, coil_sens, voxel_pos, nyquist, dephasing_func, recover_func=None, phantom_motion=None, voxel_motion=None, tissue_masks=None)
 ```
 
 | Parameter | Description |
