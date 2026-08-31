@@ -111,13 +111,74 @@ def insert_signal_plot(seq: pp.Sequence, signal: np.ndarray, ax=None):
         sp11.legend(loc='upper right', bbox_to_anchor=(1.02, 1.0), fontsize='small')
 
 
+def _ensure_stacked_figsize(fig):
+    """Double figure height for a 6-row stacked plot, but only once."""
+    w, h = fig.get_size_inches()
+    if h / w < 1.2:
+        fig.set_size_inches(w, h * 2, forward=True)
+
+
+def _pulseq_plot_axes(figid=(1, 2), stacked=True, clear=False):
+    """Create or reuse sequence-plot axes.
+
+    stacked=True: one figure (figid[0]) with six shared-x rows
+    (ADC, RF mag, RF phase, Gx, Gy, Gz).
+    stacked=False: two 3-row figures (RF/ADC and gradients).
+    """
+    fig1 = plt.figure(figid[0])
+    if stacked:
+        _ensure_stacked_figsize(fig1)
+        if clear:
+            for ax in list(fig1.get_axes()):
+                ax.remove()
+        axes = fig1.get_axes()
+        if len(axes) == 6:
+            sp11, sp12, sp13, sp21, sp22, sp23 = axes[:6]
+        else:
+            for ax in list(axes):
+                ax.remove()
+            sp11 = fig1.add_subplot(611)
+            sp12 = fig1.add_subplot(612, sharex=sp11)
+            sp13 = fig1.add_subplot(613, sharex=sp11)
+            sp21 = fig1.add_subplot(614, sharex=sp11)
+            sp22 = fig1.add_subplot(615, sharex=sp11)
+            sp23 = fig1.add_subplot(616, sharex=sp11)
+        return fig1, fig1, (sp11, sp12, sp13), (sp21, sp22, sp23)
+
+    fig2 = plt.figure(figid[1])
+    fig1_axes = fig1.get_axes()
+    fig2_axes = fig2.get_axes()
+    if clear:
+        for ax in list(fig1_axes) + list(fig2_axes):
+            ax.remove()
+        fig1_axes = fig1.get_axes()
+        fig2_axes = fig2.get_axes()
+    if len(fig1_axes) == 3:
+        sp11, sp12, sp13 = fig1_axes[:3]
+    else:
+        for ax in list(fig1_axes):
+            ax.remove()
+        sp11 = fig1.add_subplot(311)
+        sp12 = fig1.add_subplot(312, sharex=sp11)
+        sp13 = fig1.add_subplot(313, sharex=sp11)
+    if len(fig2_axes) == 3:
+        sp21, sp22, sp23 = fig2_axes[:3]
+    else:
+        for ax in list(fig2_axes):
+            ax.remove()
+        sp21 = fig2.add_subplot(311, sharex=sp11)
+        sp22 = fig2.add_subplot(312, sharex=sp11)
+        sp23 = fig2.add_subplot(313, sharex=sp11)
+    return fig1, fig2, (sp11, sp12, sp13), (sp21, sp22, sp23)
+
 
 def pulseq_plot(seq: pp.Sequence,
                 type: Literal['Gradient', 'Kspace'] = 'Gradient',
                 time_range: tuple[float, float] = (0, np.inf),
                 time_disp: Literal['s', 'ms', 'us'] = 's',
                 show_blocks=False,
-                clear=False, signal=None, figid=(1, 2)):
+                clear=False, signal=None, figid=(1, 2),
+                stacked=True):
     try:
         signal=signal.numpy()
     except:
@@ -138,21 +199,30 @@ def pulseq_plot(seq: pp.Sequence,
         sp_adc, t_adc = pulseq_plot_15(
             seq=seq, time_range=time_range, time_disp=time_disp,
             show_blocks=show_blocks, clear=clear, signal=signal, figid=figid,
-            plot_now=(signal is None),
+            plot_now=(signal is None), stacked=stacked,
         )
     elif version>=1.4:
         # This works since pypulseq 1.4, which introduced the plot_now argument
         print("plotting with pulseq 1.4")
         if signal is None:
-            sp_adc, t_adc = pulseq_plot_142(seq=seq,time_range=time_range,time_disp=time_disp,show_blocks=show_blocks)
+            sp_adc, t_adc = pulseq_plot_142(
+                seq=seq, time_range=time_range, time_disp=time_disp,
+                show_blocks=show_blocks, figid=figid, stacked=stacked, clear=clear,
+            )
         else:
-            sp_adc, t_adc = pulseq_plot_142(seq=seq,plot_now=False,time_range=time_range,time_disp=time_disp,show_blocks=show_blocks)
-            insert_signal_plot(seq, signal)
+            sp_adc, t_adc = pulseq_plot_142(
+                seq=seq, plot_now=False, time_range=time_range, time_disp=time_disp,
+                show_blocks=show_blocks, figid=figid, stacked=stacked, clear=clear,
+            )
+            insert_signal_plot(seq, signal, ax=sp_adc)
             plt.show()
     else:
         # This works for older pypulseq versions expect the newest dev branch
         print("plotting with pulseq <=1.3")
-        sp_adc, t_adc = pulseq_plot_pre14(seq=seq,time_range=time_range,time_disp=time_disp,signal=signal)
+        sp_adc, t_adc = pulseq_plot_pre14(
+            seq=seq, time_range=time_range, time_disp=time_disp,
+            signal=signal, figid=figid, clear=clear, stacked=stacked,
+        )
     
     return sp_adc, t_adc
 
@@ -164,13 +234,14 @@ def pulseq_plot_15(seq: pp.Sequence,
                    clear: bool = False,
                    signal=None,
                    figid=(1, 2),
-                   plot_now: bool = True):
+                   plot_now: bool = True,
+                   stacked=True):
     """Thin wrapper around native pypulseq >= 1.5 `Sequence.plot()`.
 
-    pypulseq 1.5 already supports figure reuse (`clear`, `fig1` / `fig2`) and
-    ADC sample times via `Sequence.adc_times()`, so this does not reimplement
-    the plotter. Returns the ADC axes and `t_adc` for compatibility with
-    `pulseq_plot`.
+    pypulseq 1.5 already supports figure reuse (`clear`, `fig1` / `fig2`),
+    stacked one-figure layout, and ADC sample times via `Sequence.adc_times()`,
+    so this does not reimplement the plotter. Returns the ADC axes and `t_adc`
+    for compatibility with `pulseq_plot`.
     """
     if signal is not None:
         plot_now = False
@@ -184,13 +255,18 @@ def pulseq_plot_15(seq: pp.Sequence,
     )
 
     fig1 = plt.figure(figid[0])
-    fig2 = plt.figure(figid[1])
+    fig2 = fig1 if stacked else plt.figure(figid[1])
+    if stacked:
+        _ensure_stacked_figsize(fig1)
+
+    plot_params = inspect.signature(seq.plot).parameters
+    if "stacked" in plot_params:
+        plot_kwargs["stacked"] = stacked
 
     # Forward figure handles when the installed plot() accepts them (1.4.2.post / some 1.5)
-    plot_params = inspect.signature(seq.plot).parameters
     if "fig1" in plot_params:
         plot_kwargs["fig1"] = fig1
-        if "fig2" in plot_params:
+        if "fig2" in plot_params and not stacked:
             plot_kwargs["fig2"] = fig2
         result = seq.plot(**plot_kwargs)
     else:
@@ -208,10 +284,14 @@ def pulseq_plot_15(seq: pp.Sequence,
                 clear=clear,
                 fig1=fig1,
                 fig2=fig2,
-                stacked=False,
+                stacked=stacked,
             )
         except (ImportError, TypeError):
             result = seq.plot(**plot_kwargs)
+
+    if stacked:
+        stacked_fig = getattr(result, "fig1", None) or fig1
+        _ensure_stacked_figsize(stacked_fig)
 
     if hasattr(result, "ax1"):
         sp_adc = result.ax1[0]
@@ -247,7 +327,10 @@ def pulseq_plot_142(seq: pp.Sequence,
         time_range=(0, np.inf),
         time_disp: str = "s",
         grad_disp: str = "kHz/m",
-        plot_now: bool = True
+        plot_now: bool = True,
+        figid=(1, 2),
+        stacked=True,
+        clear=False,
     ) -> None:
         """
         Plot `Sequence`.
@@ -304,45 +387,9 @@ def pulseq_plot_142(seq: pp.Sequence,
                 + str(valid_grad_units)
             )
 
-        fig1, fig2 = plt.figure(1), plt.figure(2)
-        ### change satrts here
-        clear=False
-        fig1_sp_list = fig1.get_axes()
-        fig2_sp_list = fig2.get_axes()
-        clear=False
-
-        if clear:
-            for ax in fig1_sp_list + fig2_sp_list:
-                ax.remove()
-            fig1_sp_list = fig1.get_axes()
-            fig2_sp_list = fig2.get_axes()
-
-        if len(fig1_sp_list) == 3:
-            (sp11, sp12, sp13) = fig1_sp_list
-        else:
-            for ax in fig1_sp_list:
-                ax.remove()
-
-            # These 3 subplots are unchanged from pypulseq 1.2
-            sp11 = fig1.add_subplot(311)
-            sp12 = fig1.add_subplot(312, sharex=sp11)
-            sp13 = fig1.add_subplot(313, sharex=sp11)
-
-        if len(fig2_sp_list) == 3:
-            fig2_sp_list = fig2_sp_list
-            fig2_subplots = fig2_sp_list
-        else:
-            for ax in fig2_sp_list:
-                ax.remove()
-
-            # This is also straight from pypulseq 1.2
-            fig2_sp_list = [
-                fig2.add_subplot(311, sharex=sp11),
-                fig2.add_subplot(312, sharex=sp11),
-                fig2.add_subplot(313, sharex=sp11)
-            ]
-            fig2_subplots = fig2_sp_list
-        ### change ends here
+        fig1, fig2, (sp11, sp12, sp13), fig2_subplots = _pulseq_plot_axes(
+            figid, stacked=stacked, clear=clear
+        )
         t_factor_list = [1, 1e3, 1e6]
         t_factor = t_factor_list[valid_time_units.index(time_disp)]
 
@@ -500,10 +547,12 @@ def pulseq_plot_142(seq: pp.Sequence,
             sp.grid()
 
         fig1.tight_layout()
-        fig2.tight_layout()
+        if fig2 is not fig1:
+            fig2.tight_layout()
         if save:
             fig1.savefig("seq_plot1.jpg")
-            fig2.savefig("seq_plot2.jpg")
+            if fig2 is not fig1:
+                fig2.savefig("seq_plot2.jpg")
 
         if plot_now:
             plt.show()
@@ -517,7 +566,7 @@ def pulseq_plot_pre14(seq: pp.Sequence,
                 type: Literal['Gradient', 'Kspace'] = 'Gradient',
                 time_range: tuple[float, float] = (0, np.inf),
                 time_disp: Literal['s', 'ms', 'us'] = 's',
-                clear=False, signal=0, figid=(1, 2)):
+                clear=False, signal=0, figid=(1, 2), stacked=True):
     """Modified pypulseq Sequence.plot() that includes an ADC signal.
 
     Parameters
@@ -540,42 +589,9 @@ def pulseq_plot_pre14(seq: pp.Sequence,
     if time_disp not in valid_time_units:
         raise Exception()
 
-    fig1, fig2 = plt.figure(figid[0]), plt.figure(figid[1])
-
-# >>>> This is changed compared to pypulseq 1.2
-    fig1_sp_list = fig1.get_axes()
-    fig2_sp_list = fig2.get_axes()
-
-    if clear:
-        for ax in fig1_sp_list + fig2_sp_list:
-            ax.remove()
-        fig1_sp_list = fig1.get_axes()
-        fig2_sp_list = fig2.get_axes()
-
-    if len(fig1_sp_list) == 3:
-        (sp11, sp12, sp13) = fig1_sp_list
-    else:
-        for ax in fig1_sp_list:
-            ax.remove()
-
-        # These 3 subplots are unchanged from pypulseq 1.2
-        sp11 = fig1.add_subplot(311)
-        sp12 = fig1.add_subplot(312, sharex=sp11)
-        sp13 = fig1.add_subplot(313, sharex=sp11)
-
-    if len(fig2_sp_list) == 3:
-        fig2_sp_list = fig2_sp_list
-    else:
-        for ax in fig2_sp_list:
-            ax.remove()
-
-        # This is also straight from pypulseq 1.2
-        fig2_sp_list = [
-            fig2.add_subplot(311, sharex=sp11),
-            fig2.add_subplot(312, sharex=sp11),
-            fig2.add_subplot(313, sharex=sp11)
-        ]
-# <<<< End of change
+    fig1, fig2, (sp11, sp12, sp13), fig2_sp_list = _pulseq_plot_axes(
+        figid, stacked=stacked, clear=clear
+    )
 
     t_factor_list = [1, 1e3, 1e6]
     t_factor = t_factor_list[valid_time_units.index(time_disp)]

@@ -1,3 +1,7 @@
+- 1.0.8
+  - `util.pulseq_plot` defaults to a stacked six-row figure (`stacked=True`) on pypulseq 1.5, 1.4 and pre-1.4
+  - stacked plots use a doubled figure height so the six rows stay readable
+  - `stacked=False` restores the previous two-figure RF/ADC + gradient layout
 - 1.0.7
   - `util.pulseq_plot` now wraps native pypulseq 1.5 plot (figure handles, `clear`, `t_adc`)
 - 1.0.6

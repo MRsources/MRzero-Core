@@ -45,6 +45,8 @@ plt.show()
 
 Wrapper around [`insert_signal_plot`](#insert_signal_plot), [`pulseq_plot_15`](#pulseq_plot_15), [`pulseq_plot_142`](#pulseq_plot_142) and [`pulseq_plot_pre14`](#pulseq_plot_pre14) which selects the appropriate plotting function based on the installed pulseq version.
 
+Defaults to a **six-row stacked figure** (ADC, RF mag, RF phase, Gx, Gy, Gz) on all pypulseq versions. Pass `stacked=False` for the older two-figure layout. When stacked, only `figid[0]` is used.
+
 | Parameter | Description |
 | --------- | ----------- |
 | `seq` | sequence object |
@@ -52,16 +54,17 @@ Wrapper around [`insert_signal_plot`](#insert_signal_plot), [`pulseq_plot_15`](#
 | `time_range` | _same as for pulseq `plot()`_ |
 | `time_disp` | _same as for pulseq `plot()`_ |
 | `show_blocks` | _same as for pulseq `plot()`_ |
-| `clear` | clear / reuse figures (used by pulseq 1.5) |
+| `clear` | clear / reuse figures |
 | `signal` | insert simulated signal into the ADC plot |
-| `figid` | figure IDs to plot into (used by pulseq 1.5) |
+| `figid` | figure IDs `(fig1, fig2)`; stacked uses `fig1` only |
+| `stacked` | one six-row figure (default `True`); `False` restores two figures |
 
 
 ## `pulseq_plot_15`
 
 Use with **pypulseq versions 1.5.x**
 
-Thin wrapper around native pulseq `plot()`. pypulseq 1.5 already returns figure / axes handles and supports `clear` (replot / overlay), so this does not copy the plotter. ADC sample times come from `seq.adc_times()`.
+Thin wrapper around native pulseq `plot()`. pypulseq 1.5 already returns figure / axes handles and supports `clear` and `stacked`, so this does not copy the plotter. ADC sample times come from `seq.adc_times()`. Defaults to `stacked=True`.
 
 | Parameter | Description |
 | --------- | ----------- |
@@ -71,8 +74,9 @@ Thin wrapper around native pulseq `plot()`. pypulseq 1.5 already returns figure 
 | `show_blocks` | _same as for pulseq `plot()`_ |
 | `clear` | _same as for pulseq `plot()`_ |
 | `signal` | insert simulated signal into the ADC plot |
-| `figid` | matplotlib figure IDs `(fig1, fig2)` |
+| `figid` | matplotlib figure IDs `(fig1, fig2)`; stacked uses `fig1` only |
 | `plot_now` | show the figures immediately |
+| `stacked` | one six-row figure (default `True`) |
 
 
 ## `pulseq_plot_142`
@@ -93,6 +97,9 @@ _Modified from pypulseq 1.4.2 [sequence.py - plot()](https://github.com/imr-fram
 | `time_disp` | _same as for pulseq `plot()`_ |
 | `grad_disp` | _same as for pulseq `plot()`_ |
 | `plot_now` | _same as for pulseq `plot()`_ |
+| `figid` | matplotlib figure IDs `(fig1, fig2)`; stacked uses `fig1` only |
+| `stacked` | one six-row figure (default `True`) |
+| `clear` | clear / reuse figures |
 
 
 ## `pulseq_plot_pre14`
@@ -111,7 +118,8 @@ _Modified from pypulseq 1.2.0post1 [sequence.py - plot()](https://github.com/imr
 | `time_disp` | _same as for pulseq `plot()`_ |
 | `clear` | clear matplotlib figures before plotting |
 | `signal` | insert simulated signal into the ADC plot |
-| `figid` | use specific figure IDs (to reuse previously created figures) |
+| `figid` | use specific figure IDs (to reuse previously created figures); stacked uses `fig1` only |
+| `stacked` | one six-row figure (default `True`) |
 
 
 ## `imshow`
