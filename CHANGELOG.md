@@ -1,3 +1,5 @@
+- 1.0.9
+  - Fix pulseq importer: correct handling of gradients in RF block that are not slice selection gradients
 - 1.0.8
   - `util.pulseq_plot` defaults to a stacked six-row figure (`stacked=True`) on pypulseq 1.5, 1.4 and pre-1.4
   - stacked plots use a doubled figure height so the six rows stay readable
