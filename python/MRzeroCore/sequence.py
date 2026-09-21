@@ -944,19 +944,19 @@ class Sequence(list):
             # - .sample(t): return the amplitude at one time point
             # - .integrate(t0, t1): return the gradient moment over the given period
             if blocks[b_idx].gx is not None:
-                if blocks[b_idx].gx.delay > rf.shape_duration:
+                if blocks[b_idx].gx.delay > rf.shape_duration + rf.delay:
                     pass # no graident present during rf 
                 else:
                     rf_hasgrad = True
                     rf_grad[0] = blocks[b_idx].gx.amp
             if blocks[b_idx].gy is not None:
-                if blocks[b_idx].gy.delay > rf.shape_duration:
+                if blocks[b_idx].gy.delay > rf.shape_duration + rf.delay:
                     pass # no graident present during rf 
                 else:
                     rf_hasgrad = True
                     rf_grad[1] = blocks[b_idx].gy.amp
             if blocks[b_idx].gz is not None:
-                if blocks[b_idx].gz.delay > rf.shape_duration:
+                if blocks[b_idx].gz.delay > rf.shape_duration + rf.delay:
                     pass # no graident present during rf 
                 else:
                     rf_hasgrad = True
