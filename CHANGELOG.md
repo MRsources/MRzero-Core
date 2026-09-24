@@ -1,3 +1,5 @@
+- 1.1.0
+  - `compute_graph` accepts `tissues`: with more than one tissue the prepass is run once per tissue and the graphs are unioned with the mean-tissue graph. Omit `tissues`, or pass a single tissue, and the call is the previous mean-relaxation prepass
 - 1.0.9
   - Fix pulseq importer: correct handling of gradients in RF block that are not slice selection gradients
 - 1.0.8

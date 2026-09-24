@@ -22,7 +22,7 @@ from .phantom.brainweb import generate_brainweb_phantoms
 from .phantom.nifti_phantom import NiftiPhantom, NiftiTissue, NiftiRef, NiftiMapping, ResliceConfig
 from .phantom.tissue_dict import TissueDict
 from .simulation.isochromat_sim import isochromat_sim
-from .simulation.pre_pass import compute_graph, compute_graph_ext, Graph
+from .simulation.pre_pass import compute_graph, compute_graph_ext, merge_graphs, Graph
 from .simulation.main_pass import execute_graph
 from .simulation.sig_to_mrd import sig_to_mrd
 from .reconstruction import reco_adjoint
