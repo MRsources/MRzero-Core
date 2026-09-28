@@ -181,23 +181,17 @@ class VoxelGridPhantom:
         mask = self.PD > PD_threshold
 
         shape = torch.tensor(mask.shape)
-        pos_x, pos_y, pos_z = torch.meshgrid(
-            torch.arange(
-                int(shape[0]), dtype=torch.float32, device=self.PD.device),
-            torch.arange(
-                int(shape[1]), dtype=torch.float32, device=self.PD.device),
-            torch.arange(
-                int(shape[2]), dtype=torch.float32, device=self.PD.device),
-            indexing="ij"
-        )
-        
-        pos = torch.stack([pos_x, pos_y, pos_z], dim=-1)  
+        axes = [
+            torch.arange(n, dtype=torch.float32, device=self.PD.device) - (n // 2)
+            for n in shape
+        ]
+        pos = torch.stack(torch.meshgrid(*axes, indexing="ij"), dim=-1)
         
         pos_rot = torch.einsum(
             'ij,xyzj->xyzi',
             self.affine[:3,:3] / 1000,
             pos
-        ) + self.affine[None, None, None, :3,3] / 1000
+        ) # No translation because we want that the voxel position are centered
         
         voxel_pos = pos_rot[mask]
 
