@@ -266,7 +266,7 @@ def execute_graph(graph: Graph,
                     dist.mag = dist.mag * torch.exp(2j * np.pi * motion_phase[-1, :])
                 dist.kt_vec = dist_traj[-1]
             else:  # z or z0
-                k = torch.linalg.vector_norm(dist.kt_vec[:3])
+                k = 2 * torch.pi * torch.linalg.vector_norm(dist.kt_vec[:3])
                 diffusion = torch.exp(-1e-9 * data.D * total_time * k**2)
                 dist.mag = dist.mag * r1 * diffusion
             if dist.dist_type == 'z0':
