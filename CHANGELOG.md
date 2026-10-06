@@ -1,3 +1,5 @@
+- 1.1.2
+  - fix: diffusion for z states was missing a (2pi)² in the b-value computation
 - 1.1.1
   - `VoxelGridPhantom.build()`: voxel positions are always centered around the origin (index offset `- n // 2`); the affine translation is no longer applied, only rotation and scaling
 - 1.1.0
