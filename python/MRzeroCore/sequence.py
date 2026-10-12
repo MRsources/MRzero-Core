@@ -1035,7 +1035,7 @@ class Sequence(list):
             rep.pulse.phase = torch.as_tensor(phase)
             rep.pulse.usage = rf_usage
             rep.pulse.shim_array = shim_arr
-            rep.pulse.freq_offset = 2*torch.pi * rf.freq
+            rep.pulse.freq_offset = rf.freq
             rep.pulse.duration = rf.shape_duration
             rep.pulse.grad = rf_grad
             if rep.pulse.freq_offset != 0 or rf_hasgrad:
