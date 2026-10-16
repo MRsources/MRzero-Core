@@ -8,6 +8,28 @@ import config
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils import load_reference
 
+def compute_metrics(actual: Dict[str, Any], reference: Dict[str, Any]) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Compute magnitude NRMSE, phase RMSE and runtime deviation (in percent)
+    of the actual vs. the reference simulation for every accuracy level.
+    """
+    dt = actual.get("timing_results")
+    signal = actual.get("signal")
+
+    ref_dt = reference.get("timing_results")
+    ref_signal = reference.get("signal")
+
+    n = len(config.ACC_ARRAY)
+    mag_rmse = np.zeros(n)
+    phase_rmse = np.zeros(n)
+    dt_diff_percent = np.zeros(n)
+    for i in range(n):
+        mag_rmse[i] = np.sqrt(np.mean((np.abs(signal[i]) - np.abs(ref_signal[i])) ** 2)) / np.mean(np.abs(signal[i]))
+        phase_rmse[i] = np.sqrt(np.mean((np.angle(signal[i]) - np.angle(ref_signal[i])) ** 2))
+        dt_diff_percent[i] = ((dt[i] - ref_dt[i]) / ref_dt[i]) * 100
+
+    return mag_rmse, phase_rmse, dt_diff_percent
+
 def compare_seq_parameters(actual: Dict[str, Any], reference: Dict[str, Any]) -> Tuple[bool, str]:
     """
     Compare MR sequence simulation outputs against reference data across multiple accuracy levels.
@@ -29,17 +51,12 @@ def compare_seq_parameters(actual: Dict[str, Any], reference: Dict[str, Any]) ->
             - bool: True if all comparisons pass thresholds, False otherwise
             - str: Diagnostic message indicating pass status or specific failure details
     """
-    dt = actual.get("timing_results")
-    signal = actual.get("signal")
+    mag_rmses, phase_rmses, dt_diff_percents = compute_metrics(actual, reference)
 
-    ref_dt = reference.get("timing_results")
-    ref_signal = reference.get("signal")
-
-    for i in range(len(config.ACC_ARRAY)):
-        acc = config.ACC_ARRAY[i]
-        mag_rmse = np.sqrt(np.mean((np.abs(signal[i]) - np.abs(ref_signal[i])) ** 2)) / np.mean(np.abs(signal[i]))
-        phase_rmse = np.sqrt(np.mean((np.angle(signal[i]) - np.angle(ref_signal[i])) ** 2))
-        dt_diff_percent = ((dt[i] - ref_dt[i]) / ref_dt[i]) * 100
+    for i, acc in enumerate(config.ACC_ARRAY):
+        mag_rmse = mag_rmses[i]
+        phase_rmse = phase_rmses[i]
+        dt_diff_percent = dt_diff_percents[i]
 
         if mag_rmse > config.MAG_NRMSE:
             return False, f"Mag RMSE too high ({mag_rmse:.5f}) at acc={acc:.5f}"

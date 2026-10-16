@@ -93,10 +93,22 @@ pub fn comp_graph(
     // Make precision of state merging dependent on the units used in the seq.
     // For this, we use a fraction of the smallest used step.
     let min_kt_step = [
-        seq.iter().flat_map(|r| r.gradm_event.iter().map(|g| g[0].abs() as f64)).filter(|x| *x > 1e-3).min_by(f64::total_cmp),
-        seq.iter().flat_map(|r| r.gradm_event.iter().map(|g| g[1].abs() as f64)).filter(|x| *x > 1e-3).min_by(f64::total_cmp),
-        seq.iter().flat_map(|r| r.gradm_event.iter().map(|g| g[2].abs() as f64)).filter(|x| *x > 1e-3).min_by(f64::total_cmp),
-        seq.iter().flat_map(|r| r.event_time.iter().map(|t| *t as f64)).filter(|x| *x > 1e-6).min_by(f64::total_cmp)
+        seq.iter()
+            .flat_map(|r| r.gradm_event.iter().map(|g| g[0].abs() as f64))
+            .filter(|x| *x > 1e-3)
+            .min_by(f64::total_cmp),
+        seq.iter()
+            .flat_map(|r| r.gradm_event.iter().map(|g| g[1].abs() as f64))
+            .filter(|x| *x > 1e-3)
+            .min_by(f64::total_cmp),
+        seq.iter()
+            .flat_map(|r| r.gradm_event.iter().map(|g| g[2].abs() as f64))
+            .filter(|x| *x > 1e-3)
+            .min_by(f64::total_cmp),
+        seq.iter()
+            .flat_map(|r| r.event_time.iter().map(|t| *t as f64))
+            .filter(|x| *x > 1e-6)
+            .min_by(f64::total_cmp),
     ];
     let inv_kt_grid = [
         1.0 / (0.1 * min_kt_step[0].unwrap_or(1.0)).clamp(1e-6, 1.0),
@@ -126,7 +138,7 @@ pub fn comp_graph(
                 max_dist_count,
                 min_dist_mag,
                 avg_b1_trig,
-                inv_kt_grid
+                inv_kt_grid,
             );
             dists_p = _dists_p;
             dists_z = _dists_z;
@@ -161,7 +173,9 @@ pub fn comp_graph(
                 // gives 1/3 * (k1^2 + k1*k2 + k2^2)
                 // k's are in rotations / meter but we need rad / m -> * 2pi
                 use std::f32::consts::TAU;
-                let b = 1.0 / 3.0 * TAU * TAU
+                let b = 1.0 / 3.0
+                    * TAU
+                    * TAU
                     * dt
                     * ((k1[0] * k1[0] + k1[0] * k2[0] + k2[0] * k2[0])
                         + (k1[1] * k1[1] + k1[1] * k2[1] + k2[1] * k2[1])
@@ -180,8 +194,9 @@ pub fn comp_graph(
         let r1 = (-rep_time / t1).exp();
 
         for mut dist in dists_z.iter().map(|d| d.borrow_mut()) {
+            use std::f64::consts::TAU;
             let sqr = |x| x * x;
-            let k2 = sqr(dist.kt_vec[0]) + sqr(dist.kt_vec[1]) + sqr(dist.kt_vec[2]);
+            let k2 = TAU * TAU * (sqr(dist.kt_vec[0]) + sqr(dist.kt_vec[1]) + sqr(dist.kt_vec[2]));
 
             dist.mag *= r1 * (-d * rep_time * k2 as f32).exp();
         }
@@ -354,7 +369,8 @@ pub fn analyze_graph(graph: &mut Vec<Vec<RcDist>>) {
                 let tmp = anc.dist.borrow().latent_signal;
                 let tmp_unormalized = anc.dist.borrow().latent_signal_unormalized;
                 anc.dist.borrow_mut().latent_signal = f32::max(tmp, dist.latent_signal * contrib);
-                anc.dist.borrow_mut().latent_signal_unormalized = f32::max(tmp_unormalized, dist.latent_signal_unormalized * contrib);
+                anc.dist.borrow_mut().latent_signal_unormalized =
+                    f32::max(tmp_unormalized, dist.latent_signal_unormalized * contrib);
             }
         }
     }
