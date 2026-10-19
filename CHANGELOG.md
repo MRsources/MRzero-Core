@@ -1,4 +1,5 @@
 - 1.2.0
+  - fix: phantoms with zero size along an axis (2D, single voxel) no longer crash the prepass with `Encountered a NaN while sorting + dists by mag` when simulating normalized-gradient sequences; such axes are not scaled
   - add `fid_graph`: builds a graph with only `z0` and one `+` state per repetition, as an alternative to `compute_graph` without running the prepass
   - fix: `import_pulseq_rs` stores `pulse.freq_offset` in Hz, matching the pydissect importer (was rad/s) (#197)
   - speed up `import_pulseq_rs` by integrating gradient moments in NumPy instead of once per event, ~4-13x faster on typical sequences (#194)
