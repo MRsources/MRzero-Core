@@ -83,6 +83,23 @@ Returns the computed [`Graph`](#graph).
 | `size` | used to scale gradients to phantom FOV if the [`Sequence`](api-sequence.md#sequence) sets `normalize_grads=True` |
 
 
+### `fid_graph`
+
+Alternative to [`compute_graph`](#compute_graph) that skips the pre-pass.
+Returns a [`Graph`](#graph) that only contains `z0` and a single `+` state per repetition, which [`execute_graph`](#execute_graph) simulates as FID signal.
+Every excitation pulse (`PulseUsage.EXCIT` or `UNDEF`) creates a new `+` state from `z0` and discards the previous one; refocusing pulses (`REFOC`) conjugate it, all other pulses only scale it.
+Stimulated echoes and other states are never simulated, so this is only exact for perfectly spoiled sequences.
+
+```python
+graph = mr0.fid_graph(seq)
+signal = mr0.execute_graph(graph, seq, data)
+```
+
+| Parameter | Description |
+| --------- | ----------- |
+| `seq` | the [`Sequence`](api-sequence.md#sequence) to compute the graph for |
+
+
 ### `execute_graph`
 
 Takes the [`Sequence`](api-sequence.md#sequence), the [`SimData`](api-phantom.md#simdata) and the [`Graph`](#graph) and calculates the measured ADC signal.

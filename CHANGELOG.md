@@ -1,4 +1,5 @@
 - 1.1.3
+  - add `fid_graph`: builds a graph with only `z0` and one `+` state per repetition, as an alternative to `compute_graph` without running the prepass
   - fix: `import_pulseq_rs` stores `pulse.freq_offset` in Hz, matching the pydissect importer (was rad/s) (#197)
   - speed up `import_pulseq_rs` by integrating gradient moments in NumPy instead of once per event, ~4-13x faster on typical sequences (#194)
   - fix: cast values to native Python floats before writing the MRD header, so the XML no longer contains `np.float64(...)` (#189)

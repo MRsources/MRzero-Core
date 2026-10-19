@@ -31,6 +31,7 @@ import MRzeroCore as mr0
     - [`mr0.isochromat_sim`](api-simulation.md#isochromat_sim)
     - [`mr0.compute_graph`](api-simulation.md#compute_graph)
     - [`mr0.compute_graph_ext`](api-simulation.md#compute_graph_ext)
+    - [`mr0.fid_graph`](api-simulation.md#fid_graph)
     - [`mr0.Graph`](api-simulation.md#graph)
     - [`mr0.execute_graph`](api-simulation.md#execute_graph)
 - [Reconstruction](api-reconstruction.md)
