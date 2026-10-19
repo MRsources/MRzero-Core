@@ -11,7 +11,6 @@
     - [Pulseq Integration](integration-pulseq.md)
     - [Matlab Integration](integration-matlab.md)
     - [Pulseq-zero](integration-pulseqzero.md)
-    - [ISMRMD]()
 - [FAQ](faq.md)
 
 ---
@@ -22,7 +21,6 @@
   - [Loading and generating phantoms](nifti-generate.md)
   - [Specification](nifti-spec.md)
   - [Coordinate System](nifti-coords.md)
-- [Motion simulation]()
 - [State selection](state_selection.md)
 - [API overview](api.md)
     - [Sequence building blocks](api-sequence.md)
@@ -38,3 +36,5 @@
 ---
 
 [Literature](literature.md)
+
+[Changelog](changelog.md)
