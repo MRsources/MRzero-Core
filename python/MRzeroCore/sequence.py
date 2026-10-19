@@ -12,6 +12,74 @@ import matplotlib.pyplot as plt
 from .pulseq.pulseq_loader import intermediate, PulseqFile, Adc, Spoiler
 
 
+def _gradient_cumulative(g, times=None):
+    """Moment from the start of ``g``'s shape to a shape-relative time.
+
+    The returned function matches ``g.integrate(0, s)`` for an array of times,
+    so an interval moment is a difference of two evaluations. Piecewise-linear
+    trapezoids are integrated in NumPy instead of one PyO3 call per event.
+    """
+    duration = float(g.shape_duration)
+    scale = float(g.amp)
+    if times is None:
+        times = g.shape_times()
+    t = np.asarray(times, dtype=np.float64)
+    a = np.asarray(g.shape_amp(), dtype=np.float64)
+    zeros = lambda s: np.zeros(np.shape(s), dtype=np.float64)
+    if t.size == 0 or duration <= 0.0 or scale == 0.0:
+        return zeros
+    if t.size == 1:
+        slope = scale * float(a[0])
+
+        def cum_const(s, slope=slope, duration=duration):
+            s = np.clip(np.asarray(s, dtype=np.float64), 0.0, duration)
+            return slope * s
+
+        return cum_const
+
+    # Hold the endpoint amplitude on [0, first] and [last, duration], matching
+    # Shape::interpolate outside the stored samples.
+    if t[0] > 0.0:
+        t = np.concatenate(([0.0], t))
+        a = np.concatenate(([a[0]], a))
+    if t[-1] < duration:
+        t = np.concatenate((t, [duration]))
+        a = np.concatenate((a, [a[-1]]))
+    if t.size > 1 and np.any(np.diff(t) <= 0.0):
+        keep = np.empty(t.size, dtype=bool)
+        keep[0] = True
+        keep[1:] = np.diff(t) > 0.0
+        t = t[keep]
+        a = a[keep]
+    if t.size < 2:
+        slope = scale * float(a[0]) if a.size else 0.0
+
+        def cum_flat(s, slope=slope, duration=duration):
+            s = np.clip(np.asarray(s, dtype=np.float64), 0.0, duration)
+            return slope * s
+
+        return cum_flat
+
+    prefix = np.empty(t.size, dtype=np.float64)
+    prefix[0] = 0.0
+    np.cumsum(0.5 * (a[:-1] + a[1:]) * np.diff(t), out=prefix[1:])
+    prefix *= scale
+    a = a * scale
+
+    def cum(s, t=t, a=a, prefix=prefix, duration=duration):
+        s = np.clip(np.asarray(s, dtype=np.float64), 0.0, duration)
+        idx = np.clip(np.searchsorted(t, s, side="right") - 1, 0, t.size - 2)
+        t0 = t[idx]
+        t1 = t[idx + 1]
+        a0 = a[idx]
+        width = t1 - t0
+        frac = np.divide(s - t0, width, out=np.zeros_like(s), where=width > 0.0)
+        v = a0 + (a[idx + 1] - a0) * frac
+        return prefix[idx] + 0.5 * (a0 + v) * (s - t0)
+
+    return cum
+
+
 class PulseUsage(Enum):
     """:class:`Enum` of all pulse usages, needed for reconstruction.
 
@@ -843,36 +911,50 @@ class Sequence(list):
         blocks = list(interp.blocks)
         duration = interp.duration
 
-        # Sorted list of times - can use bisect to find blocks faster
-        block_starts = [b.start for b in blocks]
-        block_ends = [b.start + b.duration for b in blocks]
-
-        # Per-axis sorted breakpoint times for fast lookups
+        # Per-axis sorted breakpoint times for fast lookups, plus a cumulative
+        # moment function so each repetition is integrated in one NumPy pass.
         flat_grad_times: dict[str, list[float]] = {"x": [], "y": [], "z": []}
+        grad_cum: dict[str, list] = {"x": [], "y": [], "z": []}
+        grad_origin: dict[str, list[float]] = {"x": [], "y": [], "z": []}
+        grad_end: dict[str, list[float]] = {"x": [], "y": [], "z": []}
         for b in blocks:
             for axis in ("x", "y", "z"):
                 g = getattr(b, "g" + axis)
                 if g is None:
                     continue
+                shape_t = g.shape_times()
                 t_off = b.start + g.delay
-                flat_grad_times[axis].extend(t_off + t for t in g.shape_times())
+                flat_grad_times[axis].extend(t_off + t for t in shape_t)
+                grad_cum[axis].append(_gradient_cumulative(g, shape_t))
+                grad_origin[axis].append(t_off)
+                grad_end[axis].append(t_off + float(g.shape_duration))
 
-        # Precomputed ADC lists for faster lookup
+        # Precomputed ADC lists for faster lookup. Label values are stored as
+        # parallel columns so a repetition can slice them instead of reading
+        # one dict per sample.
         flat_adc_times: list[float] = []
         flat_adc_phases: list[float] = []
-        flat_adc_labels: list[dict[str, int]] = []
         label_names: list[str] = []
+        label_cols: dict[str, list[int]] = {}
         for b in blocks:
             if b.adc is None:
                 continue
             lbl = b.adc.labels()
-            if not label_names and lbl is not None:
-                label_names = list(lbl.keys())
             ts = b.adc.sample_times()
             ph = b.adc.sample_phases()
             flat_adc_times.extend(b.start + t for t in ts)
             flat_adc_phases.extend(ph)
-            flat_adc_labels.extend(lbl for _ in ts)
+            n_samples = len(ts)
+            if lbl is not None and not label_names:
+                label_names = list(lbl.keys())
+                label_cols = {name: [] for name in label_names}
+            if label_names:
+                for name in label_names:
+                    value = int(lbl[name]) if lbl is not None else 0
+                    label_cols[name].extend([value] * n_samples)
+        label_arr = {
+            name: np.asarray(col, dtype=np.int32) for name, col in label_cols.items()
+        }
 
         def events_axis_in(t0: float, t1: float, axis: str) -> list[float]:
             times = flat_grad_times[axis]
@@ -880,30 +962,21 @@ class Sequence(list):
             hi = bisect.bisect_right(times, t1)
             return times[lo:hi]
 
-        def adcs_in(t0: float, t1: float) -> tuple[
-            list[float], list[float], list[dict[str, int]]
-        ]:
+        def adcs_in(t0: float, t1: float) -> tuple[list[float], list[float], int, int]:
             lo = bisect.bisect_left(flat_adc_times, t0)
             hi = bisect.bisect_right(flat_adc_times, t1)
-            return flat_adc_times[lo:hi], flat_adc_phases[lo:hi], flat_adc_labels[lo:hi]
+            return flat_adc_times[lo:hi], flat_adc_phases[lo:hi], lo, hi
 
-        def integrate_axis(axis: str, t0: float, t1: float) -> float:
-            if t1 <= t0:
-                return 0.0
-            moment = 0.0
-            # First block with end > t0, up to (excluding) first block with
-            # start >= t1 - can use bisect to narrow down relevant range
-            lo_idx = bisect.bisect_right(block_ends, t0)
-            hi_idx = bisect.bisect_left(block_starts, t1)
-            for j in range(lo_idx, hi_idx):
-                g = getattr(blocks[j], "g" + axis)
-                if g is None:
-                    continue
-                lo = max(t0, block_starts[j]) - block_starts[j]
-                hi = min(t1, block_ends[j]) - block_starts[j]
-                if hi > lo:
-                    moment += g.integrate(lo, hi)
-            return moment
+        def moments(axis: str, edges: np.ndarray) -> np.ndarray:
+            total = np.zeros(edges.shape[0], dtype=np.float64)
+            origins = grad_origin[axis]
+            ends = grad_end[axis]
+            lo = bisect.bisect_right(ends, float(edges[0]))
+            hi = bisect.bisect_left(origins, float(edges[-1]))
+            cums = grad_cum[axis]
+            for j in range(lo, hi):
+                total += cums[j](edges - origins[j])
+            return np.diff(total)
 
         seq = cls(normalized_grads=False)
 
@@ -972,7 +1045,7 @@ class Sequence(list):
             else:
                 shim_arr = torch.as_tensor(shims, dtype=torch.float32)
 
-            adcs, adc_phases, adc_label_snapshots = adcs_in(rep_start, rep_end)
+            adcs, adc_phases, adc_lo, adc_hi = adcs_in(rep_start, rep_end)
 
             if exact_trajectories:
                 first = pe
@@ -1020,15 +1093,10 @@ class Sequence(list):
                     f"{len(adcs)} are ADC (starting at {adc_start})"
                 )
 
-            mom_x = np.empty(event_count, dtype=np.float64)
-            mom_y = np.empty(event_count, dtype=np.float64)
-            mom_z = np.empty(event_count, dtype=np.float64)
-            for k in range(event_count):
-                t0 = abs_times[k]
-                t1 = abs_times[k + 1]
-                mom_x[k] = integrate_axis("x", t0, t1)
-                mom_y[k] = integrate_axis("y", t0, t1)
-                mom_z[k] = integrate_axis("z", t0, t1)
+            edges = np.asarray(abs_times, dtype=np.float64)
+            mom_x = moments("x", edges)
+            mom_y = moments("y", edges)
+            mom_z = moments("z", edges)
 
             rep = seq.new_rep(event_count)
             rep.pulse.angle = torch.as_tensor(angle)
@@ -1051,11 +1119,12 @@ class Sequence(list):
                 rep.adc_usage[adc_start:adc_start + len(adcs)] = 1
                 rep.adc_phase[adc_start:adc_start + len(adcs)] = phases_t
 
-            if label_names and adc_label_snapshots and adc_start is not None:
+            if label_names and adc_hi > adc_lo and adc_start is not None:
                 for name in label_names:
                     t = torch.zeros(event_count, dtype=torch.int32)
-                    for k, snap in enumerate(adc_label_snapshots):
-                        t[adc_start + k] = snap[name]
+                    t[adc_start:adc_start + (adc_hi - adc_lo)] = torch.from_numpy(
+                        label_arr[name][adc_lo:adc_hi].copy()
+                    )
                     rep.adc_labels[name] = t
 
         if print_stats:
