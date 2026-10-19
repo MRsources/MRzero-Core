@@ -79,7 +79,11 @@ def execute_graph(graph: Graph,
 
 
     if seq.normalized_grads:
-        grad_scale = 1 / data.size
+        # Axes without extent (2D / single voxel phantoms) are not scaled, as
+        # 1 / 0 = inf would turn the trajectory into NaN (0 * inf)
+        grad_scale = torch.where(
+            data.size > 0, 1 / data.size, torch.zeros_like(data.size)
+        )
     else:
         grad_scale = torch.ones_like(data.size)
     signal: list[torch.Tensor] = []

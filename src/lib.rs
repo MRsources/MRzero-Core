@@ -173,8 +173,11 @@ fn compute_graph<'p>(
     let start = Instant::now();
     println!("Compute Graph");
 
+    // Phantoms without extent along an axis (e.g. 2D or single voxel) would
+    // produce inf scales and 0 * inf = NaN trajectories; don't scale those
+    let inv_size = |s: f32| if s > 0.0 { 1.0 / s } else { 0.0 };
     let grad_scale = if normalized_grads {
-        [1.0 / size[0], 1.0 / size[1], 1.0 / size[2]]
+        [inv_size(size[0]), inv_size(size[1]), inv_size(size[2])]
     } else {
         [1.0, 1.0, 1.0]
     };

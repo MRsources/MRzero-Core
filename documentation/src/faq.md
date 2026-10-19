@@ -30,7 +30,7 @@ seq = pp.Sequence()
 signal, ktraj_adc = mr0.util.simulate(seq)  # seq is PyPulseq object
 ```
 Note, this is will still generate a temporary seq file.
-For avoiding seq files completely, check out [Pulseq-zero](https://github.com/pulseq-frame/pulseq-zero) 
+For avoiding seq files completely, check out [Pulseq-zero](https://github.com/MRsources/pulseq-zero) 
 
 
 ## How do I use custom phantoms with B0 field modifications?
