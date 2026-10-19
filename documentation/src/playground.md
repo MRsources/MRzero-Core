@@ -40,7 +40,7 @@ These .seq files could also be measured on any MRI scanner using a Pulseq interp
 ## MR-zero optimization
 
 Gradient descent optimizations using automatic differentiation by backpropagation.
-Some notebooks use [pulseq-zero](https://github.com/pulseq-frame/pulseq-zero) for optimizable sequence definitions with PyPulseq.
+Some notebooks use [pulseq-zero](https://github.com/MRsources/pulseq-zero) for optimizable sequence definitions with PyPulseq.
 
 | Notebook | ![](https://colab.research.google.com/assets/colab-badge.svg) |
 | -------- | ------------------------------------------------------------- |

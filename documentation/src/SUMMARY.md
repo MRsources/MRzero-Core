@@ -35,12 +35,6 @@
 - [MR-zero FFT/sign conventions](fft_sign_conventions.md)
   
 
-# 📊 Pulseq-zero
-
-- [Introduction](pulseqzero-intro.md)
-- [Math methods for differentiability](pulseqzero-math.md)
-
-
 ---
 
 [Literature](literature.md)

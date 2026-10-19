@@ -1,3 +1,0 @@
-[submodule "documentation/src/external/pulseq-zero"]
-	path = documentation/src/external/pulseq-zero
-	url = https://github.com/MRsources/pulseq-zero.git
