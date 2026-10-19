@@ -245,10 +245,11 @@ def _seq_write_mrd_head(
     """Writes the pulseq sequence definitions and labels to the ISMRMRD header."""
     
     def m_to_mm(x_in_m):
-        return x_in_m * 1e3
-    
+        # Cast to a native python float to prevent "NP.FLOAT64(1.0)" in xml
+        return float(x_in_m) * 1e3
+
     def s_to_ms(x_in_s):
-        return x_in_s * 1e3
+        return float(x_in_s) * 1e3
 
     mrd_seq_params = ismrmrd.xsd.sequenceParametersType()
 
