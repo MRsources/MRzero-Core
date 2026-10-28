@@ -1,3 +1,6 @@
+- unreleased
+  - use the official [`bifti`](https://pypi.org/project/bifti/) package for BIfTI phantoms instead of the internal implementation (#201). `NiftiPhantom`, `NiftiTissue` and `ResliceConfig` are now aliases of `bifti.BiftiPhantom`, `bifti.BiftiTissue` and `bifti.ResliceTo`; `TissueDict.load` uses the `bifti` loader (density-weighted resampling, `patient` position support)
+  - requires Python >= 3.12 (required by `bifti`)
 - 1.2.0
   - fix: phantoms with zero size along an axis (2D, single voxel) no longer crash the prepass with `Encountered a NaN while sorting + dists by mag` when simulating normalized-gradient sequences; such axes are not scaled
   - add `fid_graph`: builds a graph with only `z0` and one `+` state per repetition, as an alternative to `compute_graph` without running the prepass
