@@ -1,12 +1,11 @@
 from .voxel_grid_phantom import VoxelGridPhantom
 from .sim_data import SimData
-from .nifti_phantom import NiftiPhantom, NiftiTissue, NiftiRef, NiftiMapping, ResliceConfig
+from .nifti_phantom import NiftiPhantom, NiftiTissue, NiftiRef, ResliceConfig, Patient
 from pathlib import Path
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
 from typing import Literal, Self
-from functools import lru_cache
 
 
 class TissueDict(dict[str, VoxelGridPhantom]):
@@ -41,103 +40,50 @@ class TissueDict(dict[str, VoxelGridPhantom]):
         # units are supported (conversion factor 1); this might change in the future
 
         return TissueDict({
-            name: load_tissue(tissue, base_dir, reslice=config.reslice_to)
+            name: load_tissue(tissue, base_dir, config.reslice_to, config.patient)
             for name, tissue in config.tissues.items()
         })
     
     def save(self, path_to_json: str | Path, gyro=42.5764, B0=3.0):
-        from pathlib import Path
-        import os
-        import nibabel as nib
+        """Save as BIfTI phantom: the `.json` and NIfTIs named after it.
+
+        Maps that are (nearly) constant are stored as values in the `.json`.
+        """
+        import bifti
 
         path_to_json = Path(path_to_json)
-        base_name = path_to_json.stem
-        base_dir = path_to_json.parent
-        os.makedirs(base_dir, exist_ok=True)
-
-        density = []
-        T1 = []
-        T2 = []
-        T2dash = []
-        ADC = []
-        dB0 = []
-        B1_tx = []
-        B1_rx = []
-
-        def save_tissue(tissue: VoxelGridPhantom):
-            config = {}
-
-            def save_map(name, map, nifti):
-                ext = f"_{name}" if name != "density" else ""
-                # Multi-channel data when setting the same property multiple times
-                def set(value):
-                    if name in config:
-                        config[name].append(value)
-                    else:
-                        config[name] = value
-
-                if map.std() < 1e-5:
-                    set(float(map.mean()))
-                else:
-                    # Check if map is shared with other tissues
-                    for idx, nifti_map in enumerate(nifti):
-                        if torch.equal(map, nifti_map):
-                            set(f"{base_name}{ext}.nii.gz[{idx}]")
-                            return
-                    # Not shared, write new map
-                    set(f"{base_name}{ext}.nii.gz[{len(nifti)}]")
-                    nifti.append(map)
-
-            save_map("density", tissue.PD, density)
-            save_map("T1", tissue.T1, T1)
-            save_map("T2", tissue.T2, T2)
-            save_map("T2'", tissue.T2dash, T2dash)
-            save_map("ADC", tissue.D, ADC)
-            save_map("dB0", tissue.B0, dB0)
-            config["B1+"] = []
-            for channel in tissue.B1:
-                save_map("B1+", channel, B1_tx)
-            config["B1-"] = []
-            for channel in tissue.coil_sens:
-                save_map("B1-", channel, B1_rx)
-
-            return NiftiTissue.from_dict(config)
-
-        # Generate all tissues (and fill the prop maps)
-        tissues = {tissue: save_tissue(self[tissue]) for tissue in self.keys()}
-
-        # Write the NIfTIs
-        affine = np.asarray(next(iter(self.values())).affine)
-        if affine.shape == (3, 4):
-            affine = np.vstack([affine, [0, 0, 0, 1]], dtype=np.float32)
-
-        def save_nifti(prop, name):
-            if len(prop) > 0:
-                ext = f"_{name}" if name != "density" else ""
-                file_name = base_dir / f"{base_name}{ext}.nii.gz"
-                data = np.stack(prop, -1)
-
-                print(f"Storing '{file_name}' - {data.shape}")
-                nib.save(nib.nifti1.Nifti1Image(data, affine), file_name)
-        
-        save_nifti(density, "density")
-        save_nifti(T1, "T1")
-        save_nifti(T2, "T2")
-        save_nifti(T2dash, "T2'")
-        save_nifti(ADC, "ADC")
-        save_nifti(dB0, "dB0")
-        save_nifti(B1_tx, "B1+")
-        save_nifti(B1_rx, "B1-")
-
-        reslice_to = {
-            "resolution": list(next(iter(self.values())).PD.shape),
-            "affine": affine[:3, :4].tolist()
-        }
-
         config = NiftiPhantom.default(gyro, B0)
-        config.tissues = tissues
-        config.reslice_to = ResliceConfig.from_dict(reslice_to)
-        config.save(path_to_json)
+        tissues = {}
+
+        def np_map(t: torch.Tensor):
+            return t.detach().cpu().numpy()
+
+        for name, tissue in self.items():
+            # Placeholder references, replaced by the files written by bifti
+            ref = NiftiRef(Path(), 0)
+            config.tissues[name] = NiftiTissue(
+                density=ref, T1=ref, T2=ref, T2dash=ref, ADC=ref, dB0=ref,
+                B1_tx=[ref] * tissue.B1.shape[0],
+                B1_rx=[ref] * tissue.coil_sens.shape[0],
+            )
+            tissues[name] = bifti.NumpyTissue(
+                density=np_map(tissue.PD),
+                T1=np_map(tissue.T1),
+                T2=np_map(tissue.T2),
+                T2dash=np_map(tissue.T2dash),
+                ADC=np_map(tissue.D),
+                dB0=np_map(tissue.B0),
+                B1_tx=np_map(tissue.B1),
+                B1_rx=np_map(tissue.coil_sens),
+                resliced=ResliceConfig(
+                    affine=tissue.affine[:3, :].tolist(),
+                    resolution=list(tissue.PD.shape),
+                ),
+            )
+
+        bifti.NumpyPhantom(config, tissues).save(
+            path_to_json.parent, path_to_json.name, constant_threshold=1e-5
+        )
     
     def interpolate(self, x: int, y: int, z: int):
         return TissueDict({
@@ -298,174 +244,25 @@ class TissueDict(dict[str, VoxelGridPhantom]):
 # ============================
 
 def load_tissue(config: NiftiTissue, base_dir: Path,
-                reslice: ResliceConfig | None = None) -> VoxelGridPhantom:
-    density, nifti_affine = load_file_ref(base_dir, config.density)
+                reslice: ResliceConfig | None = None,
+                patient: Patient | None = None) -> VoxelGridPhantom:
+    """Load a tissue with the `bifti` reference loader into a VoxelGridPhantom.
 
-    def lp(cfg):
-        return load_property(cfg, base_dir, density, nifti_affine)
+    The voxel-to-scanner affine includes the phantom's patient position (if any).
+    """
+    import bifti.loader
 
-    T1     = lp(config.T1)
-    T2     = lp(config.T2)
-    T2dash = lp(config.T2dash)
-    ADC      = lp(config.ADC)
-    B0     = lp(config.dB0)
-    B1     = [lp(cfg) for cfg in config.B1_tx]
-    coil   = [lp(cfg) for cfg in config.B1_rx]
-
-    if reslice is None:
-        target_shape = density.shape
-        aff_mm = nifti_affine[:3, :]
-    else:
-        target_shape = tuple(reslice.resolution)
-        aff_mm = np.array(reslice.affine, dtype=float)
-        
-    def rs(arr):
-        return _resample_nifti(arr, nifti_affine, target_shape, aff_mm)
-    density = rs(density)
-    T1, T2, T2dash, ADC, B0 = rs(T1), rs(T2), rs(T2dash), rs(ADC), rs(B0)
-    B1   = [rs(b) for b in B1]
-    coil = [rs(c) for c in coil]
+    tissue = bifti.loader.load_tissue(config, base_dir, reslice)
+    affine = bifti.to_scanner_affine(tissue.affine, patient)[:3, :]
 
     return VoxelGridPhantom(
-        PD=torch.as_tensor(density),
-        T1=torch.as_tensor(T1),
-        T2=torch.as_tensor(T2),
-        T2dash=torch.as_tensor(T2dash),
-        D=torch.as_tensor(ADC),
-        B0=torch.as_tensor(B0),
-        B1=torch.stack([torch.as_tensor(b) for b in B1], 0),
-        coil_sens=torch.stack([torch.as_tensor(c) for c in coil], 0),
-        affine=torch.as_tensor(aff_mm),
+        PD=torch.as_tensor(tissue.density),
+        T1=torch.as_tensor(tissue.T1),
+        T2=torch.as_tensor(tissue.T2),
+        T2dash=torch.as_tensor(tissue.T2dash),
+        D=torch.as_tensor(tissue.ADC),
+        B0=torch.as_tensor(tissue.dB0),
+        B1=torch.as_tensor(tissue.B1_tx),
+        coil_sens=torch.as_tensor(tissue.B1_rx),
+        affine=torch.as_tensor(affine),
     )
-
-
-def load_property(config: float | NiftiRef | NiftiMapping,
-                  base_dir: Path, density_mat: np.ndarray, target_affine: np.ndarray
-                  ) -> np.ndarray:
-    
-    if isinstance(config, float):
-        return np.full_like(density_mat, config)
-
-    if isinstance(config, NiftiRef):
-        data, affine = load_file_ref(base_dir, config)
-        assert np.all(affine == target_affine)
-        return data
-
-    if isinstance(config, NiftiMapping):
-        data, affine = load_mapping(base_dir, config)
-        assert np.all(affine == target_affine)
-        return data
-
-    raise TypeError("Config must be a float, file_ref or mapping", type(config))
-
-def load_mapping(base_dir: Path, file_mapping: NiftiMapping) -> tuple[np.ndarray, np.ndarray]:
-    data, affine = load_file_ref(base_dir, file_mapping.file)
-
-    # TODO - SAFETY: Don't use eval but a custom (imported?) expression parser.
-    print(f"Executing mapping function: '{file_mapping.func}'")
-    return eval(
-        file_mapping.func,
-        {"__builtins__": None},
-        {
-            "x": data,
-            "x_min": data.min(),
-            "x_max": data.max(),
-            "x_mean": data.mean(),
-            "x_std": data.std()
-        }
-    ), affine
-
-
-def load_file_ref(base_dir: Path, file_ref: NiftiRef) -> tuple[np.ndarray, np.ndarray]:
-    print(f"Loading NIfTI (file={file_ref.file_name}, index={file_ref.tissue_index})")
-    file = file_ref.file_name
-    index = file_ref.tissue_index
-    if not file.is_absolute():
-        file = (base_dir / file).resolve()
-
-    data, affine = _load_cached(str(file))
-    return data[:, :, :, index], affine
-
-
-# Use a small cache to avoid reloading NIfTIs every time
-@lru_cache(maxsize=20)
-def _load_cached(file_name):
-    import nibabel
-    img = nibabel.loadsave.load(file_name)
-    return np.asarray(img.dataobj), img.get_sform()
-
-
-def _resample_nifti(data: np.ndarray, nifti_affine: np.ndarray,
-                    target_shape: tuple,
-                    target_affine_mm: np.ndarray) -> np.ndarray:
-    """Resample a 3D array onto a target grid via trilinear interpolation,
-    averaging over the slice thickness using the source voxel size as step.
-
-    Parameters
-    ----------
-    data:
-        Source 3D numpy array (native NIfTI voxel space).
-    nifti_affine:
-        4×4 sform affine of the source NIfTI (mm units).
-    target_shape:
-        Output shape ``(nx, ny, nz)``.
-    target_affine_mm:
-        3×4 or 4×4 NIfTI-style affine of the target grid in mm.
-        Maps target voxel ``[i, j, k]`` to physical coordinates in mm.
-    """
-    from scipy.ndimage import affine_transform
-
-    # A constant field stays constant under any resampling. Short-circuit this
-    # case so that constant defaults (e.g. T2 == inf for "no decay") survive:
-    # feeding non-finite values to ``affine_transform`` would yield NaNs.
-    flat = np.asarray(data).reshape(-1)
-    if flat.size > 0 and np.all(flat == flat[0]):
-        return np.full(tuple(target_shape), flat[0], dtype=float)
-
-    A = np.array(target_affine_mm, dtype=float)
-    A_rot   = A[:3, :3]
-    A_trans = A[:3, 3]
-
-    A_nifti_inv = np.linalg.inv(nifti_affine[:3, :3])
-
-    # Voxel size of source phantom (column norms of affine rotation)
-    src_voxel_mm    = np.linalg.norm(nifti_affine[:3, :3], axis=0)
-    # Slice thickness and normal from Z-column of target affine
-    slice_vec_mm    = A_rot[:, 2]
-    slice_thickness = np.linalg.norm(slice_vec_mm)
-    slice_unit      = slice_vec_mm / slice_thickness
-    # Step size = source voxel projected onto slice normal
-    step_mm   = float(np.dot(src_voxel_mm, np.abs(slice_unit)))
-    n_samples = max(int(round(slice_thickness / step_mm)), 1)
-
-    offsets_mm = np.arange(n_samples, dtype=float) * step_mm
-    offsets_mm -= offsets_mm.mean()
-
-    M      = A_nifti_inv @ A_rot
-    o0     = A_nifti_inv @ (A_trans - nifti_affine[:3, 3])
-    o_step = A_nifti_inv @ slice_unit   # offset change per mm along slice normal
-
-    kwargs = dict(output_shape=tuple(target_shape), order=1,
-                  mode='constant', cval=0.0, prefilter=False)
-
-    # Convert once outside the loop
-    if np.iscomplexobj(data):
-        data_r = data.real.copy()
-        data_i = data.imag.copy()
-    else:
-        data_r = data.astype(float, copy=False)
-        data_i = None
-
-    accumulator = np.zeros(target_shape,
-                           dtype=np.complex128 if data_i is not None else float)
-
-    for delta_mm in offsets_mm:
-        o = o0 + delta_mm * o_step
-        if data_i is not None:
-            accumulator += (affine_transform(data_r, M, offset=o, **kwargs) +
-                            1j * affine_transform(data_i, M, offset=o, **kwargs))
-        else:
-            accumulator += affine_transform(data_r, M, offset=o, **kwargs)
-
-    return accumulator / n_samples
-

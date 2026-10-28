@@ -27,6 +27,7 @@ import MRzeroCore as mr0
     - [`mr0.NiftiMapping`](api-nifti.md#niftimapping)
     - [`mr0.NiftiTissue`](api-nifti.md#niftitissue)
     - [`mr0.NiftiPhantom`](api-nifti.md#niftiphantom)
+    - [`mr0.ResliceConfig`](api-nifti.md#niftiphantom)
 - [Simulation](api-simulation.md)
     - [`mr0.isochromat_sim`](api-simulation.md#isochromat_sim)
     - [`mr0.compute_graph`](api-simulation.md#compute_graph)

@@ -6,6 +6,10 @@ You can load a complete phantom directly with [`mr0.TissueDict.load`](api-phanto
 *But you can also* load only the configuration with [`mr0.NiftiPhantom.load`](#niftiphantom).
 This allows you to modify it as needed before loading the phantom or saving the changes.
 
+These classes are provided by the official [`bifti`](https://github.com/mrx-org/bifti-phantoms) package and re-exported by MRzero.
+`NiftiPhantom`, `NiftiTissue` and `ResliceConfig` are aliases of `bifti.BiftiPhantom`, `bifti.BiftiTissue` and `bifti.ResliceTo`.
+See the [bifti documentation](https://github.com/mrx-org/bifti-phantoms/blob/main/python/bifti/README.md) for the full reference.
+
 All classes are [dataclasses](https://docs.python.org/3/library/dataclasses.html), augmented with additional functions.
 
 ## `PhantomUnits`
@@ -118,7 +122,7 @@ where `Prop = float | NiftiRef | NiftiMapping`
 Represents the configuration given by a phantom `.json` file.
 
 ```python
-NiftiPhantom(units, system, tissues)
+NiftiPhantom(units, system, tissues, reslice_to=None, schema=NiftiPhantom.DEFAULT_SCHEMA, patient=None)
 ```
 
 | Parameter | Description |
@@ -126,8 +130,9 @@ NiftiPhantom(units, system, tissues)
 | `units` | [`PhantomUnits`](#phantomunits) object |
 | `system` | [`PhantomSystem`](#phantomsystem) object |
 | `tissues` | Dictionary of tissues; key specifies name, values are [`NiftiTissue`](#niftitissue) objects |
-
-The class attribute `schema_uri` is always `"https://github.com/mrx-org/bifti-phantoms/bifti-phantom-v1"` and is not a constructor parameter.
+| `reslice_to` | Optional `ResliceConfig` (`affine`, `resolution`): target grid the tissues are resampled to on load |
+| `schema` | Value of the `$schema` field; defaults to the schema hosted in the bifti-phantoms repository |
+| `patient` | Optional `Patient` (`position`, e.g. `"HFS"`); omitted means `FFS` (no transformation) |
 
 - `NiftiPhantom.default(gyro=42.5764, B0=3)`: return a `NiftiPhantom` without tissues
 - `NiftiPhantom.load(path)`: load from `.json` file, given by the path
