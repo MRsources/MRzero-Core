@@ -1,4 +1,4 @@
-- unreleased
+- 1.3.0
   - use the official [`bifti`](https://pypi.org/project/bifti/) package for BIfTI phantoms instead of the internal implementation (#201). `NiftiPhantom`, `NiftiTissue` and `ResliceConfig` are now aliases of `bifti.BiftiPhantom`, `bifti.BiftiTissue` and `bifti.ResliceTo`; `TissueDict.load` uses the `bifti` loader (density-weighted resampling, `patient` position support)
   - requires Python >= 3.12 (required by `bifti`)
 - 1.2.0
