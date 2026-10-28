@@ -1,6 +1,6 @@
 from .voxel_grid_phantom import VoxelGridPhantom
 from .sim_data import SimData
-from .nifti_phantom import NiftiPhantom, NiftiTissue, ResliceConfig, Patient
+from .nifti_phantom import NiftiPhantom, NiftiTissue, NiftiRef, ResliceConfig, Patient
 from pathlib import Path
 import torch
 import numpy as np
@@ -45,98 +45,45 @@ class TissueDict(dict[str, VoxelGridPhantom]):
         })
     
     def save(self, path_to_json: str | Path, gyro=42.5764, B0=3.0):
-        from pathlib import Path
-        import os
-        import nibabel as nib
+        """Save as BIfTI phantom: the `.json` and NIfTIs named after it.
+
+        Maps that are (nearly) constant are stored as values in the `.json`.
+        """
+        import bifti
 
         path_to_json = Path(path_to_json)
-        base_name = path_to_json.stem
-        base_dir = path_to_json.parent
-        os.makedirs(base_dir, exist_ok=True)
-
-        density = []
-        T1 = []
-        T2 = []
-        T2dash = []
-        ADC = []
-        dB0 = []
-        B1_tx = []
-        B1_rx = []
-
-        def save_tissue(tissue: VoxelGridPhantom):
-            config = {}
-
-            def save_map(name, map, nifti):
-                ext = f"_{name}" if name != "density" else ""
-                # Multi-channel data when setting the same property multiple times
-                def set(value):
-                    if name in config:
-                        config[name].append(value)
-                    else:
-                        config[name] = value
-
-                if map.std() < 1e-5:
-                    set(float(map.mean()))
-                else:
-                    # Check if map is shared with other tissues
-                    for idx, nifti_map in enumerate(nifti):
-                        if torch.equal(map, nifti_map):
-                            set(f"{base_name}{ext}.nii.gz[{idx}]")
-                            return
-                    # Not shared, write new map
-                    set(f"{base_name}{ext}.nii.gz[{len(nifti)}]")
-                    nifti.append(map)
-
-            save_map("density", tissue.PD, density)
-            save_map("T1", tissue.T1, T1)
-            save_map("T2", tissue.T2, T2)
-            save_map("T2'", tissue.T2dash, T2dash)
-            save_map("ADC", tissue.D, ADC)
-            save_map("dB0", tissue.B0, dB0)
-            config["B1+"] = []
-            for channel in tissue.B1:
-                save_map("B1+", channel, B1_tx)
-            config["B1-"] = []
-            for channel in tissue.coil_sens:
-                save_map("B1-", channel, B1_rx)
-
-            return NiftiTissue.from_dict(config)
-
-        # Generate all tissues (and fill the prop maps)
-        tissues = {tissue: save_tissue(self[tissue]) for tissue in self.keys()}
-
-        # Write the NIfTIs
-        affine = np.asarray(next(iter(self.values())).affine)
-        if affine.shape == (3, 4):
-            affine = np.vstack([affine, [0, 0, 0, 1]], dtype=np.float32)
-
-        def save_nifti(prop, name):
-            if len(prop) > 0:
-                ext = f"_{name}" if name != "density" else ""
-                file_name = base_dir / f"{base_name}{ext}.nii.gz"
-                data = np.stack(prop, -1)
-
-                print(f"Storing '{file_name}' - {data.shape}")
-                nib.save(nib.nifti1.Nifti1Image(data, affine), file_name)
-        
-        save_nifti(density, "density")
-        save_nifti(T1, "T1")
-        save_nifti(T2, "T2")
-        save_nifti(T2dash, "T2'")
-        save_nifti(ADC, "ADC")
-        save_nifti(dB0, "dB0")
-        save_nifti(B1_tx, "B1+")
-        save_nifti(B1_rx, "B1-")
-
-        reslice_to = {
-            "resolution": list(next(iter(self.values())).PD.shape),
-            "affine": affine[:3, :4].tolist()
-        }
-
         config = NiftiPhantom.default(gyro, B0)
-        config.tissues = tissues
-        config.reslice_to = ResliceConfig.from_dict(reslice_to)
-        config.save(path_to_json)
+        tissues = {}
+
+        def np_map(t: torch.Tensor):
+            return t.detach().cpu().numpy()
+
+        for name, tissue in self.items():
+            # Placeholder references, replaced by the files written by bifti
+            ref = NiftiRef(Path(), 0)
+            config.tissues[name] = NiftiTissue(
+                density=ref, T1=ref, T2=ref, T2dash=ref, ADC=ref, dB0=ref,
+                B1_tx=[ref] * tissue.B1.shape[0],
+                B1_rx=[ref] * tissue.coil_sens.shape[0],
+            )
+            tissues[name] = bifti.NumpyTissue(
+                density=np_map(tissue.PD),
+                T1=np_map(tissue.T1),
+                T2=np_map(tissue.T2),
+                T2dash=np_map(tissue.T2dash),
+                ADC=np_map(tissue.D),
+                dB0=np_map(tissue.B0),
+                B1_tx=np_map(tissue.B1),
+                B1_rx=np_map(tissue.coil_sens),
+                resliced=ResliceConfig(
+                    affine=tissue.affine[:3, :].tolist(),
+                    resolution=list(tissue.PD.shape),
+                ),
+            )
+
+        bifti.NumpyPhantom(config, tissues).save(
+            path_to_json.parent, path_to_json.name, constant_threshold=1e-5
+        )
     
     def interpolate(self, x: int, y: int, z: int):
         return TissueDict({

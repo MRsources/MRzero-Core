@@ -103,7 +103,7 @@ TissueDict(dict[str, VoxelGridPhantom])
 ```
 
 - `TissueDict.load(path, config=None)`: either load from `.json` or from a dir + [`NiftiPhantom`](api-nifti.md#niftiphantom)
-- `TissueDict.save(path, gyro, B0)`: save as [NIfTI phantom](nifti.md)
+- `TissueDict.save(path, gyro, B0)`: save as [NIfTI phantom](nifti.md) (via `bifti.NumpyPhantom.save`; NIfTIs are named after the `.json`, nearly constant maps are stored as values)
 - `TissueDict.interpolate()`: apply [`VoxelGridPhantom.interpolate()] to all tissues
 - `TissueDict.slices()`: apply [`VoxelGridPhantom.slices()] to all tissues
 - `TissueDict.combine()`: merge all tissues into a single [`VoxelGridPhantom`](#voxelgridphantom)
