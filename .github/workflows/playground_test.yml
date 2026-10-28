@@ -56,6 +56,7 @@ jobs:
             pip install pydisseqt
             pip install ismrmrd
             pip install MRzeroCore --no-deps
+            pip install bifti
             pip install  torchkbnufft PyWavelets tqdm scikit-image
             wget https://github.com/MRsources/MRzero-Core/raw/main/documentation/playground_mr0/numerical_brain_cropped.mat &> /dev/null
             pip install jupyter nbconvert
