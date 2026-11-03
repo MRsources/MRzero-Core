@@ -648,6 +648,9 @@ class Sequence(list):
                     fov_rot: Optional[tuple[float, float, float, float]] = None,
                     soft_delays: Optional[dict[str, float]] = None,
                     output_dir: Optional[str] = None,
+                    samples_offres: int = 1,
+                    samples_slicesel: int = 1,
+                    samples_onres: int = 1,
                     ) -> Sequence:
         """Import a pulseq .seq file or a bundle of .dsv files.
 
@@ -692,6 +695,11 @@ class Sequence(list):
         output_dir : str | None
             Directory the converted .seq file is written to when importing a
             .dsv file. Only used for ``backend="pydisseqt"`` with .dsv input.
+        samples_offres, samples_slicesel, samples_onres : int
+            Number of instantaneous sub-pulses per RF pulse, as in pulseqzero's
+            ``to_mr0``: ``samples_offres`` for pulses with a frequency offset,
+            else ``samples_slicesel`` if the block contains a gradient, else
+            ``samples_onres``. Only supported by ``backend="pulseq_rs"``.
 
         Returns
         -------
@@ -711,8 +719,16 @@ class Sequence(list):
                 file_name, exact_trajectories, print_stats, default_shim,
                 larmor_hz=larmor_hz, fov_scale=fov_scale,
                 fov_pos=fov_pos, fov_rot=fov_rot, soft_delays=soft_delays,
+                samples_offres=samples_offres, samples_slicesel=samples_slicesel,
+                samples_onres=samples_onres,
             )
         elif backend == "pydisseqt":
+            if (samples_offres, samples_slicesel, samples_onres) != (1, 1, 1):
+                warnings.warn(
+                    "pydisseqt backend does not support sub-pulses; "
+                    "samples_offres / samples_slicesel / samples_onres are ignored.",
+                    stacklevel=2,
+                )
             return cls._import_pydisseqt(
                 file_name, exact_trajectories, print_stats, default_shim,
                 ref_voltage, resolution, output_dir
@@ -892,6 +908,9 @@ class Sequence(list):
                           fov_pos: Optional[tuple[float, float, float]] = None,
                           fov_rot: Optional[tuple[float, float, float, float]] = None,
                           soft_delays: Optional[dict[str, float]] = None,
+                          samples_offres: int = 1,
+                          samples_slicesel: int = 1,
+                          samples_onres: int = 1,
                           ) -> Sequence:
         from . import _prepass  # local import to avoid touching module init order
 
@@ -941,7 +960,10 @@ class Sequence(list):
                 continue
             lbl = b.adc.labels()
             ts = b.adc.sample_times()
-            ph = b.adc.sample_phases()
+            # sample_phases() only contains the phase offset, add the
+            # frequency offset term (time from the start of the block)
+            ph = [p - 2 * np.pi * b.adc.freq * t
+                  for p, t in zip(b.adc.sample_phases(), ts)]
             flat_adc_times.extend(b.start + t for t in ts)
             flat_adc_phases.extend(ph)
             n_samples = len(ts)
@@ -980,25 +1002,41 @@ class Sequence(list):
 
         seq = cls(normalized_grads=False)
 
-        # Discover RF pulses: each RF-bearing block produces one (start, end).
-        pulses: list[tuple[float, float, int]] = []  # (pulse_start, pulse_end, block_idx)
+        # Discover RF pulses: each RF-bearing block is split into n instantaneous
+        # sub-pulses at the centers of n equal windows of the shape, as in
+        # pulseqzero's to_mr0. n = 1 places one pulse at the shape center.
+        # (center, pulse_start, pulse_end, block_idx, sub-pulse index, n)
+        pulses: list[tuple[float, float, float, int, int, int]] = []
         for j, b in enumerate(blocks):
             if b.rf is None:
                 continue
+            if b.rf.freq != 0:
+                n = samples_offres
+            elif b.gx is not None or b.gy is not None or b.gz is not None:
+                n = samples_slicesel
+            else:
+                n = samples_onres
             ps = b.start + b.rf.delay
             pe = ps + b.rf.shape_duration
-            pulses.append((ps, pe, j))
+            step = b.rf.shape_duration / n
+            for k in range(n):
+                pulses.append((ps + (k + 0.5) * step, ps, pe, j, k, n))
 
         for i in range(len(pulses)):
-            ps, pe, b_idx = pulses[i]
-            rep_start = 0.5 * (ps + pe)
+            rep_start, ps, pe, b_idx, k, n = pulses[i]
             if i + 1 < len(pulses):
-                rep_end = 0.5 * (pulses[i + 1][0] + pulses[i + 1][1])
+                rep_end = pulses[i + 1][0]
             else:
                 rep_end = duration
 
             rf = blocks[b_idx].rf
-            angle, phase = rf.integrate(0.0, rf.shape_duration)
+            step = rf.shape_duration / n
+            angle, phase = rf.integrate(k * step, (k + 1) * step)
+            # The frequency offset is a phase ramp over the sub-pulses, falling
+            # like the free precession exp(-2πi f t) of the spins it hits.
+            # The phase offset refers to the pulse center.
+            phase -= 2 * np.pi * rf.freq * step * (k - (n - 1) / 2)
+            t_center = rep_start - blocks[b_idx].start  # block-relative
             if rf.rf_use == "excitation":
                 rf_usage = PulseUsage.EXCIT
             elif rf.rf_use == "saturation":
@@ -1008,32 +1046,15 @@ class Sequence(list):
             else:
                 rf_usage = PulseUsage.UNDEF
             
-            # TODO: I do not know if this is the expected format!
+            # Gradient amplitude at the sub-pulse center, which follows the
+            # shape (ramps, arbitrary gradients) instead of only its amplitude
             rf_grad = torch.zeros(3, dtype=torch.float32)
             rf_hasgrad = False
-            # BUG: this code is too simple - amp is the amplitude scaling and
-            # ignores the shape. Use the following methods on gx/gy/gz instead:
-            # - .shape_times() and .amp * .shape_amp(): return the full shape
-            # - .sample(t): return the amplitude at one time point
-            # - .integrate(t0, t1): return the gradient moment over the given period
-            if blocks[b_idx].gx is not None:
-                if blocks[b_idx].gx.delay > rf.shape_duration + rf.delay:
-                    pass # no graident present during rf 
-                else:
-                    rf_hasgrad = True
-                    rf_grad[0] = blocks[b_idx].gx.amp
-            if blocks[b_idx].gy is not None:
-                if blocks[b_idx].gy.delay > rf.shape_duration + rf.delay:
-                    pass # no graident present during rf 
-                else:
-                    rf_hasgrad = True
-                    rf_grad[1] = blocks[b_idx].gy.amp
-            if blocks[b_idx].gz is not None:
-                if blocks[b_idx].gz.delay > rf.shape_duration + rf.delay:
-                    pass # no graident present during rf 
-                else:
-                    rf_hasgrad = True
-                    rf_grad[2] = blocks[b_idx].gz.amp
+            for axis, g in enumerate((blocks[b_idx].gx, blocks[b_idx].gy, blocks[b_idx].gz)):
+                if g is None or g.delay > rf.shape_duration + rf.delay:
+                    continue  # no gradient present during rf
+                rf_hasgrad = True
+                rf_grad[axis] = g.sample(t_center)
 
             # Shim handling: pulseq-rs always returns a list, with [(1.0, 0.0)]
             # meaning "no shim" - in that case fall back to the default.
@@ -1047,9 +1068,13 @@ class Sequence(list):
 
             adcs, adc_phases, adc_lo, adc_hi = adcs_in(rep_start, rep_end)
 
-            if exact_trajectories:
+            if k < n - 1:
+                # from one sub-pulse center to the next, no ADC during RF
+                abs_times = [rep_start, rep_end]
+                adc_start = None
+            elif exact_trajectories:
                 first = pe
-                last = pulses[i + 1][0] if i + 1 < len(pulses) else rep_end
+                last = pulses[i + 1][1] if i + 1 < len(pulses) else rep_end
                 eps = 1e-6
                 precision = 6
 
@@ -1103,8 +1128,8 @@ class Sequence(list):
             rep.pulse.phase = torch.as_tensor(phase)
             rep.pulse.usage = rf_usage
             rep.pulse.shim_array = shim_arr
-            rep.pulse.freq_offset = rf.freq
-            rep.pulse.duration = rf.shape_duration
+            rep.pulse.freq_offset = torch.as_tensor(rf.freq, dtype=torch.float32)
+            rep.pulse.duration = torch.as_tensor(step, dtype=torch.float32)
             rep.pulse.grad = rf_grad
             if rep.pulse.freq_offset != 0 or rf_hasgrad:
                  rep.pulse.off_res = True
