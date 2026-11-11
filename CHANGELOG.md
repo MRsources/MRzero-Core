@@ -1,3 +1,8 @@
+- 1.4.0
+  - requires Python >= 3.10 again (was >= 3.12), now that `bifti` 0.3.1 supports Python 3.10; tested on Python 3.10 - 3.15
+  - `scikit-image` and `torchkbnufft` are no longer installed by default (they are not used by MRzeroCore itself); install them with `pip install mrzerocore[playground]`
+  - `ismrmrd` is now an optional dependency, only needed for `sig_to_mrd`: install it with `pip install mrzerocore[mrd]`. Without it, `sig_to_mrd` raises an `ImportError`; everything else works. This avoids building `h5py` from source where no wheels exist (e.g. Python 3.15)
+  - `numpy` is now a declared dependency; minimum versions: `bifti>=0.3.1`, `nibabel>=5.2`, `numpy>=1.22`, `ismrmrd>=1.14.1` (with `[mrd]`)
 - 1.3.0
   - use the official [`bifti`](https://pypi.org/project/bifti/) package for BIfTI phantoms instead of the internal implementation (#201). `NiftiPhantom`, `NiftiTissue` and `ResliceConfig` are now aliases of `bifti.BiftiPhantom`, `bifti.BiftiTissue` and `bifti.ResliceTo`; `TissueDict.load` uses the `bifti` loader (density-weighted resampling, `patient` position support, complex B1 maps, `func` mappings are parsed instead of `eval`ed)
   - `TissueDict.save` uses `bifti.NumpyPhantom.save`: NIfTIs are named `<json name>_<property>.nii.gz` (e.g. `phantom_B1plus_0.nii.gz`) and stored as float64 / complex128; the `.json` no longer contains `reslice_to`
