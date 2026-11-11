@@ -1,18 +1,28 @@
+from __future__ import annotations
+
 import os
 
-import ismrmrd
 import numpy as np
 import pypulseq as pp
 import torch
 from tqdm import tqdm
 
+# ismrmrd (and its h5py dependency) is an optional dependency, only needed for
+# MRD export: install with `pip install mrzerocore[mrd]`.
+try:
+    import ismrmrd
+except ImportError as e:
+    ismrmrd = None
+    _ISMRMRD_IMPORT_ERROR = e
+
+# Pulseq ADC label -> name of the ISMRMRD acquisition flag
 PULSEQ_MRD_FLAGS = {
-    "NAV": ismrmrd.ACQ_IS_PHASECORR_DATA,
-    "REV": ismrmrd.ACQ_IS_REVERSE,
-    "REF": ismrmrd.ACQ_IS_PARALLEL_CALIBRATION,
-    "IMA": ismrmrd.ACQ_IS_PARALLEL_CALIBRATION_AND_IMAGING,
-    "NOISE": ismrmrd.ACQ_IS_NOISE_MEASUREMENT,
-    "PMC": ismrmrd.ACQ_IS_RTFEEDBACK_DATA,
+    "NAV": "ACQ_IS_PHASECORR_DATA",
+    "REV": "ACQ_IS_REVERSE",
+    "REF": "ACQ_IS_PARALLEL_CALIBRATION",
+    "IMA": "ACQ_IS_PARALLEL_CALIBRATION_AND_IMAGING",
+    "NOISE": "ACQ_IS_NOISE_MEASUREMENT",
+    "PMC": "ACQ_IS_RTFEEDBACK_DATA",
 }
 
 
@@ -38,6 +48,12 @@ def sig_to_mrd(
     verbose : int, optional
         Logging verbosity level from 0 (silent) to 5 (most detailed). Default is 0.
     """
+    if ismrmrd is None:
+        raise ImportError(
+            "sig_to_mrd requires the optional 'ismrmrd' package: "
+            "pip install mrzerocore[mrd]  (or: pip install ismrmrd)"
+        ) from _ISMRMRD_IMPORT_ERROR
+
     #  Convert signal tensor to NumPy for ISMRMRD compatibility
     mr0_signal_numpy = mr0_signal.detach().cpu().numpy()
 
@@ -233,7 +249,7 @@ def _labels_to_acq_head(
     for key, item in PULSEQ_MRD_FLAGS.items():
         label_value = seq_labels.get(key, 0)
         if label_value > 0:
-            acq_head.set_flag(item)
+            acq_head.set_flag(getattr(ismrmrd, item))
 
     return acq_head
 

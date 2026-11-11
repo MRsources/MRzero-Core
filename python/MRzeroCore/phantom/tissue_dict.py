@@ -5,7 +5,7 @@ from pathlib import Path
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
-from typing import Literal, Self
+from typing import Literal
 
 
 class TissueDict(dict[str, VoxelGridPhantom]):
@@ -158,7 +158,7 @@ class TissueDict(dict[str, VoxelGridPhantom]):
 
         return SimData(**kwargs)
 
-    def recover(self, sim_data: SimData) -> Self:
+    def recover(self, sim_data: SimData) -> "TissueDict":
         """Provided to :class:`SimData` to reverse the ``build()``"""
         
         assert sim_data.tissue_masks is not None
