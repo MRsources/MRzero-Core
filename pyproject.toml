@@ -13,29 +13,39 @@ readme = "README.md"
 classifiers = [
     "Programming Language :: Rust",
     "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
     "Programming Language :: Python :: Implementation :: PyPy",
     "License :: OSI Approved :: GNU Affero General Public License v3",
 ]
-requires-python = ">=3.12"
+requires-python = ">=3.10"
 dependencies = [
-    "bifti>=0.3.0",
-    "ismrmrd",
+    "bifti>=0.3.1",
     "matplotlib>=3.5",
+    "nibabel>=5.2",
+    "numpy>=1.22",
     "pydisseqt>=0.1.13",
-    "pypulseq",           
+    "pypulseq",
     "requests>=2.20",
-    "scikit-image",
     "scipy>=1.7",
-    "torchkbnufft",
     "torch>=1.12",
     "tqdm",
-    "nibabel",
 ]
 
 # --- OPTIONAL INSTALLS ---
 [project.optional-dependencies]
 # to select pypulseq 1.4 or <1.5 use pip install mrzerocore[pp14]
 pp15 = ["pypulseq"]
+# ISMRMRD export (mr0.sig_to_mrd); optional because h5py lacks wheels for some environments
+mrd = ["ismrmrd>=1.14.1"]
+# Not used by MRzeroCore itself, only by some of the playground notebooks
+playground = ["scikit-image", "torchkbnufft"]
 
 [project.urls]
 Repository = "https://github.com/MRsources/MRzero-Core"

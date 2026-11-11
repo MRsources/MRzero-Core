@@ -21,6 +21,8 @@ The configuration files with the used tissue parameters can be found here: [brai
 
 Write the simulation output to an [ISMRMD](https://github.com/ismrmrd/ismrmrd) file; supported by many reconstruction tools.
 
+Requires the optional `ismrmrd` dependency: `pip install mrzerocore[mrd]`.
+
 | Parameter | Description |
 | --------- | ----------- |
 | `mrd_path` | path where the file will be written to |
