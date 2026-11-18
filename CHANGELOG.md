@@ -1,6 +1,6 @@
-- unreleased
+- 1.5.0
   - **breaking:** `VoxelGridPhantom.build()` uses the full affine including its translation instead of always centering the phantom. NIfTI phantoms loaded with `TissueDict.load` therefore sit where their affine says: the NIfTI affine without `reslice_to`, the `reslice_to` affine without `move_to`, otherwise the `move_to` affine; `slices()` keeps the world position of the selected slices
-  - support `reslice_to.move_to` (needs `bifti` with `ResliceTo.move_to`): `"center"` puts voxel `n // 2` at the isocenter (the previous behaviour), an affine places the grid exactly there
+  - support `reslice_to.move_to` (requires `bifti>=0.4.0`): `"center"` puts voxel `n // 2` at the isocenter (the previous behaviour), an affine places the grid exactly there
   - `VoxelGridPhantom.slices`, `interpolate`, `scale_fft` and setting `size` emit a `UserWarning`: the BIfTI config should describe the simulated phantom, use `reslice_to` instead
   - `VoxelGridPhantom.load` / `load_mat` build a centered affine (voxel `n // 2` at the origin, new helper `center_affine`), so these phantoms are placed as before; `interpolate`, `scale_fft` and the `size` setter keep the center voxel in place
 - 1.4.0

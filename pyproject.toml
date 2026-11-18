@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "mrzerocore"
-version = "1.4.0"
+version = "1.5.0"
 description = "Core functionality of MRzero"
 authors = [
     {name = "Jonathan Endres", email = "jonathan.endres@uk-erlangen.de"},
@@ -26,7 +26,7 @@ classifiers = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-    "bifti>=0.3.1",
+    "bifti>=0.4.0",
     "matplotlib>=3.5",
     "nibabel>=5.2",
     "numpy>=1.22",
