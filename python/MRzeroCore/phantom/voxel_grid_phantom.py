@@ -43,16 +43,32 @@ def rescale_affine(affine: torch.Tensor,
     """Rescale a voxel-to-world affine for a changed grid resolution.
 
     Resampling (e.g. :meth:`VoxelGridPhantom.interpolate`) keeps the same
-    field of view but changes the number of voxels. The affine encodes the
-    per-voxel step (its 3x3 part) and the world origin (its last column). Only
-    the per-voxel step must change: scaling column ``i`` by
-    ``old_shape[i] / new_shape[i]`` keeps the total extent (and the origin)
-    constant while preserving any rotation/shear in the affine.
+    field of view but changes the number of voxels. Scaling column ``i`` of
+    the 3x3 part by ``old_shape[i] / new_shape[i]`` keeps the total extent
+    while preserving any rotation/shear in the affine. The translation is
+    chosen so that the center voxel (``n // 2``) stays where it was - for a
+    centered phantom it stays at the isocenter.
     """
     scaled = affine.clone()
     for i in range(3):
         scaled[:3, i] = affine[:3, i] * (old_shape[i] / new_shape[i])
+    old_center = torch.tensor([n // 2 for n in old_shape], dtype=affine.dtype)
+    new_center = torch.tensor([n // 2 for n in new_shape], dtype=affine.dtype)
+    scaled[:3, 3] = (
+        affine[:3, :3] @ old_center + affine[:3, 3] - scaled[:3, :3] @ new_center
+    )
     return scaled
+
+
+def center_affine(affine: torch.Tensor, shape) -> torch.Tensor:
+    """Copy of ``affine`` translated so that voxel ``shape // 2`` is at the origin.
+
+    Even ``n`` then spans ``-n/2 .. n/2-1`` voxels, odd ``n`` ``-(n-1)/2 .. (n-1)/2``.
+    """
+    centered = torch.as_tensor(affine, dtype=torch.float32).clone()
+    center = torch.tensor([n // 2 for n in shape], dtype=centered.dtype)
+    centered[:3, 3] = -centered[:3, :3] @ center
+    return centered
 
 
 def generate_B0_B1(PD):
@@ -148,6 +164,7 @@ class VoxelGridPhantom:
     
     @size.setter
     def size(self, value):
+        warn("Setting VoxelGridPhantom.size changes the loaded phantom, use reslice_to in the BIfTI config instead.", stacklevel=2)
         value = torch.as_tensor(value, dtype=torch.float32)
         shape = torch.tensor(self.PD.shape, dtype=torch.float32)
 
@@ -160,11 +177,13 @@ class VoxelGridPhantom:
         new_affine = old_affine.clone()
         new_affine[:3, :3] = unit_dirs * voxel_size
     
-        # Corner-referenced translation: for even resolutions the shift is exactly
-        # FOV/2, for odd resolutions it's FOV/2 - voxel_size/2
+        # Scale around the center voxel (n // 2): it stays where it was, so a
+        # centered phantom stays centered
         half_index = torch.floor(shape / 2)
-        shift = half_index * voxel_size
-        new_affine[:3, 3] = -unit_dirs @ shift
+        new_affine[:3, 3] = (
+            old_affine[:3, :3] @ half_index + old_affine[:3, 3]
+            - new_affine[:3, :3] @ half_index
+        )
 
         self.affine = new_affine
 
@@ -180,19 +199,20 @@ class VoxelGridPhantom:
         """
         mask = self.PD > PD_threshold
 
-        shape = torch.tensor(mask.shape)
+        # Voxel positions are given by the affine, translation included
+        affine = self.affine.to(self.PD.device)
         axes = [
-            torch.arange(n, dtype=torch.float32, device=self.PD.device) - (n // 2)
-            for n in shape
+            torch.arange(n, dtype=torch.float32, device=self.PD.device)
+            for n in mask.shape
         ]
         pos = torch.stack(torch.meshgrid(*axes, indexing="ij"), dim=-1)
-        
+
         pos_rot = torch.einsum(
             'ij,xyzj->xyzi',
-            self.affine[:3,:3] / 1000,
+            affine[:3, :3] / 1000,
             pos
-        ) # No translation because we want that the voxel position are centered
-        
+        ) + affine[:3, 3] / 1000
+
         voxel_pos = pos_rot[mask]
 
         if voxel_shape == "box":
@@ -255,7 +275,7 @@ class VoxelGridPhantom:
             affine[0, 0] = size[0] / PD.shape[0] * 1000
             affine[1, 1] = size[1] / PD.shape[1] * 1000
             affine[2, 2] = size[2] / PD.shape[2] * 1000
-            affine[:, 3] = -size / 2 * 1000
+            affine = center_affine(affine, PD.shape)
             
             tissue_masks = {
                 key: torch.tensor(mask)
@@ -334,7 +354,7 @@ class VoxelGridPhantom:
         affine[0, 0] = size[0] / data[..., 0].shape[0] * 1000
         affine[1, 1] = size[1] / data[..., 0].shape[1] * 1000
         affine[2, 2] = size[2] / data[..., 0].shape[2] * 1000
-        affine[:, 3] = -torch.as_tensor(size) / 2 * 1000
+        affine = center_affine(affine, data[..., 0].shape)
         
         return cls(
             data[..., 0],  # PD
@@ -361,6 +381,7 @@ class VoxelGridPhantom:
         SimData
             A new instance containing the selected slice(s).
         """
+        warn("VoxelGridPhantom.slices() changes the loaded phantom, use reslice_to in the BIfTI config instead.", stacklevel=2)
         assert all(0 <= s < self.PD.shape[2] for s in slices)
 
         def select(tensor: torch.Tensor):
@@ -399,6 +420,7 @@ class VoxelGridPhantom:
 
     def scale_fft(self, x: int, y: int, z: int) -> VoxelGridPhantom:
         """This is experimental, shows strong ringing and is not recommended"""
+        warn("VoxelGridPhantom.scale_fft() changes the loaded phantom, use reslice_to in the BIfTI config instead.", stacklevel=2)
         # This function currently only supports downscaling
         assert x <= self.PD.shape[0]
         assert y <= self.PD.shape[1]
@@ -461,6 +483,8 @@ class VoxelGridPhantom:
         SimData
             A new :class:`SimData` instance containing resized tensors.
         """
+        warn("VoxelGridPhantom.interpolate() changes the loaded phantom, use reslice_to in the BIfTI config instead.", stacklevel=2)
+
         def resample(tensor: torch.Tensor) -> torch.Tensor:
             # Introduce additional dimensions: mini-batch and channels
             src = tensor[None, None, ...]

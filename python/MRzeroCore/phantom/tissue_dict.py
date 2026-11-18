@@ -89,7 +89,7 @@ class TissueDict(dict[str, VoxelGridPhantom]):
         return TissueDict({
             name: phantom.interpolate(x, y, z) for name, phantom in self.items()
         })
-    
+
     def slices(self, slices: list[int]):
         return TissueDict({
             name: phantom.slices(slices) for name, phantom in self.items()
