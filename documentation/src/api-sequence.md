@@ -74,6 +74,9 @@ Sequence.import_file(file_name, exact_trajectories, print_stats, default_shim, r
 | `default_shim` | `shim_array` for pulses that don't specify it themselves |
 | `ref_voltage` | *.dsv only:* used to convert volts to RF amplitudes |
 | `resolution` | *.dsv only:* defines samples per ADC block. If not set, this is determined by the .dsv time step + ADC duration. |
+| `samples_offres` | *`pulseq_rs` only:* number of instantaneous sub-pulses for RF pulses with a frequency offset (default `1`) |
+| `samples_slicesel` | *`pulseq_rs` only:* number of sub-pulses for RF pulses without frequency offset but with a gradient in the block (default `1`) |
+| `samples_onres` | *`pulseq_rs` only:* number of sub-pulses for all other RF pulses (default `1`) |
 
 
 ### `chain`
