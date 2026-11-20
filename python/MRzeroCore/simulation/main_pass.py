@@ -102,10 +102,10 @@ def execute_graph(graph: Graph,
     # Calculate kt_vec ourselves for autograd
     graph[0][0].kt_vec = torch.zeros(4, device=data.device)
 
-    params_per_rep = [data.get_params(r) for r in range(len(seq))]
     
     mag_adc = []
-    for i, (dists, rep, params) in enumerate(zip(graph[1:], seq, params_per_rep)):
+    for i, (dists, rep) in enumerate(zip(graph[1:], seq)):
+        params = data.get_params(i)
         current_T1 = params["T1"]
         current_T2 = params["T2"]
         current_T2dash = params["T2dash"]
