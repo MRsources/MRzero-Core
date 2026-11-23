@@ -1,3 +1,5 @@
+- 1.6.1
+  - fix: update pulseq-rs to 0.3.1, the phase of the `rf_shims` extension is no longer multiplied by 2π (it is already given in rad)
 - 1.6.0
   - `Sequence.import_file` (`backend="pulseq_rs"`) can split each RF pulse into several instantaneous sub-pulses, as in pulseqzero's `to_mr0`: new arguments `samples_offres` (pulses with a frequency offset), `samples_slicesel` (pulses with a gradient in the block) and `samples_onres` (all other pulses), default `1` (previous behaviour). The `pydisseqt` backend ignores them with a warning
   - fix: the RF frequency offset is applied as a phase ramp over the sub-pulses, the phase offset refers to the pulse center
