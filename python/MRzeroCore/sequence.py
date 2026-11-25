@@ -124,8 +124,6 @@ class Pulse:
         Flip angle in radians
     phase : torch.Tensor
         Pulse phase in radians
-    pulse_freq: torch.Tensor, to be removed in the future!
-        pulse frequency omega_1 = angle/duration
     freq_offset: torch.Tensor
         Frequency offset in Hz
 	duration: torch.Tensor
@@ -146,7 +144,6 @@ class Pulse:
         angle: torch.Tensor,
         phase: torch.Tensor,
         
-        pulse_freq: torch.Tensor, # to be removed in the future
         freq_offset: torch.Tensor,
         duration: torch.Tensor,
         grad: torch.Tensor,
@@ -160,7 +157,6 @@ class Pulse:
         self.angle = angle
         self.phase = phase
         
-        self.pulse_freq = pulse_freq # to be removed in the future
         self.freq_offset = freq_offset
         self.duration = duration
         self.grad = grad
@@ -176,7 +172,6 @@ class Pulse:
             torch.as_tensor(self.angle, dtype=torch.float32).cpu(),
             torch.as_tensor(self.phase, dtype=torch.float32).cpu(),
             
-            torch.as_tensor(self.pulse_freq, dtype=torch.float32).cpu(), # to be removed in the future
             torch.as_tensor(self.freq_offset, dtype=torch.float32).cpu(),
             torch.as_tensor(self.duration, dtype=torch.float32).cpu(),
             torch.as_tensor(self.grad, dtype=torch.float32).cpu(),
@@ -193,7 +188,6 @@ class Pulse:
             torch.as_tensor(self.angle, dtype=torch.float32).cuda(device),
             torch.as_tensor(self.phase, dtype=torch.float32).cuda(device),
             
-            torch.as_tensor(self.pulse_freq, dtype=torch.float32).cuda(device), # to be removed in the future
             torch.as_tensor(self.freq_offset, dtype=torch.float32).cuda(device),
             torch.as_tensor(self.duration, dtype=torch.float32).cuda(device),
             torch.as_tensor(self.grad, dtype=torch.float32).cuda(device),
@@ -215,7 +209,6 @@ class Pulse:
             PulseUsage.UNDEF,
             torch.zeros(1, dtype=torch.float32),
             torch.zeros(1, dtype=torch.float32),
-            torch.zeros(1, dtype=torch.float32), # to be removed in the future
             torch.zeros(1, dtype=torch.float32),
             torch.zeros(1, dtype=torch.float32),
             torch.zeros(3, dtype=torch.float32),
@@ -231,7 +224,6 @@ class Pulse:
             self.angle.clone(),
             self.phase.clone(),
             
-            self.pulse_freq.clone(), # to be removed in the future
             self.freq_offset.clone(),
             self.duration.clone(),
             self.grad.clone(),
@@ -871,8 +863,7 @@ class Sequence(list):
             rep.pulse.angle = pulse.angle
             rep.pulse.phase = pulse.phase                       
             
-            # provide frequency and frequency-offset to pulse object needed for potential treatment off off-resonance
-            rep.pulse.pulse_freq = 2*torch.pi * frequency # rad/s # may only work for block-pulses
+            # provide frequency-offset to pulse object as needed for off off-resonance
             rep.pulse.freq_offset = frequency_offset      # Hz
             if rep.pulse.freq_offset != 0:
                  rep.pulse.off_res = True
