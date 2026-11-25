@@ -1,3 +1,21 @@
+- 1.6.1
+  - fix: update pulseq-rs to 0.3.1, the phase of the `rf_shims` extension is no longer multiplied by 2π (it is already given in rad)
+- 1.6.0
+  - `Sequence.import_file` (`backend="pulseq_rs"`) can split each RF pulse into several instantaneous sub-pulses, as in pulseqzero's `to_mr0`: new arguments `samples_offres` (pulses with a frequency offset), `samples_slicesel` (pulses with a gradient in the block) and `samples_onres` (all other pulses), default `1` (previous behaviour). The `pydisseqt` backend ignores them with a warning
+  - fix: the RF frequency offset is applied as a phase ramp over the sub-pulses, the phase offset refers to the pulse center
+  - fix: the ADC phase of `import_pulseq_rs` now includes the ADC frequency offset (`sample_phases()` only contained the phase offset)
+  - fix: the gradient during an RF pulse (`pulse.grad`) is sampled from the gradient shape at the (sub-)pulse center instead of using only its amplitude
+  - `pulse.freq_offset` and `pulse.duration` are stored as tensors; `pulse.duration` is the duration of one sub-pulse
+- 1.5.0
+  - **breaking:** `VoxelGridPhantom.build()` uses the full affine including its translation instead of always centering the phantom. NIfTI phantoms loaded with `TissueDict.load` therefore sit where their affine says: the NIfTI affine without `reslice_to`, the `reslice_to` affine without `move_to`, otherwise the `move_to` affine; `slices()` keeps the world position of the selected slices
+  - support `reslice_to.move_to` (requires `bifti>=0.4.0`): `"center"` puts voxel `n // 2` at the isocenter (the previous behaviour), an affine places the grid exactly there
+  - `VoxelGridPhantom.slices`, `interpolate`, `scale_fft` and setting `size` emit a `UserWarning`: the BIfTI config should describe the simulated phantom, use `reslice_to` instead
+  - `VoxelGridPhantom.load` / `load_mat` build a centered affine (voxel `n // 2` at the origin, new helper `center_affine`), so these phantoms are placed as before; `interpolate`, `scale_fft` and the `size` setter keep the center voxel in place
+- 1.4.0
+  - requires Python >= 3.10 again (was >= 3.12), now that `bifti` 0.3.1 supports Python 3.10; tested on Python 3.10 - 3.15
+  - `scikit-image` and `torchkbnufft` are no longer installed by default (they are not used by MRzeroCore itself); install them with `pip install mrzerocore[playground]`
+  - `ismrmrd` is now an optional dependency, only needed for `sig_to_mrd`: install it with `pip install mrzerocore[mrd]`. Without it, `sig_to_mrd` raises an `ImportError`; everything else works. This avoids building `h5py` from source where no wheels exist (e.g. Python 3.15)
+  - `numpy` is now a declared dependency; minimum versions: `bifti>=0.3.1`, `nibabel>=5.2`, `numpy>=1.22`, `ismrmrd>=1.14.1` (with `[mrd]`)
 - 1.3.0
   - use the official [`bifti`](https://pypi.org/project/bifti/) package for BIfTI phantoms instead of the internal implementation (#201). `NiftiPhantom`, `NiftiTissue` and `ResliceConfig` are now aliases of `bifti.BiftiPhantom`, `bifti.BiftiTissue` and `bifti.ResliceTo`; `TissueDict.load` uses the `bifti` loader (density-weighted resampling, `patient` position support, complex B1 maps, `func` mappings are parsed instead of `eval`ed)
   - `TissueDict.save` uses `bifti.NumpyPhantom.save`: NIfTIs are named `<json name>_<property>.nii.gz` (e.g. `phantom_B1plus_0.nii.gz`) and stored as float64 / complex128; the `.json` no longer contains `reslice_to`
