@@ -139,11 +139,13 @@ impl PyRf {
         let (re, im) = integrate_complex_shape(self.shape.as_ref(), t0, t1);
         let mom = Complex64::new(re, im);
         let flip = 2.0 * std::f64::consts::PI * self.amp * mom.norm();
-        // Add the constant RF phase offset and the optional in-shape phase.
+        // The constant RF phase offset enters with a minus sign (as the frequency
+        // offset, -2π f t, and as the Siemens interpreter plays it); the optional
+        // in-shape phase is added as it is.
         let phase = if mom.norm() > 0.0 {
-            self.phase + mom.arg()
+            -self.phase + mom.arg()
         } else {
-            self.phase
+            -self.phase
         };
         (flip, phase)
     }
@@ -245,7 +247,8 @@ impl PyAdc {
     /// modulation evaluated at each sample's relative time.
     fn sample_phases(&self) -> Vec<f64> {
         let n = self.num as usize;
-        let mut out = vec![self.phase; n];
+        // the phase offset enters with a minus sign, as for the RF (see integrate)
+        let mut out = vec![-self.phase; n];
         if let Some(ps) = self.phase_shape.as_ref() {
             for (i, val) in out.iter_mut().enumerate() {
                 let t = (i as f64 + 0.5) * self.dwell;
