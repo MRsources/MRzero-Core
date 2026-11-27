@@ -64,8 +64,9 @@ def isochromat_sim(seq: Sequence, data: SimData, spin_count: int,
     # RawSimData doesn't store the voxel shape. We could extract it by FFT'ing
     # the dephasing function, if that feature is desired. Until then, we just
     # use the nyquist frequencies, with a special case for ∞ (custom phantoms).
-    voxel_size = 0.5 / torch.tensor(data.nyquist, device=data.device)
-    if not torch.isfinite(voxel_size).all():
+    nyquist = torch.as_tensor(data.nyquist, device=data.device)
+    voxel_size = 0.5 / nyquist
+    if not torch.isfinite(voxel_size).all() or torch.isinf(nyquist).all():
         # Fallback voxel size
         voxel_size = torch.tensor([0.1, 0.1, 0.1], device=data.device)
 
@@ -84,7 +85,7 @@ def isochromat_sim(seq: Sequence, data: SimData, spin_count: int,
             (r2_seed[0] + a[0] * indices) % 1,
             (r2_seed[1] + a[1] * indices) % 1,
             (r2_seed[2] + a[2] * indices) % 1
-        ])
+        ], dim=1)
     else:
         raise ValueError("unexpected spin_dist", spin_dist)
 
@@ -108,6 +109,13 @@ def isochromat_sim(seq: Sequence, data: SimData, spin_count: int,
                         device=data.device)
     spins[:, :, 2] = 1
 
+    if seq.normalized_grads:
+        grad_scale = torch.where(
+            data.size > 0, 1 / data.size, torch.zeros_like(data.size)
+        )
+    else:
+        grad_scale = torch.ones_like(data.size)
+
     # Simulation:
     signal = []
 
@@ -118,7 +126,15 @@ def isochromat_sim(seq: Sequence, data: SimData, spin_count: int,
         if perfect_spoiling and rep.pulse.usage == PulseUsage.EXCIT:
             spins[:, :, :2] = 0
 
-        spins = flip(spins, rep.pulse.angle, rep.pulse.phase, data.B1)
+        shim_array = torch.as_tensor(rep.pulse.shim_array, device=data.device)
+        if shim_array.shape[0] == 1:
+            B1 = data.B1.sum(0)
+        else:
+            assert shim_array.shape[0] == data.B1.shape[0]
+            shim = shim_array[:, 0] * torch.exp(-1j * shim_array[:, 1])
+            B1 = (data.B1 * shim[:, None]).sum(0)
+
+        spins = flip(spins, rep.pulse.angle, rep.pulse.phase, B1)
         rep_sig = torch.zeros((rep.event_count, coil_count),
                               dtype=torch.cfloat, device=data.device)
         signal.append(rep_sig)
@@ -128,7 +144,7 @@ def isochromat_sim(seq: Sequence, data: SimData, spin_count: int,
         # state immedeately after the pulse for every event
         spins_start = spins
         time = rep.event_time.cumsum(0).to(device=data.device)
-        gradm = rep.gradm.cumsum(0).to(device=data.device)
+        gradm = (rep.gradm.to(device=data.device) * grad_scale[None, :]).cumsum(0)
 
         for e in range(rep.event_count):
             spins = spins_start.clone()
@@ -191,10 +207,11 @@ def dephase(spins: torch.Tensor, omega: torch.Tensor,
 def flip(spins: torch.Tensor, angle: torch.Tensor, phase: torch.Tensor,
          B1: torch.Tensor) -> torch.Tensor:
     """Rotate the magnetisation to simulate a RF-pulse."""
-    a = angle * B1
-    p = torch.as_tensor(phase)
+    B1 = torch.as_tensor(B1, device=spins.device).reshape(-1)
+    a = torch.as_tensor(angle, device=spins.device) * B1.abs()
+    p = torch.as_tensor(phase, device=spins.device) + B1.angle()
     # Rz(phase) * Rx(angle) * Rz(-phase):
-    rot_mat = torch.zeros((B1.numel(), 3, 3), device=spins.device)
+    rot_mat = torch.zeros((B1.numel(), 3, 3), device=spins.device, dtype=spins.dtype)
     rot_mat[:, 0, 0] = torch.sin(p)**2*torch.cos(a) + torch.cos(p)**2
     rot_mat[:, 0, 1] = (1 - torch.cos(a))*torch.sin(p)*torch.cos(p)
     rot_mat[:, 0, 2] = torch.sin(a)*torch.sin(p)
